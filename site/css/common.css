@@ -1,0 +1,129 @@
+/* 공통: Apple 디자인 시스템(DESIGN-apple.md) 기반
+   - 상호작용 색은 Action Blue 하나뿐
+   - 카드·버튼에 그림자 없음, 얇은 선(hairline)과 면 색 변화로 구분
+   - 눌렀을 때 scale(0.95)
+   O/X의 빨강, 정답의 초록은 의미를 전하는 색이라 예외로 둡니다. */
+:root {
+  --primary: #0066cc;
+  --primary-focus: #0071e3;
+  --primary-on-dark: #2997ff;
+  --ink: #1d1d1f;
+  --ink-80: #333333;
+  --ink-48: #7a7a7a;
+  --canvas: #ffffff;
+  --parchment: #f5f5f7;
+  --pearl: #fafafc;
+  --tile-1: #272729;
+  --tile-2: #2a2a2c;
+  --black: #000000;
+  --chip: #d2d2d7;
+  --hairline: #e0e0e0;
+  --red: #ff3b30;
+  --green: #34c759;
+
+  /* 기존 이름과 연결 (다른 CSS가 이 이름을 씁니다) */
+  --cheong: var(--primary);
+  --cheong-deep: #1d1d1f;
+  --jeok: var(--red);
+  --hwang: var(--parchment);
+  --baek: var(--canvas);
+  --heuk: var(--ink);
+  --nok: var(--green);
+  --sky: var(--parchment);
+  --muted: var(--ink-48);
+  --line: rgba(0, 0, 0, .08);
+  --paper: var(--canvas);
+  --stroke: 1px;
+  --lift: none;
+
+  --font-display: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, system-ui, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
+  --font-body: var(--font-display);
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; min-height: 100%; }
+body {
+  font-family: var(--font-body);
+  font-size: 17px;
+  letter-spacing: -0.022em;
+  color: var(--ink);
+  background: var(--parchment);
+  line-height: 1.47;
+  -webkit-text-size-adjust: 100%;
+  -webkit-font-smoothing: antialiased;
+}
+h1, h2, h3, .display {
+  font-family: var(--font-display);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  margin: 0;
+  line-height: 1.1;
+}
+button, input, select, textarea { font: inherit; color: inherit; letter-spacing: inherit; }
+
+.btn {
+  font-family: var(--font-body);
+  font-size: 17px;
+  font-weight: 400;
+  line-height: 1.2;
+  border: 1px solid var(--primary);
+  border-radius: 9999px;
+  padding: 11px 22px;
+  background: transparent;
+  color: var(--primary);
+  cursor: pointer;
+  box-shadow: none;
+  transition: transform .12s ease;
+  touch-action: manipulation;
+}
+.btn:active:not(:disabled) { transform: scale(.95); }
+.btn.primary, .btn.yellow { background: var(--primary); border-color: var(--primary); color: #fff; }
+.btn.danger { background: var(--ink); border-color: var(--ink); color: #fff; border-radius: 8px; }
+.btn.small { font-size: 14px; padding: 8px 15px; }
+.btn.ghost { border-color: transparent; text-decoration: none; }
+.btn:disabled { opacity: .4; cursor: not-allowed; }
+
+:focus-visible { outline: 2px solid var(--primary-focus); outline-offset: 2px; }
+
+input[type=text], input[type=email], input[type=password], input[type=tel], select, textarea {
+  border: 1px solid rgba(0, 0, 0, .12);
+  border-radius: 11px;
+  padding: 11px 14px;
+  background: var(--canvas);
+  color: var(--ink);
+  width: 100%;
+}
+textarea { resize: vertical; }
+
+.hidden { display: none !important; }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+.car-svg { display: block; width: 100%; height: auto; overflow: visible; }
+
+.toast-wrap {
+  position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%);
+  display: flex; flex-direction: column; gap: 8px; align-items: center;
+  z-index: 100; pointer-events: none; width: min(92vw, 520px);
+}
+.toast {
+  background: rgba(29, 29, 31, .92); color: #fff;
+  -webkit-backdrop-filter: saturate(180%) blur(20px); backdrop-filter: saturate(180%) blur(20px);
+  padding: 12px 20px; border-radius: 18px; font-size: 15px;
+  text-align: center;
+  animation: toast-in .2s ease-out;
+}
+@keyframes toast-in { from { opacity: 0; transform: translateY(8px); } }
+
+.demo-banner {
+  position: fixed; left: 12px; bottom: 12px; z-index: 90;
+  max-width: calc(100vw - 24px);
+  background: rgba(245, 245, 247, .85); color: var(--ink);
+  -webkit-backdrop-filter: saturate(180%) blur(20px); backdrop-filter: saturate(180%) blur(20px);
+  border: 1px solid var(--line); border-radius: 11px;
+  padding: 8px 14px; font-size: 14px;
+}
+.demo-banner a { color: var(--primary); }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+}

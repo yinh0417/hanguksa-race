@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#173A8A">
+<title>한국사 레이스</title>
+<link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" rel="stylesheet">
+<link rel="stylesheet" href="css/common.css">
+<link rel="stylesheet" href="css/play.css">
+</head>
+<body class="phone">
+<div id="offline" class="offline hidden">인터넷 연결이 끊겼어요. 다시 연결되면 그대로 이어서 달려요.</div>
+
+<!-- 입장 코드 -->
+<main id="sCode" class="screen hidden">
+  <h1 class="logo">한국사 레이스</h1>
+  <form id="codeForm" class="card">
+    <label for="codeInput" class="big-label">큰 화면의 입장 코드 4자리</label>
+    <input id="codeInput" type="tel" inputmode="numeric" maxlength="4" pattern="[0-9]{4}" autocomplete="off" placeholder="0000">
+    <p id="codeErr" class="err" role="alert"></p>
+    <button class="btn primary wide" type="submit">들어가기</button>
+  </form>
+</main>
+
+<!-- 닉네임과 차 -->
+<main id="sJoin" class="screen hidden">
+  <h1 class="logo small">한국사 레이스</h1>
+  <form id="joinForm" class="card">
+    <p id="joinNote" class="note hidden"></p>
+    <label for="nickInput" class="big-label">닉네임 (6글자까지)</label>
+    <input id="nickInput" type="text" maxlength="6" autocomplete="off" placeholder="닉네임">
+    <p class="big-label">내 차 고르기</p>
+    <div id="carPick" class="car-pick" role="radiogroup" aria-label="차 고르기"></div>
+    <p id="joinErr" class="err" role="alert"></p>
+    <button class="btn primary wide" type="submit">입장하기</button>
+  </form>
+</main>
+
+<!-- 기다리기 -->
+<main id="sWait" class="screen hidden">
+  <div class="wait">
+    <div id="waitCar" class="wait-car"></div>
+    <p id="waitNick" class="wait-nick"></p>
+    <h2 id="waitTitle"></h2>
+    <p id="waitText" class="wait-text"></p>
+    <div id="waitCount" class="wait-count hidden"></div>
+  </div>
+</main>
+
+<!-- 레이스 -->
+<main id="sRace" class="screen race-screen hidden">
+  <div class="status">
+    <span class="st-pos" id="stPos">0 / 15칸</span>
+    <span class="st-rank" id="stRank">-위</span>
+    <span class="st-time" id="stTime">3:00</span>
+  </div>
+  <p class="st-scene" id="stScene"></p>
+  <div class="qtime"><span id="qBar"></span></div>
+  <section class="qcard" id="qCard">
+    <p class="q-type" id="qType"></p>
+    <p class="q-text" id="qText"></p>
+  </section>
+  <div class="answers" id="answers"></div>
+  <div class="item-slot">
+    <span id="shieldMark" class="shield-mark hidden">🛡️ 거북선 방패 있음</span>
+    <button id="itemBtn" class="btn item-btn hidden" type="button"></button>
+  </div>
+  <div id="overlay" class="overlay hidden" aria-live="assertive">
+    <div class="ov-icon" id="ovIcon"></div>
+    <p class="ov-title" id="ovTitle"></p>
+    <p class="ov-sub" id="ovSub"></p>
+    <p class="ov-count" id="ovCount"></p>
+  </div>
+  <div id="flash" class="flash hidden" aria-live="polite"></div>
+</main>
+
+<!-- 끝 -->
+<main id="sDone" class="screen hidden">
+  <div class="done">
+    <div id="doneCar" class="wait-car"></div>
+    <h2 id="doneTitle"></h2>
+    <p id="doneRank" class="done-rank"></p>
+    <p id="doneStat" class="done-stat"></p>
+    <p class="wait-text">큰 화면을 봐 주세요.</p>
+  </div>
+</main>
+
+<!-- 안내 -->
+<main id="sMsg" class="screen hidden">
+  <div class="card msg">
+    <h2 id="msgTitle"></h2>
+    <p id="msgText"></p>
+    <a class="btn primary wide" href="play.html">처음으로</a>
+  </div>
+</main>
+
+<div class="toast-wrap" id="toasts" aria-live="polite"></div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="js/config.js"></script>
+<script src="js/db.js"></script>
+<script src="js/rules.js"></script>
+<script src="js/art.js"></script>
+<script src="js/play.js"></script>
+</body>
+</html>

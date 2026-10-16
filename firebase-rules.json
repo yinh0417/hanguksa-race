@@ -1,0 +1,37 @@
+{
+  "rules": {
+    "sets": {
+      ".read": "auth != null && auth.token.email === 'yinh0417@gmail.com'",
+      ".write": "auth != null && auth.token.email === 'yinh0417@gmail.com'"
+    },
+    "records": {
+      ".read": "auth != null && auth.token.email === 'yinh0417@gmail.com'",
+      ".write": "auth != null && auth.token.email === 'yinh0417@gmail.com'"
+    },
+    "rooms": {
+      ".read": "auth != null && auth.token.email === 'yinh0417@gmail.com'",
+      ".write": "auth != null && auth.token.email === 'yinh0417@gmail.com'",
+      "$code": {
+        ".read": "auth != null",
+        "players": {
+          "$uid": {
+            ".write": "auth != null && auth.uid === $uid && root.child('rooms/' + $code + '/meta').exists() && newData.child('status').val() === 'pending' && (!data.exists() || data.child('status').val() === 'pending' || data.child('status').val() === 'rejected')",
+            ".validate": "newData.hasChildren(['nick', 'car', 'status']) && newData.child('nick').isString() && newData.child('nick').val().length >= 1 && newData.child('nick').val().length <= 6"
+          }
+        },
+        "state": {
+          "$uid": {
+            ".write": "auth != null && auth.uid === $uid && root.child('rooms/' + $code + '/players/' + $uid + '/status').val() === 'approved'"
+          }
+        },
+        "hits": {
+          "$target": {
+            "$hit": {
+              ".write": "auth != null && ((auth.uid === $target && !newData.exists()) || (!data.exists() && newData.child('from').val() === auth.uid && root.child('rooms/' + $code + '/players/' + auth.uid + '/status').val() === 'approved'))"
+            }
+          }
+        }
+      }
+    }
+  }
+}

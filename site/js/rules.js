@@ -1,0 +1,197 @@
+/* 게임 규칙: 순위, 아이템, 출제 순서, 시트 붙여넣기 해석 */
+(function () {
+  const C = window.APP_CONFIG;
+  const ITEMS = C.items;
+
+  // 2022 개정 교육과정 한국사1·2 기준 10개 시대, 시대마다 5장면(시간 순서)
+  const ERAS = [
+    { id: 'e1', no: '1', name: '선사·고조선·여러 나라', scenes: ['구석기 동굴 사냥터', '신석기 움집 마을', '청동기 고인돌 언덕', '고조선 왕검성', '여러 나라의 제천 행사'] },
+    { id: 'e2', no: '2', name: '삼국·남북국', scenes: ['고구려 무용총 수렵도', '백제 금동 대향로와 정림사지 5층 석탑', '신라 첨성대', '통일 신라 불국사와 석굴암', '발해 상경성'] },
+    { id: 'e3', no: '3', name: '고려', scenes: ['개경 만월대', '서희 담판과 귀주 대첩', '벽란도 국제 무역항', '상감 청자 가마', '팔만대장경과 직지'] },
+    { id: 'e4', no: '4', name: '조선 전기', scenes: ['한양 경복궁과 숭례문', '집현전과 훈민정음', '측우기와 앙부일구', '한산도 대첩 거북선', '행주산성'] },
+    { id: 'e5', no: '5', name: '조선 후기', scenes: ['장시와 보부상', '김홍도 풍속화 속 서당과 씨름판', '수원 화성과 거중기', '대동여지도', '판소리 마당'] },
+    { id: 'e6', no: '6', name: '개항기와 대한제국', scenes: ['제물포 개항장', '동학 농민군 황토현', '독립문과 만민 공동회', '환구단과 덕수궁 석조전', '한성 전차와 전등'] },
+    { id: 'e7a', no: '7-A', name: '3·1 운동과 무장 독립 전쟁', scenes: ['3·1 운동 만세 거리', '상하이 대한민국 임시 정부', '봉오동 골짜기', '청산리 숲', '한국광복군'] },
+    { id: 'e7b', no: '7-B', name: '대중 운동과 민족 문화 수호', scenes: ['물산 장려 운동 장터', '6·10 만세 운동', '신간회 창립', '광주 학생 항일 운동', '조선어 학회와 우리말 큰사전 원고'] },
+    { id: 'e8', no: '8', name: '대한민국의 발전', scenes: ['1945 광복의 기쁨', '1948 정부 수립', '4·19 혁명', '경제 개발 5개년 계획과 경부 고속 도로', '수출 100억 달러 달성과 조선소'] },
+    { id: 'e9', no: '9', name: '오늘날의 대한민국', scenes: ['1987 6월 민주 항쟁', '1988 서울 올림픽', '외환 위기 금 모으기 운동', '2002 월드컵 거리 응원', '오늘날의 서울과 한류'] }
+  ];
+  function era(id) { return ERAS.find(e => e.id === id) || ERAS[7]; }
+
+  function shuffle(a) {
+    const b = a.slice();
+    for (let i = b.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [b[i], b[j]] = [b[j], b[i]];
+    }
+    return b;
+  }
+
+  // 한 바퀴 출제 순서. 바퀴가 바뀔 때 같은 문제가 연달아 나오지 않게 합니다.
+  function nextOrder(n, lastIdx) {
+    const o = shuffle([...Array(n).keys()]);
+    if (n > 1 && o[0] === lastIdx) [o[0], o[1]] = [o[1], o[0]];
+    return o;
+  }
+
+  function pick(table) {
+    const total = table.reduce((s, r) => s + r[1], 0);
+    let r = Math.random() * total;
+    for (const [k, w] of table) { if ((r -= w) < 0) return k; }
+    return table[table.length - 1][0];
+  }
+
+  // 정답을 맞혔을 때 받는 좋은 아이템. 뒤쪽 절반일수록 강한 아이템이 잘 나옵니다.
+  function rollGoodItem(rank, n, opts) {
+    const lower = n > 1 && (rank - 1) / (n - 1) >= 0.5;
+    let table = lower
+      ? [['boost2', 40], ['balloon', 25], ['lightning', 20], ['boost1', 15]]
+      : [['boost1', 50], ['shield', 30], ['balloon', 20]];
+    if (opts.holdingAttack || rank === 1 || n < 2) table = table.filter(([k]) => ITEMS[k].kind === 'self');
+    if (opts.hasShield) table = table.filter(([k]) => k !== 'shield');
+    if (!table.length) table = [['boost1', 1]];
+    return pick(table);
+  }
+  function rollBadItem() { return Math.random() < 0.5 ? 'fuel' : 'ink'; }
+
+  function accuracy(s) {
+    const c = s.correct || 0, w = s.wrong || 0;
+    return c + w ? c / (c + w) : 0;
+  }
+
+  // players: [{uid, nick, car}] (승인된 학생), states: {uid: 상태}
+  function ranking(players, states) {
+    const list = players.map(p => {
+      const s = (states && states[p.uid]) || {};
+      return Object.assign({}, p, {
+        pos: s.pos || 0,
+        finishedAt: s.finishedAt || null,
+        correct: s.correct || 0,
+        wrong: s.wrong || 0,
+        acc: accuracy(s),
+        movedAt: s.movedAt || Infinity
+      });
+    });
+    list.sort((a, b) => {
+      if (a.finishedAt && b.finishedAt) return a.finishedAt - b.finishedAt;
+      if (a.finishedAt) return -1;
+      if (b.finishedAt) return 1;
+      if (b.pos !== a.pos) return b.pos - a.pos;
+      if (b.acc !== a.acc) return b.acc - a.acc;
+      return a.movedAt - b.movedAt;
+    });
+    list.forEach((x, i) => { x.rank = i + 1; });
+    return list;
+  }
+
+  // 공격 대상: 물풍선은 바로 앞 친구(내가 1위면 바로 뒤 친구), 신기전은 아직 달리는 친구 중 1위
+  function attackTarget(type, myUid, ranked) {
+    const alive = ranked.filter(r => !r.finishedAt && r.uid !== myUid);
+    if (!alive.length) return null;
+    if (type === 'lightning') return alive[0];
+    const me = ranked.find(r => r.uid === myUid);
+    const myRank = me ? me.rank : Infinity;
+    const ahead = alive.filter(r => r.rank < myRank);
+    if (ahead.length) return ahead[ahead.length - 1];
+    return alive.find(r => r.rank > myRank) || null;
+  }
+
+  function sceneIndex(pos) { return Math.min(4, Math.floor((pos || 0) / C.cellsPerScene)); }
+
+  // 문제별 정답률: 정답 / (정답 + 오답 + 시간 초과)
+  function questionStats(questions, states) {
+    return questions.map((q, i) => {
+      let c = 0, w = 0, t = 0;
+      Object.values(states || {}).forEach(s => {
+        const st = s && s.q && s.q[i];
+        if (st) { c += st.c || 0; w += st.w || 0; t += st.t || 0; }
+      });
+      const total = c + w + t;
+      return { i, c, w, t, total, rate: total ? c / total : null };
+    });
+  }
+
+  function answerText(q) {
+    if (q.type === 'ox') return q.answer;
+    return '①②③④'[q.answer] + ' ' + q.choices[q.answer];
+  }
+
+  // ---------- 엑셀·구글 시트 붙여넣기 ----------
+  const TEMPLATE = [
+    ['유형', '문제', '보기1', '보기2', '보기3', '보기4', '정답'],
+    ['OX', '물산 장려 운동은 우리 기업이 만든 물건을 쓰자는 운동이었다.', '', '', '', '', 'O'],
+    ['4지선다', '1927년 민족주의 세력과 사회주의 세력이 함께 만든 단체는?', '신민회', '독립 협회', '신간회', '의열단', '3']
+  ].map(r => r.join('\t')).join('\n');
+
+  function parseType(raw) {
+    const s = String(raw || '').replace(/\s/g, '').toLowerCase();
+    if (/^(ox|o\/x|o·x|오엑스|ㅇㅌ)$/.test(s)) return 'ox';
+    if (/4|사지|선다|객관/.test(s)) return 'mc';
+    return null;
+  }
+  function parseOX(raw) {
+    const s = String(raw || '').trim().toUpperCase();
+    if (['O', '○', 'ㅇ', '맞음', '참'].includes(s)) return 'O';
+    if (['X', '×', '✕', 'ㅌ', '틀림', '거짓'].includes(s)) return 'X';
+    return null;
+  }
+  function parseMC(raw, choices) {
+    const s = String(raw || '').trim();
+    const circled = '①②③④'.indexOf(s);
+    if (circled >= 0) return circled;
+    const n = parseInt(s.replace(/[번)]/g, ''), 10);
+    if (n >= 1 && n <= 4 && /^\d/.test(s)) return n - 1;
+    const byText = choices.findIndex(c => c && c === s);
+    return byText >= 0 ? byText : null;
+  }
+
+  // 반환: [{type, q, choices, answer, error}]
+  function parseSheet(text) {
+    const lines = String(text || '').replace(/\r/g, '').split('\n').filter(l => l.trim());
+    const rows = [];
+    lines.forEach(line => {
+      const cells = line.split('\t').map(c => c.trim());
+      if (/^유형/.test(cells[0])) return; // 머리글 줄
+      rows.push(rowFromCells(cells));
+    });
+    return rows;
+  }
+  function rowFromCells(cells) {
+    const type = parseType(cells[0]);
+    const q = cells[1] || '';
+    const choices = [cells[2] || '', cells[3] || '', cells[4] || '', cells[5] || ''];
+    const row = { type: type || 'mc', q, choices, answer: null, error: null };
+    if (!type) row.error = '유형은 OX 또는 4지선다로 적어 주세요.';
+    if (type === 'ox') row.answer = parseOX(cells[6]);
+    if (type === 'mc') row.answer = parseMC(cells[6], choices);
+    return validateRow(row);
+  }
+  function validateRow(row) {
+    row.error = null;
+    if (!row.q.trim()) row.error = '문제가 비어 있어요.';
+    else if (row.type === 'mc' && row.choices.some(c => !String(c).trim())) row.error = '보기 4개를 모두 채워 주세요.';
+    else if (row.type === 'ox' && !['O', 'X'].includes(row.answer)) row.error = '정답은 O 또는 X로 적어 주세요.';
+    else if (row.type === 'mc' && !(typeof row.answer === 'number' && row.answer >= 0 && row.answer <= 3)) row.error = '정답은 1~4 중 하나로 적어 주세요.';
+    return row;
+  }
+  function cleanQuestion(row) {
+    if (row.type === 'ox') return { type: 'ox', q: row.q.trim(), answer: row.answer };
+    return { type: 'mc', q: row.q.trim(), choices: row.choices.map(c => String(c).trim()), answer: row.answer };
+  }
+
+  // 7-B 예시 문제 (선생님이 고쳐서 쓰는 출발점)
+  const SAMPLE_7B = [
+    { type: 'ox', q: '물산 장려 운동은 "조선 사람 조선 것"을 내세우며 우리 기업이 만든 물건을 쓰자는 운동이었다.', answer: 'O' },
+    { type: 'mc', q: '1926년 순종의 장례일에 학생들이 중심이 되어 일으킨 만세 운동은?', choices: ['3·1 운동', '6·10 만세 운동', '광주 학생 항일 운동', '물산 장려 운동'], answer: 1 },
+    { type: 'mc', q: '1927년 민족주의 세력과 사회주의 세력이 힘을 합쳐 만든 단체는?', choices: ['신민회', '독립 협회', '신간회', '의열단'], answer: 2 },
+    { type: 'ox', q: '광주 학생 항일 운동은 1929년 한국 학생과 일본 학생의 충돌을 계기로 일어나 전국으로 퍼졌다.', answer: 'O' },
+    { type: 'mc', q: '한글 맞춤법 통일안을 만들고 「우리말 큰사전」을 펴내려 한 단체는?', choices: ['조선어 학회', '신간회', '근우회', '조선 교육회'], answer: 0 }
+  ];
+
+  window.GAME = {
+    ITEMS, ERAS, era, shuffle, nextOrder, rollGoodItem, rollBadItem, ranking, attackTarget,
+    accuracy, sceneIndex, questionStats, answerText, TEMPLATE, parseSheet, validateRow,
+    cleanQuestion, SAMPLE_7B,
+    timeLimit: q => (q.type === 'ox' ? C.timeLimit.ox : C.timeLimit.mc) * 1000
+  };
+})();
