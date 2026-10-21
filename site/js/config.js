@@ -1,5 +1,5 @@
 /*
- * 한국사 레이스 설정 파일
+ * 이동규 선생님과 함께하는 한국사 복습 퀴즈 레이스 설정 파일
  * 선생님이 고치는 곳은 이 파일 하나뿐입니다. 자세한 방법은 설정안내.md를 보세요.
  */
 window.APP_CONFIG = {
@@ -17,6 +17,9 @@ window.APP_CONFIG = {
 
   // ② 선생님 로그인 이메일 (Firebase 규칙에 넣은 이메일과 똑같이, 소문자로)
   teacherEmail: "yinh0417@gmail.com",
+
+  // 학생들이 접속하는 실제 사이트 주소 (QR에 들어가는 주소)
+  publicUrl: "https://hanguksa-race.netlify.app/",
 
   // ③ 게임 숫자 (시범 수업 뒤 여기서 조정)
   classCount: 7,          // 반 개수

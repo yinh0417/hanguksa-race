@@ -222,13 +222,32 @@
     renderItem();
     if (!states[uid]) save();
     if (me.finishedAt) { finished(); return; }
-    nextQuestion();
+    const open = me.openQ;
+    nextQuestion(open != null && questions[open] ? open : null);
   }
 
-  function nextQuestion() {
-    if (!order.length) order = G.nextOrder(questions.length, lastIdx);
-    const i = order.shift();
+  // 가장 적게 나온 문제부터 냅니다. 나온 횟수(s)를 내 기록에 저장하므로
+  // 휴대폰이 다시 연결되거나 새로고침되어도 5문제가 골고루 나옵니다.
+  function pickQuestion() {
+    const n = questions.length;
+    const seen = k => (me.q[k] && me.q[k].s) || 0;
+    const last = me.lastQ == null ? -1 : me.lastQ;
+    let min = Infinity;
+    for (let k = 0; k < n; k++) min = Math.min(min, seen(k));
+    let cand = [];
+    for (let k = 0; k < n; k++) if (seen(k) === min && (n === 1 || k !== last)) cand.push(k);
+    if (!cand.length) for (let k = 0; k < n; k++) if (k !== last) cand.push(k);
+    return cand[Math.floor(Math.random() * cand.length)];
+  }
+
+  function nextQuestion(resume) {
+    // 다시 연결된 경우, 화면에 떠 있던(아직 답하지 않은) 문제를 그대로 이어서 냅니다
+    const i = resume != null ? resume : pickQuestion();
     lastIdx = i;
+    if (resume == null) { const st = stat(i); st.s = (st.s || 0) + 1; }
+    me.lastQ = i;
+    me.openQ = i;
+    save();
     const q = questions[i];
     const limit = G.timeLimit(q);
     const start = Math.max(DB.now(), blockedUntil());
@@ -281,6 +300,7 @@
     const st = stat(cur.i);
     if (ok) {
       st.c++;
+      me.openQ = null;
       me.correct++;
       const r = myRank();
       move(1, now);
@@ -294,6 +314,7 @@
       phaseUntil = now + 900;
     } else {
       st.w++;
+      me.openQ = null;
       me.wrong++;
       const bad = G.rollBadItem();
       const until = now + C.penaltySeconds * 1000;
@@ -311,6 +332,7 @@
 
   function timeout(now) {
     stat(cur.i).t++;
+    me.openQ = null;
     me.timeouts++;
     save();
     flash('time', '시간이 지났어요', '다음 문제로 넘어가요');
@@ -380,12 +402,12 @@
     if (!me) return;
     const r = myRank();
     const e = G.era(meta && meta.era);
-    const s = `${me.pos}|${r.rank}|${G.sceneIndex(me.pos)}`;
+    const s = `${me.pos}|${r.rank}|${r.n}|${G.sceneIndex(me.pos)}`;
     if (!force && s === lastStatus) return;
     lastStatus = s;
-    $('#stPos').textContent = `${me.pos} / ${C.finishCells}칸`;
-    $('#stRank').textContent = `${r.rank}위`;
-    $('#stScene').textContent = '지금 지나는 곳: ' + e.scenes[G.sceneIndex(me.pos)];
+    // 왼쪽 위: 참여 인원 중 지금 몇 등인지
+    $('#stPos').textContent = `${r.rank}등 / ${r.n}명`;
+    $('#stScene').textContent = `지금 지나는 곳: ${e.scenes[G.sceneIndex(me.pos)]} (${me.pos}/${C.finishCells}칸)`;
   }
 
   let flashTimer = null;

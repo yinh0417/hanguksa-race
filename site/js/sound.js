@@ -57,6 +57,7 @@
     finish: () => { [784, 988, 1175, 1568].forEach((f, i) => tone(f, i * 0.1, 0.22, 'square', 0.16)); },
     end: () => { [1175, 988, 784, 1047].forEach((f, i) => tone(f, i * 0.16, 0.3, 'triangle', 0.22)); },
     join: () => tone(1047, 0, 0.12, 'triangle', 0.15),
+    firework: () => { sweep(300, 1500, 0.22, 'triangle', 0.06); tone(1760 + Math.random() * 600, 0.22, 0.08, 'square', 0.04); },
     tick: () => { tone(1568, 0, 0.05, 'square', 0.12); tone(784, 0.06, 0.05, 'square', 0.08); }
   };
 
@@ -126,52 +127,123 @@
     at(m(n + 12), time, 0.25, 'sine', vol * 0.35);
   }
 
-  const SONGS = {
-    lobby: {
-      bpm: 100, bpmHot: 100,
-      bars: [
-        { bass: 38, chord: [62, 66, 69, 73] },  // Dmaj7
-        { bass: 37, chord: [61, 64, 68, 71] },  // C#m7
-        { bass: 35, chord: [59, 62, 66, 69] },  // Bm7
-        { bass: 40, chord: [64, 68, 71, 74] }   // E7
-      ],
-      melody: { 0: 81, 6: 85, 10: 83, 16: 80, 22: 76, 26: 78, 32: 74, 38: 78, 42: 81, 48: 80, 52: 76, 58: 83 },
-      step(s, t, sd) {
-        const bar = this.bars[Math.floor(s / 16) % 4], i = s % 16;
-        if (i === 0 || i === 10) kick(t, 0.32);
-        if (i === 4 || i === 12) noise(t, 0.05, 0.12, 2500, 'bandpass');   // 손가락 튕기는 소리
-        if (i % 4 === 2) noise(t, 0.03, 0.035, 8000);
-        if (i === 0) pad(bar.chord, t, sd * 15, 0.03);
-        if (i === 3 || i === 7 || i === 11 || i === 14) stab(bar.chord, t, 0.16, 0.035, 1600);
-        if (i === 0 || i === 7 || i === 10) at(m(bar.bass + (i === 7 ? 12 : 0)), t, sd * 2.5, 'triangle', 0.14);
-        const mel = this.melody[s % 64];
-        if (mel) bell(mel, t, 0.06);
-      }
-    },
-    race: {
-      bpm: 128, bpmHot: 138,
-      bars: [
-        { bass: 37, chord: [61, 64, 68] },  // C#m
-        { bass: 33, chord: [57, 61, 64] },  // A
-        { bass: 40, chord: [64, 68, 71] },  // E
-        { bass: 35, chord: [59, 63, 66] }   // B
-      ],
-      hook: { 0: 80, 2: 83, 4: 85, 6: 83, 8: 80, 10: 78, 12: 76, 14: 78, 16: 80, 18: 80, 20: 83, 22: 78, 24: 76, 28: 73, 30: 76 },
-      step(s, t, sd) {
-        const bar = this.bars[Math.floor(s / 16) % 4], i = s % 16, barNo = Math.floor(s / 16) % 4;
-        if (i % 4 === 0) kick(t);
-        if (i === 4 || i === 12) clap(t, 0.22);
-        if (hot && barNo === 3 && i >= 12) clap(t, 0.12);                    // 마지막 30초: 마디 끝 손뼉 연타
-        if (i % 4 === 2) noise(t, 0.09, 0.07, 6000);                          // 오프비트 열린 하이햇
-        else if (hot || i % 2 === 1) noise(t, 0.025, 0.035, 8000);             // 닫힌 하이햇
-        if ([0, 3, 6, 8, 10, 11, 14].includes(i)) at(m(bar.bass + (i === 6 || i === 11 ? 12 : 0)), t, sd * 1.6, 'square', 0.085);
-        if ([0, 3, 6, 10, 12].includes(i)) stab(bar.chord.map(n => n + 12), t, i === 0 ? 0.3 : 0.13, 0.05);
-        const h = this.hook[s % 32];
-        if (h) { at(m(h), t, sd * 1.8, 'square', 0.035); at(m(h), t, sd * 1.8, 'sine', 0.06); }
-      }
+  // ---------- 곡 만들기 ----------
+  // 화음 진행, 리듬(그루브), 베이스와 신스 자리, 멜로디 씨앗(seed)을 정하면 곡 하나가 됩니다.
+  // 모두 이 프로그램이 만든 창작곡이라 저작권 걱정이 없습니다.
+  const NOTE = { C: 0, 'C#': 1, Db: 1, D: 2, 'D#': 3, Eb: 3, E: 4, F: 5, 'F#': 6, Gb: 6, G: 7, 'G#': 8, Ab: 8, A: 9, 'A#': 10, Bb: 10, B: 11 };
+  function chordOf(name) {
+    const mt = /^([A-G][#b]?)(.*)$/.exec(name);
+    const root = 48 + NOTE[mt[1]];
+    const iv = { m: [0, 3, 7], m7: [0, 3, 7, 10], maj7: [0, 4, 7, 11], 7: [0, 4, 7, 10], '': [0, 4, 7] }[mt[2]] || [0, 4, 7];
+    return { bass: root - 12, notes: iv.map(x => root + 12 + x) };
+  }
+  function rng(seed) {
+    return () => {
+      seed = (seed + 0x6D2B79F5) | 0;
+      let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+  // 화음에 맞는 음으로 멜로디를 만들고, 3마디째는 1마디를 되풀이해 귀에 남게 합니다
+  function makeHook(chords, seed, rhythm) {
+    const r = rng(seed), hook = {}, bars = [];
+    for (let b = 0; b < 4; b++) {
+      const tones = chords[b].notes.map(n => n + 12);
+      let last = tones[0];
+      bars[b] = rhythm.map(() => {
+        const n = r() < 0.72 ? tones[Math.floor(r() * tones.length)] : last + (r() < 0.5 ? 2 : -2);
+        last = n;
+        return n;
+      });
     }
+    bars[2] = bars[0].map(n => n + (chords[2].notes[0] - chords[0].notes[0]));
+    bars.forEach((ns, b) => rhythm.forEach((st, k) => { hook[b * 16 + st] = ns[k]; }));
+    return hook;
+  }
+  const GROOVES = {
+    four:   { kick: [0, 4, 8, 12], clap: [4, 12], open: [2, 6, 10, 14], closed: [1, 3, 5, 7, 9, 11, 13, 15] },
+    dembow: { kick: [0, 4, 8, 12], clap: [3, 6, 11, 14], open: [], closed: [0, 2, 4, 6, 8, 10, 12, 14] },
+    half:   { kick: [0, 7, 10], clap: [8], open: [6, 14], closed: [0, 2, 4, 6, 8, 10, 12, 14] },
+    bounce: { kick: [0, 6, 10], clap: [4, 12], open: [14], closed: [2, 6, 10] },
+    chill:  { kick: [0, 10], clap: [4, 12], open: [], closed: [2, 6, 10, 14] }
   };
+  function makeSong(def) {
+    const chords = def.prog.map(chordOf), g = GROOVES[def.groove];
+    const hook = makeHook(chords, def.seed, def.rhythm);
+    return {
+      name: def.name, bpm: def.bpm, bpmHot: def.hot || def.bpm,
+      step(s, t, sd) {
+        const barNo = Math.floor(s / 16) % 4, bar = chords[barNo], i = s % 16, h = hook[s % 64];
+        if (def.race) {
+          if (g.kick.includes(i)) kick(t);
+          if (g.clap.includes(i)) clap(t, 0.2);
+          if (hot && barNo === 3 && i >= 12) clap(t, 0.12);                 // 마지막 30초: 마디 끝 손뼉 연타
+          if (g.open.includes(i)) noise(t, 0.09, 0.065, 6000);
+          else if (hot || g.closed.includes(i)) noise(t, 0.025, 0.035, 8000);
+          if (def.bass.includes(i)) at(m(bar.bass + ((def.oct || []).includes(i) ? 12 : 0)), t, sd * 1.6, def.bassWave || 'square', 0.085);
+          if (def.stab.includes(i)) stab(bar.notes, t, i === 0 ? 0.3 : 0.13, 0.045, def.cutoff);
+          if (h) { at(m(h), t, sd * 1.8, def.lead || 'square', 0.03); at(m(h), t, sd * 1.8, 'sine', 0.055); }
+          else if (def.arp && i % 2 === 1) at(m(bar.notes[(i >> 1) % bar.notes.length] + 12), t, sd * 0.9, 'triangle', 0.025);
+        } else {
+          if (g.kick.includes(i)) kick(t, 0.3);
+          if (g.clap.includes(i)) noise(t, 0.05, 0.11, 2500, 'bandpass');  // 손가락 튕기는 소리
+          if (g.closed.includes(i)) noise(t, 0.03, 0.03, 8000);
+          if (i === 0) pad(bar.notes, t, sd * 15, 0.028);
+          if (def.stab.includes(i)) stab(bar.notes, t, 0.16, 0.032, 1600);
+          if (def.bass.includes(i)) at(m(bar.bass + ((def.oct || []).includes(i) ? 12 : 0)), t, sd * 2.5, 'triangle', 0.14);
+          if (h) bell(h, t, 0.055);
+        }
+      }
+    };
+  }
 
+  // 대기실 5곡, 레이스 6곡. 게임마다 바로 전과 다른 곡이 무작위로 나옵니다.
+  const PLAYLIST = {
+    lobby: [
+      { name: '대기실 산책', prog: ['Dmaj7', 'C#m7', 'Bm7', 'E7'], bpm: 100, groove: 'chill', bass: [0, 7, 10], oct: [7], stab: [3, 7, 11, 14], seed: 5, rhythm: [0, 6, 10] },
+      { name: '오후의 교실', prog: ['Fmaj7', 'Em7', 'Dm7', 'Cmaj7'], bpm: 96, groove: 'chill', bass: [0, 6, 10], oct: [6], stab: [2, 6, 10, 14], seed: 9, rhythm: [0, 4, 10] },
+      { name: '창가 햇살', prog: ['Cmaj7', 'Am7', 'Dm7', 'G7'], bpm: 104, groove: 'bounce', bass: [0, 3, 8, 11], oct: [3, 11], stab: [2, 6, 10, 14], seed: 15, rhythm: [0, 6, 8, 12] },
+      { name: '두근두근 출발 전', prog: ['Ebmaj7', 'Dm7', 'Cm7', 'Bb'], bpm: 108, groove: 'bounce', bass: [0, 6, 10, 14], oct: [6, 14], stab: [3, 7, 11, 15], seed: 19, rhythm: [0, 3, 8, 11] },
+      { name: '레트로 시티', prog: ['Amaj7', 'F#m7', 'Bm7', 'E'], bpm: 98, groove: 'chill', bass: [0, 3, 7, 10], oct: [7], stab: [2, 7, 10, 15], seed: 27, rhythm: [0, 6, 10, 14] }
+    ],
+    race: [
+      { name: '출발 신호', race: true, prog: ['C#m', 'A', 'E', 'B'], bpm: 128, hot: 138, groove: 'four', bass: [0, 3, 6, 8, 10, 11, 14], oct: [6, 11], stab: [0, 3, 6, 10, 12], seed: 11, rhythm: [0, 2, 4, 6, 8, 10, 12, 14] },
+      { name: '질주 본능', race: true, prog: ['Am', 'F', 'C', 'G'], bpm: 132, hot: 142, groove: 'four', bass: [0, 2, 4, 6, 8, 10, 12, 14], oct: [2, 6, 10, 14], stab: [0, 6, 12], seed: 23, rhythm: [0, 3, 6, 8, 11, 14], lead: 'sawtooth' },
+      { name: '시간 여행', race: true, prog: ['Dm', 'Bb', 'F', 'C'], bpm: 124, hot: 134, groove: 'dembow', bass: [0, 3, 7, 8, 11, 15], oct: [7, 15], stab: [2, 6, 10, 14], seed: 37, rhythm: [0, 4, 6, 10, 12] },
+      { name: '황금 레이스', race: true, prog: ['F#m', 'D', 'A', 'E'], bpm: 136, hot: 146, groove: 'four', bass: [0, 4, 8, 12], stab: [0, 8], seed: 41, rhythm: [0, 2, 6, 8, 10, 14], arp: true },
+      { name: '마지막 질주', race: true, prog: ['Gm', 'Eb', 'Bb', 'F'], bpm: 130, hot: 140, groove: 'half', bass: [0, 3, 6, 10, 13], oct: [6, 13], stab: [0, 7, 10], seed: 53, rhythm: [0, 3, 6, 8, 12], bassWave: 'sawtooth', cutoff: 2000 },
+      { name: '무지개 드라이브', race: true, prog: ['C', 'G', 'Am', 'F'], bpm: 128, hot: 138, groove: 'bounce', bass: [0, 6, 8, 14], oct: [6, 14], stab: [2, 6, 10, 14], seed: 67, rhythm: [0, 2, 6, 8, 12, 14], arp: true }
+    ]
+  };
+  // 선생님이 켜 둔 곡만 무작위 재생에 넣습니다 (노트북에 기억)
+  function enabledList(kind) {
+    try {
+      const v = JSON.parse(localStorage.getItem('hkr-songs-' + kind));
+      if (Array.isArray(v)) return PLAYLIST[kind].map((_, k) => v[k] !== false);
+    } catch (e) { /* 무시 */ }
+    return PLAYLIST[kind].map(() => true);
+  }
+  function setSongEnabled(kind, k, on) {
+    const en = enabledList(kind);
+    en[k] = !!on;
+    try { localStorage.setItem('hkr-songs-' + kind, JSON.stringify(en)); } catch (e) { /* 무시 */ }
+  }
+  function pickSong(kind, force) {
+    const list = PLAYLIST[kind], en = enabledList(kind);
+    let last = -1;
+    try { last = +localStorage.getItem('hkr-last-song-' + kind); } catch (e) { /* 무시 */ }
+    let pool = list.map((_, k) => k).filter(k => en[k]);
+    if (!pool.length) pool = list.map((_, k) => k);
+    const fresh = pool.filter(k => k !== last);
+    const from = fresh.length ? fresh : pool;
+    const k = force != null ? force : from[Math.floor(Math.random() * from.length)];
+    try { localStorage.setItem('hkr-last-song-' + kind, String(k)); } catch (e) { /* 무시 */ }
+    songIdx = k;
+    return makeSong(list[k]);
+  }
+
+  let songKind = null, songIdx = -1;
   function pump() {
     const sd = 60 / (hot ? song.bpmHot : song.bpm) / 4;
     while (nextTime < ctx.currentTime + 0.12) {
@@ -180,23 +252,37 @@
       step++;
     }
   }
-  function startBgm(name) {
-    const next = SONGS[name || 'race'];
-    if (bgmTimer && song === next) return;
+  function startBgm(kind, force) {
+    kind = kind || 'race';
+    if (bgmTimer && songKind === kind && force == null) return;
     if (!ensure()) return;
     stopBgm();
     if (!bus) { bus = ctx.createGain(); bus.gain.value = 0.8; bus.connect(master); }
-    song = next; hot = 0; step = 0;
+    song = pickSong(kind, force); songKind = kind; hot = 0; step = 0;
     nextTime = ctx.currentTime + 0.05;
     bgmTimer = setInterval(pump, 25);
   }
-  function stopBgm() { clearInterval(bgmTimer); bgmTimer = null; hot = 0; }
+  function stopBgm() { clearInterval(bgmTimer); bgmTimer = null; hot = 0; songKind = null; }
   window.SOUND = {
     play(name) { if (!muted && FX[name]) FX[name](); },
     unlock: ensure,
     startBgm, stopBgm,
     setIntensity(v) { hot = v ? 1 : 0; },
-    playing: () => !!bgmTimer && song,
+    nowPlaying: () => (bgmTimer && song ? song.name : null),
+    // 선생님 화면의 음악 목록
+    playlist: kind => {
+      const en = enabledList(kind);
+      return PLAYLIST[kind].map((s, k) => ({ name: s.name, bpm: s.bpm, enabled: en[k], playing: !!bgmTimer && songKind === kind && songIdx === k }));
+    },
+    setSongEnabled,
+    playSong: (kind, k) => startBgm(kind, k),
+    nextSong() {
+      if (!bgmTimer || !songKind) return;
+      const kind = songKind;
+      stopBgm();
+      startBgm(kind);
+    },
+    currentKind: () => (bgmTimer ? songKind : null),
     isMuted: () => muted,
     toggle() {
       muted = !muted;

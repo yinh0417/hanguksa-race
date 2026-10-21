@@ -4,7 +4,6 @@
   const $ = s => document.querySelector(s);
   const $$ = s => Array.from(document.querySelectorAll(s));
   const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-  const X0 = 12, X1 = 96; // 트랙에서 출발선과 결승선 위치(%)
 
   let sets = {};
   let pickClass = null, pickSet = null;
@@ -27,7 +26,12 @@
     window.scrollTo(0, 0);
   }
   function currentView() { const v = $$('.view').find(x => !x.classList.contains('hidden')); return v ? '#' + v.id : ''; }
-  function playUrl(code) { return new URL('play.html?room=' + code, location.href).href; }
+  // QR은 항상 학생이 열 수 있는 실제 사이트 주소로 만듭니다(내 컴퓨터 시험 주소에서 열었더라도)
+  function playUrl(code) {
+    const local = location.protocol === 'file:' || /^(localhost|127.0.0.1)$/.test(location.hostname);
+    const base = local && C.publicUrl ? C.publicUrl : location.href;
+    return new URL('play.html?room=' + code, base).href;
+  }
   function renderQR(el, text, cell) {
     if (window.qrcode) {
       const qr = qrcode(0, 'M');
@@ -139,9 +143,43 @@
     }
   }
 
-  function sortedSets() {
-    return Object.entries(sets).map(([id, s]) => Object.assign({ id }, s)).sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
+  // 세트 이름 앞의 단원 번호("2-10 4·19 혁명")로 대단원별로 묶어 정렬합니다. 기본은 내림차순.
+  let setOrder = 'desc';
+  try { setOrder = localStorage.getItem('hkr-set-order') || 'desc'; } catch (e) { /* 무시 */ }
+  function setCode(title) {
+    const m = /^\s*(\d+)\s*-\s*(\d+)/.exec(title || '');
+    return m ? [+m[1], +m[2]] : null;
   }
+  function sortedSets() {
+    const dir = setOrder === 'asc' ? 1 : -1;
+    return Object.entries(sets).map(([id, s]) => Object.assign({ id, code: setCode(s.title) }, s)).sort((a, b) => {
+      if (a.code && b.code) return dir * ((a.code[0] - b.code[0]) || (a.code[1] - b.code[1]));
+      if (a.code) return -1;
+      if (b.code) return 1;
+      return (b.updatedAt || 0) - (a.updatedAt || 0);
+    });
+  }
+  // 대단원 제목줄을 끼워 넣으며 목록을 만듭니다
+  function groupedHtml(list, itemHtml) {
+    let last = null, html = '';
+    list.forEach(s => {
+      const unit = s.code ? '대단원 ' + s.code[0] : '단원 번호가 없는 세트';
+      if (unit !== last) { html += `<h3 class="unit-head">${unit}</h3>`; last = unit; }
+      html += itemHtml(s);
+    });
+    return html;
+  }
+  function orderBtnText() { return setOrder === 'asc' ? '단원 번호 작은 순' : '단원 번호 큰 순'; }
+  $$('[data-set-order]').forEach(b => {
+    b.textContent = orderBtnText();
+    b.addEventListener('click', () => {
+      setOrder = setOrder === 'asc' ? 'desc' : 'asc';
+      try { localStorage.setItem('hkr-set-order', setOrder); } catch (e) { /* 무시 */ }
+      $$('[data-set-order]').forEach(x => { x.textContent = orderBtnText(); });
+      renderSetPick();
+      renderSetList();
+    });
+  });
 
   function renderSetPick() {
     const el = $('#setPick');
@@ -152,12 +190,12 @@
       return;
     }
     if (pickSet && !sets[pickSet]) pickSet = null;
-    el.innerHTML = list.map(s => `
+    el.innerHTML = groupedHtml(list, s => `
       <button class="set-card" data-id="${s.id}" aria-pressed="${s.id === pickSet}">
         <span class="era-chip">${esc(G.era(s.era).no)}</span>
         <span class="set-title">${esc(s.title)}</span>
         <span class="set-sub">${esc(G.era(s.era).name)} 배경, 문제 ${(s.questions || []).length}개</span>
-      </button>`).join('');
+      </button>`);
     $$('#setPick .set-card').forEach(b => b.addEventListener('click', () => { pickSet = b.dataset.id; renderSetPick(); updateOpenBtn(); }));
     updateOpenBtn();
   }
@@ -167,13 +205,13 @@
     const el = $('#setList');
     const list = sortedSets();
     if (!list.length) { el.innerHTML = '<div class="empty">아직 문제 세트가 없어요. 오른쪽 위 \'새 세트 만들기\'를 눌러 시작하세요.</div>'; return; }
-    el.innerHTML = list.map(s => `
+    el.innerHTML = groupedHtml(list, s => `
       <div class="set-row">
         <span class="era-chip">${esc(G.era(s.era).no)}</span>
         <div class="set-row-text"><strong>${esc(s.title)}</strong><span>${esc(G.era(s.era).name)} 배경, 문제 ${(s.questions || []).length}개</span></div>
         <button class="btn small" data-edit="${s.id}">고치기</button>
         <button class="btn small danger" data-del="${s.id}">지우기</button>
-      </div>`).join('');
+      </div>`);
     $$('#setList [data-edit]').forEach(b => b.addEventListener('click', () => openEditor(b.dataset.edit)));
     $$('#setList [data-del]').forEach(b => b.addEventListener('click', () => {
       const s = sets[b.dataset.del];
@@ -358,10 +396,45 @@
           : '<span class="stu-ok">모두 맞힘</span>'}
       </button>`);
     }
-    el.innerHTML = `<p class="hint">번호를 누르면 그 학생이 틀린 문제가 단원별로 나와요. 끝내 못 맞힌 문제가 맨 위에 와요.</p>
+    el.innerHTML = `<div class="row-between"><p class="hint">번호를 누르면 그 학생이 틀린 문제가 단원별로 나와요. 끝내 못 맞힌 문제가 맨 위에 와요.</p>
+        <button class="btn small" id="classExcel">반 전체 엑셀로 저장</button></div>
       <div class="stu-grid">${cards.join('')}</div><div id="stuDetail"></div>`;
     $$('#recList .stu-card').forEach(b => b.addEventListener('click', () => { pickedStudent = +b.dataset.no; renderStudents(); }));
+    $('#classExcel').addEventListener('click', saveClassExcel);
     if (pickedStudent) renderStudentDetail(pickedStudent);
+  }
+
+  // ---------- 파일로 저장 ----------
+  function downloadFile(name, mime, content) {
+    const url = URL.createObjectURL(new Blob([content], { type: mime }));
+    const a = document.createElement('a');
+    a.href = url; a.download = name;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
+    toast(`'${name}' 파일을 저장했어요. 다운로드 폴더를 확인하세요.`, 3500);
+  }
+  function today() { const d = new Date(); return `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}`; }
+
+  // 반 전체: 학생별 틀린 문제를 한 줄씩 (엑셀에서 열리는 CSV, 한글 깨짐 방지 BOM 포함)
+  function saveClassExcel() {
+    const q = v => '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"';
+    const rows = [['출석번호', '단원', '문제', '정답', '상태', '틀린 횟수', '시간 초과 횟수']];
+    for (let no = 1; no <= (C.studentsPerClass || 24); no++) {
+      const { items, played } = studentReview(no);
+      if (!played) continue;
+      if (!items.length) { rows.push([no, '', '틀린 문제 없음', '', '모두 맞힘', 0, 0]); continue; }
+      items.forEach(it => rows.push([no, it.title, it.q, it.answerText, it.missed ? '끝내 못 맞힘' : '틀렸다가 맞힘', it.w, it.t]));
+    }
+    if (rows.length === 1) { toast('아직 저장할 기록이 없어요.'); return; }
+    downloadFile(`${recClass}반_추수지도_${today()}.csv`, 'text/csv;charset=utf-8', '﻿' + rows.map(r => r.map(q).join(',')).join('\r\n'));
+  }
+
+  // 학생 한 명: 복습 쪽지를 워드 파일로 (한글 프로그램에서도 열 수 있어요)
+  function saveStudentWord(no) {
+    const body = `<h1>${recClass}반 ${no}번 한국사 복습</h1><p>다시 풀어 볼 문제와 정답이에요. 정답을 가리고 먼저 풀어 보세요.</p>${studentSheet(no)}`;
+    const html = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word"><head><meta charset="utf-8"><title>복습</title>
+      <style>body{font-family:'Malgun Gothic',sans-serif;font-size:11pt} h1{font-size:18pt} h4{font-size:12pt;color:#555;margin:14pt 0 4pt} .stu-q{font-weight:bold;margin:0} .stu-a{margin:2pt 0 0;color:#0066cc} .stu-meta{margin:2pt 0 8pt;color:#777;font-size:10pt} li.missed .stu-meta{color:#d70015}</style></head><body>${body}</body></html>`;
+    downloadFile(`${recClass}반_${no}번_복습_${today()}.doc`, 'application/msword', '﻿' + html);
   }
 
   function studentSheet(no) {
@@ -382,8 +455,9 @@
 
   function renderStudentDetail(no) {
     $('#stuDetail').innerHTML = `<div class="stu-detail">
-      <div class="row-between"><h3>${recClass}반 ${no}번 복습 목록</h3><button class="btn small" id="stuPrint">인쇄하기</button></div>
+      <div class="row-between"><h3>${recClass}반 ${no}번 복습 목록</h3><div class="row-gap"><button class="btn small" id="stuWord">워드 파일로 저장</button><button class="btn small" id="stuPrint">인쇄하기</button></div></div>
       ${studentSheet(no)}</div>`;
+    $('#stuWord').addEventListener('click', () => saveStudentWord(no));
     $('#stuPrint').addEventListener('click', () => {
       $('#printArea').innerHTML = `<h1>${recClass}반 ${no}번 한국사 복습</h1><p class="print-sub">다시 풀어 볼 문제와 정답이에요. 정답을 가리고 먼저 풀어 보세요.</p>${studentSheet(no)}`;
       window.print();
@@ -403,7 +477,7 @@
       }
       if (!code) throw new Error('no code');
       await DB.set('rooms/' + code, {
-        meta: { classNo: pickClass, setId: pickSet, title: set.title, era: set.era, status: 'lobby', createdAt: DB.now() },
+        meta: { classNo: pickClass, setId: pickSet, title: set.title, era: set.era, track: TRACKS.pick(), status: 'lobby', createdAt: DB.now() },
         questions: set.questions
       });
       attachRoom(code);
@@ -490,7 +564,8 @@
 
   // ---------- 대기실 ----------
   function renderLobby() {
-    SOUND.startBgm('lobby');
+    if (Object.keys(players).length) SOUND.startBgm('lobby');  // 학생이 처음 들어오면 음악 시작
+    updateMuteBtn();
     $('#lbClass').textContent = meta.classNo + '반';
     $('#lbTitle').textContent = meta.title;
     $('#lbCode').textContent = room;
@@ -574,40 +649,113 @@
     raceBuiltFor = key;
     const e = G.era(meta.era);
     if (eraChanged) {
-      $('#horizon').innerHTML = e.scenes.map((name, k) => `
+      $('#infield').innerHTML = e.scenes.map((name, k) => `
         <div class="scene">${A.sceneSVG(e.id, k)}<span class="scene-name">${'①②③④⑤'[k]} ${esc(name)}</span></div>`).join('');
-      $('#zones').innerHTML = e.scenes.map(() => '<div class="zone"></div>').join('');
     }
-    const n = Math.max(ap.length, 1);
-    const lanes = $('#lanes');
-    lanes.innerHTML = ap.map(p => `
-      <div class="lane" data-uid="${p.uid}">
-        <div class="racer" data-uid="${p.uid}">
-          <span class="tag"><b class="rank-badge"></b>${esc(p.nick)}</span>
-          <div class="car-box">${A.carSVG(p.car)}<span class="fx-bubble"></span><span class="fx-shield">🛡️</span><span class="fx-bolt">⚡</span></div>
-        </div>
+    $('#lanes').innerHTML = ap.map(p => `
+      <div class="racer" data-uid="${p.uid}">
+        <span class="tag"><b class="rank-badge"></b>${esc(p.nick)}</span>
+        <div class="car-box">${A.carSVG(p.car)}<span class="fx-bubble"></span><span class="fx-shield">🛡️</span><span class="fx-bolt">⚡</span></div>
       </div>`).join('');
-    lanes.style.setProperty('--n', n);
     lastRankSig = '';
     layoutRace();
+    if (geo && trackToastFor !== room) { trackToastFor = room; toast('🏁 이번 코스: ' + geo.name, 3000); }
     updateRace(true);
+    startCarLoop();
+  }
+
+  // ---------- 레이스 코스 (코스 5종은 tracks.js) ----------
+  // 게임을 열 때 정해진 코스(meta.track)를 그립니다. 경기장 서킷은 장면을 코스 안쪽에,
+  // 나머지 코스는 장면 5개를 화면 위쪽에 나란히 보여 줍니다.
+  let geo = null;
+  function trackType() { return (meta && meta.track) || 'oval'; }
+
+  // 경기장 서킷 안쪽에 장면 5개: 한 줄(5개)과 두 줄(3개 + 2개) 중 더 크게 보이는 배치
+  function placeInfield(g) {
+    const ri = g.R - g.TW / 2 - 12, gap = 8;
+    let best = { area: 0 };
+    [1, 2].forEach(rows => {
+      const cols = rows === 1 ? 5 : 3;
+      for (let h = ri * 1.9; h > 30; h -= 3) {
+        const half = Math.sqrt(Math.max(0, ri * ri - (h / 2) * (h / 2)));
+        const total = g.L + 2 * half - 12;
+        const pw = (total - gap * (cols - 1)) / cols, ph = (h - gap * (rows - 1)) / rows;
+        if (pw / ph >= 1.45) {
+          if (pw * ph > best.area) best = { area: pw * ph, rows, h, total, pw, ph };
+          break;
+        }
+      }
+    });
+    if (!best.rows) best = { rows: 1, h: 40, total: g.L, pw: g.L / 5, ph: 40 };
+    const el = $('#infield');
+    Object.assign(el.style, { left: (g.cx - best.total / 2) + 'px', top: (g.cy - best.h / 2) + 'px', width: best.total + 'px', height: best.h + 'px', gap: gap + 'px' });
+    el.classList.toggle('two-rows', best.rows === 2);
+    el.style.setProperty('--pw', best.pw + 'px');
+    el.style.setProperty('--ph', best.ph + 'px');
   }
 
   function layoutRace() {
-    const track = $('#track'), course = $('#course');
-    if (!track || currentView() !== '#vRace') return;
-    const cw = course.clientWidth;
-    const zoneW = cw * (X1 - X0) / 100 / 5;
-    const horizonH = Math.min(zoneW / 1.45, window.innerHeight * 0.3);
-    $('#horizon').style.height = horizonH + 'px';
-    const n = Math.max(approvedList().length, 1);
-    const laneH = track.clientHeight / n;
-    const carH = Math.max(14, Math.min(laneH * 0.8, 70));
-    course.style.setProperty('--car-w', (carH * 120 / 72) + 'px');
-    course.style.setProperty('--tag-size', Math.max(11, Math.min(carH * 0.42, 24)) + 'px');
-    $$('#lanes .lane').forEach((el, i) => { el.style.top = (i * laneH) + 'px'; el.style.height = laneH + 'px'; });
+    const circ = $('#circuit');
+    if (!circ || currentView() !== '#vRace') return;
+    const Wd = circ.clientWidth, Ht = circ.clientHeight;
+    if (!Wd || !Ht) return;
+    const n = Math.max(approvedList().length, 1), k = Math.min(n, 3);
+    const type = trackType();
+    let rect = { x: 0, y: 0, w: Wd, h: Ht };
+    const inf = $('#infield');
+    if (type !== 'oval') {
+      const gap = 8, pw = (Wd - 16 - gap * 4) / 5, ph = Math.min(pw / 1.5, Ht * 0.26);
+      Object.assign(inf.style, { left: '8px', top: '8px', width: (Wd - 16) + 'px', height: ph + 'px', gap: gap + 'px' });
+      inf.classList.remove('two-rows');
+      inf.style.setProperty('--pw', pw + 'px');
+      inf.style.setProperty('--ph', ph + 'px');
+      rect = { x: 0, y: ph + 16, w: Wd, h: Ht - ph - 16 };
+    }
+    geo = TRACKS.build(type, Wd, Ht, rect);
+    geo.k = k;
+    const laneW = geo.TW * 0.86 / k;
+    const carH = Math.max(18, Math.min(laneW * 1.05, geo.TW * 0.5, 92));
+    geo.carW = carH * 120 / 86;
+    // 한 줄로 끝까지 가는 코스는 출발선 뒤에 출발 대기 줄을 만들 자리를 둡니다
+    const groups = Math.ceil(n / k);
+    geo.startS = geo.closed ? 0 : Math.min(geo.P * 0.15, (groups - 1) * geo.carW * 0.95 + geo.carW * 0.6);
+    const svg = $('#circuitSvg');
+    svg.setAttribute('viewBox', `0 0 ${Wd} ${Ht}`);
+    svg.innerHTML = geo.svg(k);
+    if (type === 'oval') placeInfield(geo);
+    circ.dataset.track = type;
+    circ.style.setProperty('--car-w', geo.carW + 'px');
+    circ.style.setProperty('--tag-size', Math.max(10, Math.min(carH * 0.3, 18)) + 'px');
   }
   window.addEventListener('resize', () => { if (currentView() === '#vRace') layoutRace(); });
+
+  // 차 위치: 목표 지점(칸)을 향해 부드럽게 따라가며 길 방향으로 회전
+  const carShown = {};
+  let carLoop = null;
+  function carTarget(i, uid) {
+    const s = states[uid] || {};
+    const pos = s.finishedAt ? C.finishCells : Math.min(s.pos || 0, C.finishCells);
+    const lane = i % geo.k, grp = Math.floor(i / geo.k);
+    return { s: geo.sAt(pos / C.finishCells) - grp * geo.carW * 0.95, off: ((lane + 0.5) / geo.k - 0.5) * geo.TW * 0.86 };
+  }
+  function moveCars() {
+    if (!geo || currentView() !== '#vRace') { carLoop = null; return; }
+    approvedList().forEach((p, i) => {
+      const el = document.querySelector(`.racer[data-uid="${p.uid}"]`);
+      if (!el) return;
+      const tg = carTarget(i, p.uid);
+      const cur = carShown[p.uid] || (carShown[p.uid] = { s: tg.s, off: tg.off });
+      cur.s += (tg.s - cur.s) * 0.08;
+      cur.off += (tg.off - cur.off) * 0.15;
+      const pt = geo.at(cur.s, cur.off);
+      el.style.left = pt.x.toFixed(1) + 'px';
+      el.style.top = pt.y.toFixed(1) + 'px';
+      const deg = pt.t * 180 / Math.PI;
+      el.querySelector('.car-box').style.transform = `rotate(${deg.toFixed(1)}deg)` + (Math.cos(pt.t) < -0.01 ? ' scaleY(-1)' : '');
+    });
+    carLoop = requestAnimationFrame(moveCars);
+  }
+  function startCarLoop() { if (!carLoop) carLoop = requestAnimationFrame(moveCars); }
 
   const FX_TEXT = {
     boost1: () => C.items.boost1.icon + ' +1',
@@ -632,8 +780,6 @@
       const racer = document.querySelector(`.racer[data-uid="${p.uid}"]`);
       if (!racer) return;
       const s = states[p.uid] || {};
-      const pos = Math.min(s.pos || 0, C.finishCells);
-      racer.style.left = `calc(${X0}% + ${(X1 - X0) * pos / C.finishCells}%)`;
       const fx = s.fx || {};
       const age = now - (fx.at || 0);
       racer.classList.toggle('trapped', now < (s.frozenUntil || 0) && (fx.type === 'balloon' || fx.type === 'lightning'));
@@ -654,7 +800,7 @@
           const f = document.createElement('span');
           f.className = 'fx-float fx-' + fx.type;
           f.textContent = FX_TEXT[fx.type]();
-          racer.querySelector('.car-box').appendChild(f);
+          racer.appendChild(f);
           setTimeout(() => f.remove(), 1300);
           SOUND.play(fx.type);
         }
@@ -667,10 +813,13 @@
       <li data-rank="${r.rank}"><span class="lr-rank">${r.rank}</span><span class="lr-car">${A.carSVG(r.car)}</span><span class="lr-nick">${esc(r.nick)}</span><span class="lr-pos">${r.finishedAt ? '🏁' : r.pos + '칸'}</span></li>`).join('');
   }
 
-  let lastCountShown = null, lastTickSec = null;
+  let lastCountShown = null, lastTickSec = null, lastSongName = null, trackToastFor = null;
   function tick() {
     if (!meta || !room) return;
     const now = DB.now();
+    const np = SOUND.nowPlaying();
+    if (np && np !== lastSongName) { lastSongName = np; toast('♪ 지금 나오는 곡: ' + np, 2500); renderMusicPop(); }
+    if (!np) lastSongName = null;
     if (meta.status === 'racing') {
       const cd = $('#countdown');
       if (now < meta.startAt) {
@@ -749,8 +898,43 @@
   $('#rcStop').addEventListener('click', () => {
     if (confirm('지금 레이스를 끝내고 결과를 볼까요?')) finishRace();
   });
-  function updateMuteBtn() { $('#rcMute').textContent = SOUND.isMuted() ? '소리 켜기' : '소리 끄기'; }
-  $('#rcMute').addEventListener('click', () => { SOUND.toggle(); updateMuteBtn(); });
+  function updateMuteBtn() { const t = SOUND.isMuted() ? '소리 켜기' : '소리 끄기'; $('#rcMute').textContent = t; $('#lbMute').textContent = t; }
+  $('#rcMute').addEventListener('click', () => { SOUND.toggle(); updateMuteBtn(); renderMusicPop(); });
+  $('#lbMute').addEventListener('click', () => { SOUND.toggle(); updateMuteBtn(); renderMusicPop(); });
+
+  // ---------- 음악 목록 (선생님 화면 전용) ----------
+  function musicKindNow() { return currentView() === '#vRace' ? 'race' : 'lobby'; }
+  function renderMusicPop() {
+    const pop = $('#musicPop');
+    if (pop.classList.contains('hidden')) return;
+    const now = musicKindNow();
+    const sec = (kind, label) => `<section class="mp-sec"><h4>${label}</h4><ul>${SOUND.playlist(kind).map((s, k) => `
+      <li class="${s.playing ? 'playing' : ''}">
+        <label><input type="checkbox" data-kind="${kind}" data-k="${k}" ${s.enabled ? 'checked' : ''}><span>${esc(s.name)}</span><small>${s.bpm} BPM</small></label>
+        ${kind === now ? `<button class="btn small" data-play="${k}" ${s.playing ? 'disabled' : ''}>${s.playing ? '나오는 중' : '틀기'}</button>` : ''}
+      </li>`).join('')}</ul></section>`;
+    $('#mpBody').innerHTML = sec(now, now === 'race' ? '레이스 음악' : '대기실 음악') + sec(now === 'race' ? 'lobby' : 'race', now === 'race' ? '대기실 음악' : '레이스 음악');
+    $('#mpMuted').classList.toggle('hidden', !SOUND.isMuted());
+    $('#mpNext').disabled = SOUND.currentKind() !== now;
+    $$('#mpBody input[type=checkbox]').forEach(cb => cb.addEventListener('change', () => {
+      SOUND.setSongEnabled(cb.dataset.kind, +cb.dataset.k, cb.checked);
+      if (!SOUND.playlist(cb.dataset.kind).some(s => s.enabled)) toast('모든 곡을 끄면 전체 곡에서 무작위로 골라요.');
+    }));
+    $$('#mpBody [data-play]').forEach(b => b.addEventListener('click', () => {
+      SOUND.unlock();
+      SOUND.playSong(now, +b.dataset.play);
+      renderMusicPop();
+    }));
+  }
+  function toggleMusicPop() {
+    const pop = $('#musicPop');
+    pop.classList.toggle('hidden');
+    renderMusicPop();
+  }
+  $('#lbMusic').addEventListener('click', toggleMusicPop);
+  $('#rcMusic').addEventListener('click', toggleMusicPop);
+  $('#mpClose').addEventListener('click', () => $('#musicPop').classList.add('hidden'));
+  $('#mpNext').addEventListener('click', () => { SOUND.unlock(); SOUND.nextSong(); renderMusicPop(); });
 
   // 레이스 중 승인
   function renderPendingPop() {
@@ -772,8 +956,59 @@
     cd.classList.add('go');
     setTimeout(() => {
       cd.classList.add('hidden');
-      if (meta && meta.status === 'finished') { renderResults(); show('#vResults'); }
+      if (meta && meta.status === 'finished') { renderResults(); show('#vResults'); startFireworks(); }
     }, 1600);
+  }
+
+  // 결과 화면 축하: 폭죽과 꽃가루 (약 8초)
+  let fwRaf = null;
+  function startFireworks() {
+    if (fwRaf) cancelAnimationFrame(fwRaf);
+    $$('.fireworks').forEach(c => c.remove());
+
+    const cv = document.createElement('canvas');
+    cv.className = 'fireworks';
+    $('#vResults').appendChild(cv);
+    const ctx = cv.getContext('2d'), dpr = window.devicePixelRatio || 1;
+    const Wd = innerWidth, Ht = innerHeight;
+    cv.width = Wd * dpr; cv.height = Ht * dpr;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    const colors = ['#ff3b30', '#ffd84a', '#34c759', '#2997ff', '#af52de', '#ff9f0a', '#ffffff', '#ff6fb5'];
+    const parts = [];
+    const burst = () => {
+      const x = Wd * (0.12 + Math.random() * 0.76), y = Ht * (0.1 + Math.random() * 0.32);
+      const c = colors[Math.floor(Math.random() * colors.length)], c2 = colors[Math.floor(Math.random() * colors.length)];
+      for (let i = 0; i < 70; i++) {
+        const a = Math.random() * Math.PI * 2, sp = 1.5 + Math.random() * 4.5;
+        parts.push({ x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, life: 1, c: i % 3 ? c : c2, r: 1.6 + Math.random() * 2, kind: 'spark' });
+      }
+      SOUND.play('firework');
+    };
+    for (let i = 0; i < 140; i++) {
+      parts.push({ x: Math.random() * Wd, y: -Math.random() * Ht * 0.6, vx: (Math.random() - 0.5) * 1.2, vy: 1.2 + Math.random() * 1.8, life: 1, c: colors[i % colors.length], r: 4 + Math.random() * 4, kind: 'confetti', rot: Math.random() * 6 });
+    }
+    const t0 = performance.now();
+    let lastBurst = -1000;
+    const loop = now => {
+      const t = now - t0;
+      if (t < 6500 && t - lastBurst > 380) { burst(); if (Math.random() < 0.45) burst(); lastBurst = t; }
+      ctx.clearRect(0, 0, Wd, Ht);
+      for (let i = parts.length - 1; i >= 0; i--) {
+        const p = parts[i];
+        if (p.kind === 'spark') { p.vy += 0.05; p.vx *= 0.985; p.vy *= 0.985; p.life -= 0.013; }
+        else { p.vx += (Math.random() - 0.5) * 0.08; p.rot += 0.1; if (p.y > Ht) p.life = 0; else if (t > 7000) p.life -= 0.01; }
+        p.x += p.vx; p.y += p.vy;
+        if (p.life <= 0) { parts.splice(i, 1); continue; }
+        ctx.globalAlpha = Math.max(0, Math.min(1, p.life));
+        ctx.fillStyle = p.c;
+        if (p.kind === 'spark') { ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2); ctx.fill(); }
+        else { ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.rot); ctx.fillRect(-p.r / 2, -p.r / 4, p.r, p.r / 2); ctx.restore(); }
+      }
+      ctx.globalAlpha = 1;
+      if ((t < 9000 || parts.length) && currentView() === '#vResults') fwRaf = requestAnimationFrame(loop);
+      else { cv.remove(); fwRaf = null; }
+    };
+    fwRaf = requestAnimationFrame(loop);
   }
 
   function renderResults() {
@@ -783,10 +1018,11 @@
     $('#podium').innerHTML = order.map(i => {
       const r = ranked[i];
       if (!r) return '<div class="podium-col empty"></div>';
-      return `<div class="podium-col p${r.rank}">
+      return `<div class="podium-col p${r.rank}" style="--d:${[0, 1.1, 0.6, 0.2][r.rank]}s">
+        ${r.rank === 1 ? '<div class="podium-crown">👑</div>' : ''}
         <div class="podium-car">${A.carSVG(r.car)}</div>
         <div class="podium-nick">${esc(r.nick)}</div>
-        <div class="podium-block"><span>${r.rank}</span></div>
+        <div class="podium-block"><span>${r.rank}</span><small>${['', '🥇', '🥈', '🥉'][r.rank]}</small></div>
       </div>`;
     }).join('');
     $('#allRank').innerHTML = ranked.map(r => `
@@ -830,7 +1066,7 @@
   });
 
   // 새로고침 뒤에는 첫 클릭 때 소리를 켭니다(브라우저 자동 재생 제한)
-  document.addEventListener('pointerdown', () => { SOUND.unlock(); if (meta && meta.status === 'lobby') SOUND.startBgm('lobby'); }, { once: true });
+  document.addEventListener('pointerdown', () => { SOUND.unlock(); if (meta && meta.status === 'lobby' && Object.keys(players).length) SOUND.startBgm('lobby'); }, { once: true });
 
   boot();
 })();

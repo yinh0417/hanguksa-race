@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#173A8A">
-<title>한국사 레이스</title>
+<title>이동규 선생님과 함께하는 한국사 복습 퀴즈 레이스</title>
 <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" rel="stylesheet">
 <link rel="stylesheet" href="css/common.css">
 <link rel="stylesheet" href="css/play.css">
@@ -14,7 +14,7 @@
 
 <!-- 입장 코드 -->
 <main id="sCode" class="screen hidden">
-  <h1 class="logo">한국사 레이스</h1>
+  <h1 class="logo"><span class="title-top">이동규 선생님과 함께하는</span> 한국사 복습 퀴즈 레이스</h1>
   <form id="codeForm" class="card">
     <label for="codeInput" class="big-label">큰 화면의 입장 코드 4자리</label>
     <input id="codeInput" type="tel" inputmode="numeric" maxlength="4" pattern="[0-9]{4}" autocomplete="off" placeholder="0000">
@@ -25,7 +25,7 @@
 
 <!-- 닉네임과 차 -->
 <main id="sJoin" class="screen hidden">
-  <h1 class="logo small">한국사 레이스</h1>
+  <h1 class="logo small"><span class="title-top">이동규 선생님과 함께하는</span> 한국사 복습 퀴즈 레이스</h1>
   <form id="joinForm" class="card">
     <p id="joinNote" class="note hidden"></p>
     <label for="nickInput" class="big-label">닉네임 (6글자까지)</label>
@@ -53,8 +53,7 @@
 <!-- 레이스 -->
 <main id="sRace" class="screen race-screen hidden">
   <div class="status">
-    <span class="st-pos" id="stPos">0 / 15칸</span>
-    <span class="st-rank" id="stRank">-위</span>
+    <span class="st-pos" id="stPos">-등 / -명</span>
     <span class="st-time" id="stTime">3:00</span>
   </div>
   <p class="st-scene" id="stScene"></p>

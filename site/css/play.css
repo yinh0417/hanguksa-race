@@ -41,7 +41,7 @@ body.phone { background: var(--cheong-deep); color: var(--baek); min-height: 100
   font-family: var(--font-display); font-size: 1.2rem; text-align: center;
   background: rgba(255,255,255,.14); border: 2px solid rgba(255,255,255,.4); border-radius: 12px; padding: .2em .4em;
 }
-.st-pos { flex: 1.4; }
+.st-pos { flex: 1.6; color: var(--primary-on-dark) !important; }
 .st-rank { flex: 1; color: var(--hwang); }
 .st-time { flex: 1; font-variant-numeric: tabular-nums; }
 .st-scene { margin: 0; font-size: .95rem; opacity: .9; text-align: center; }
@@ -116,8 +116,8 @@ body.phone { background: var(--cheong-deep); color: var(--baek); min-height: 100
 
 /* ================= Apple 디자인 덮어쓰기 ================= */
 body.phone { background: var(--cheong-deep); }
-.logo { font-family: var(--font-body); font-weight: 600; letter-spacing: -0.03em; color: #fff; -webkit-text-stroke: 0; font-size: 40px; }
-.logo.small { font-size: 24px; }
+.logo { font-family: var(--font-body); font-weight: 600; letter-spacing: -0.03em; color: #fff; -webkit-text-stroke: 0; font-size: 30px; word-break: keep-all; }
+.logo.small { font-size: 20px; }
 .card { border: 0; border-radius: 18px; box-shadow: none; padding: 24px 20px; }
 .big-label { font-family: var(--font-body); font-weight: 600; font-size: 17px; }
 .note { background: #e8f1fc; border: 0; border-radius: 11px; color: var(--ink); }

@@ -8,16 +8,104 @@
   const SKIN = '#F2C7A0';
   const W = 300, H = 200, GROUND = 150; // 장면 한 칸의 크기
 
+  // 차 8종: 실제 차 종류의 느낌만 살린 창작 디자인(상표·로고 없음), 운전자도 차마다 다른 동물
   const CARS = [
-    { name: '빨강', body: '#E2412E', stripe: '#FFD9CF' },
-    { name: '주황', body: '#F28C28', stripe: '#FFE6C2' },
-    { name: '노랑', body: '#F5C242', stripe: '#FFF6D2' },
-    { name: '초록', body: '#2E9E5B', stripe: '#CDEFD9' },
-    { name: '하늘', body: '#3FB6E8', stripe: '#D8F2FC' },
-    { name: '파랑', body: '#2350B8', stripe: '#CFDBF7' },
-    { name: '보라', body: '#8A55D6', stripe: '#E6D9F8' },
-    { name: '분홍', body: '#F07AAE', stripe: '#FDE0EC' }
+    { name: '전기차',   kind: 'ev',     driver: 'rabbit',  body: '#E2412E', stripe: '#FFD9CF' },
+    { name: 'SUV',      kind: 'suv',    driver: 'bear',    body: '#F28C28', stripe: '#FFE6C2' },
+    { name: '스포츠카', kind: 'sport',  driver: 'cat',     body: '#F5C242', stripe: '#FFF6D2' },
+    { name: '고급 세단', kind: 'luxury', driver: 'hamster', body: '#2E9E5B', stripe: '#CDEFD9' },
+    { name: '해치백',   kind: 'hatch',  driver: 'puppy',   body: '#3FB6E8', stripe: '#D8F2FC' },
+    { name: '픽업트럭', kind: 'pickup', driver: 'penguin', body: '#2350B8', stripe: '#CFDBF7' },
+    { name: '박스카',   kind: 'box',    driver: 'panda',   body: '#8A55D6', stripe: '#E6D9F8' },
+    { name: '레트로카', kind: 'retro',  driver: 'chick',   body: '#F07AAE', stripe: '#FDE0EC' }
   ];
+
+  // 차 모양: 몸체, 창문, 창문 아랫선(운전자가 보이는 높이), 운전자 위치, 바퀴 위치, 앞등 위치
+  const SHAPES = {
+    ev: {
+      body: ['M8 48 C8 40 12 36 20 34 C30 22 40 15 56 14 L70 14 C84 15 96 24 104 32 C111 34 116 38 116 46 L116 50 C116 54 113 56 109 56 L12 56 C9 56 8 53 8 48 Z'],
+      win: ['M34 33 C42 22 50 18 58 18 L69 18 C80 19 89 25 96 33 Z'], belt: 33,
+      head: [76, 25, 9.5], wheels: [30, 92], light: 'bar', lx: 107, ly: 38
+    },
+    suv: {
+      body: ['M8 52 L8 36 C8 33 10 31 14 31 L26 31 L34 14 C35 12 37 11 40 11 L96 11 C99 11 101 13 102 15 L108 31 L112 31 C115 31 117 34 117 38 L117 52 C117 55 115 57 112 57 L12 57 C10 57 8 55 8 52 Z'],
+      win: ['M37 29 L43 15 L66 15 L66 29 Z', 'M70 29 L70 15 L95 15 L101 29 Z'], belt: 29,
+      head: [84, 22, 9.5], wheels: [31, 94], light: 'square', lx: 109, ly: 35, rails: 'M42 9 H96'
+    },
+    sport: {
+      body: ['M6 50 C6 44 10 42 18 41 L40 38 C50 26 58 22 68 22 L78 22 C86 23 92 30 96 36 L110 39 C115 40 118 43 118 48 L118 51 C118 54 116 56 112 56 L12 56 C8 56 6 54 6 50 Z', 'M5 40 L3 32 L17 32 L19 40 Z'],
+      win: ['M50 37 C56 28 62 25 68 25 L76 25 C82 26 87 31 90 37 Z'], belt: 37,
+      head: [72, 29, 8.8], wheels: [28, 96], light: 'slim', lx: 108, ly: 41
+    },
+    luxury: {
+      body: ['M7 48 C7 42 10 39 16 38 L30 37 L40 20 C42 17 45 16 48 16 L74 16 C78 16 81 18 83 21 L92 36 L110 38 C115 39 117 42 117 47 L117 51 C117 54 115 56 112 56 L12 56 C9 56 7 54 7 51 Z'],
+      win: ['M43 35 L49 20 L60 20 L60 35 Z', 'M64 35 L64 20 L77 20 L86 35 Z'], belt: 35,
+      head: [73, 26, 9], wheels: [31, 93], light: 'round', lx: 110, ly: 41, grille: true
+    },
+    hatch: {
+      body: ['M10 50 C10 42 12 36 18 33 C24 20 32 13 46 12 L66 12 C80 12 90 22 96 32 C106 34 112 38 112 46 L112 51 C112 54 110 56 107 56 L14 56 C11 56 10 53 10 50 Z'],
+      win: ['M24 32 C29 22 36 16 46 16 L56 16 L56 32 Z', 'M60 32 L60 16 L66 16 C76 16 84 23 89 32 Z'], belt: 32,
+      head: [71, 24, 9.5], wheels: [30, 90], light: 'round', lx: 105, ly: 39
+    },
+    pickup: {
+      body: ['M6 34 L54 34 L54 57 L10 57 C7 57 6 55 6 52 Z', 'M52 57 L52 34 L60 34 L68 14 C69 12 71 11 74 11 L94 11 C97 11 99 13 100 15 L106 32 L111 33 C115 34 117 37 117 41 L117 52 C117 55 115 57 112 57 Z'],
+      win: ['M71 30 L76 15 L95 15 L101 30 Z'], belt: 30,
+      head: [86, 22, 9.5], wheels: [28, 94], light: 'square', lx: 110, ly: 37, bed: true
+    },
+    box: {
+      body: ['M10 53 L10 18 C10 12 14 9 20 9 L92 9 C100 9 104 13 106 20 L112 34 C115 35 117 38 117 42 L117 53 C117 55 115 57 113 57 L14 57 C11 57 10 55 10 53 Z'],
+      win: ['M16 30 L16 14 L48 14 L48 30 Z', 'M52 30 L52 14 L90 14 C95 14 98 17 100 21 L104 30 Z'], belt: 30,
+      head: [79, 21, 10], wheels: [30, 93], light: 'round', lx: 111, ly: 40
+    },
+    retro: {
+      body: ['M8 50 C8 44 12 42 16 41 C20 24 36 12 58 12 C80 12 96 24 102 40 C110 41 114 45 114 50 L114 52 C114 55 112 57 109 57 L13 57 C10 57 8 55 8 52 Z'],
+      win: ['M28 38 C32 26 42 18 55 17 L56 38 Z', 'M60 38 L60 17 C74 18 84 26 89 38 Z'], belt: 38,
+      head: [73, 28, 9.5], wheels: [30, 90], light: 'bigRound', lx: 106, ly: 43
+    }
+  };
+
+  // 귀여운 동물 운전자 (창작 캐릭터)
+  function driver(kind, x, y, r) {
+    const eye = (dx, dy) => `<circle cx="${(x + dx).toFixed(1)}" cy="${(y + dy).toFixed(1)}" r="${(r * 0.14).toFixed(2)}" fill="#2b2633"/><circle cx="${(x + dx + r * 0.05).toFixed(1)}" cy="${(y + dy - r * 0.06).toFixed(1)}" r="${(r * 0.05).toFixed(2)}" fill="#fff"/>`;
+    const face = (eyeY, dark) => {
+      const ey = eyeY == null ? r * 0.05 : eyeY;
+      let g = eye(-r * 0.38, ey) + eye(r * 0.38, ey);
+      g += `<ellipse cx="${(x - r * 0.62).toFixed(1)}" cy="${(y + r * 0.32).toFixed(1)}" rx="${(r * 0.2).toFixed(1)}" ry="${(r * 0.12).toFixed(1)}" fill="#ff8fa3" opacity=".6"/><ellipse cx="${(x + r * 0.62).toFixed(1)}" cy="${(y + r * 0.32).toFixed(1)}" rx="${(r * 0.2).toFixed(1)}" ry="${(r * 0.12).toFixed(1)}" fill="#ff8fa3" opacity=".6"/>`;
+      g += `<path d="M${(x - r * 0.16).toFixed(1)} ${(y + r * 0.34).toFixed(1)} q${(r * 0.08).toFixed(1)} ${(r * 0.12).toFixed(1)} ${(r * 0.16).toFixed(1)} 0 q${(r * 0.08).toFixed(1)} ${(r * 0.12).toFixed(1)} ${(r * 0.16).toFixed(1)} 0" fill="none" stroke="${dark || '#2b2633'}" stroke-width="${(r * 0.07).toFixed(2)}" stroke-linecap="round"/>`;
+      return g;
+    };
+    const head = (fill, stroke) => `<circle cx="${x}" cy="${y}" r="${r}" fill="${fill}" stroke="${stroke || 'rgba(0,0,0,.18)'}" stroke-width=".7"/>`;
+    const f = n => n.toFixed(1);
+    switch (kind) {
+      case 'rabbit':
+        return `<ellipse cx="${f(x - r * 0.4)}" cy="${f(y - r * 1.25)}" rx="${f(r * 0.28)}" ry="${f(r * 0.75)}" fill="#fff" stroke="rgba(0,0,0,.15)" stroke-width=".7"/><ellipse cx="${f(x - r * 0.4)}" cy="${f(y - r * 1.25)}" rx="${f(r * 0.13)}" ry="${f(r * 0.5)}" fill="#ffc2cf"/>
+          <ellipse cx="${f(x + r * 0.4)}" cy="${f(y - r * 1.25)}" rx="${f(r * 0.28)}" ry="${f(r * 0.75)}" fill="#fff" stroke="rgba(0,0,0,.15)" stroke-width=".7"/><ellipse cx="${f(x + r * 0.4)}" cy="${f(y - r * 1.25)}" rx="${f(r * 0.13)}" ry="${f(r * 0.5)}" fill="#ffc2cf"/>` + head('#fff') + face();
+      case 'bear':
+        return `<circle cx="${f(x - r * 0.72)}" cy="${f(y - r * 0.72)}" r="${f(r * 0.34)}" fill="#b5835a"/><circle cx="${f(x + r * 0.72)}" cy="${f(y - r * 0.72)}" r="${f(r * 0.34)}" fill="#b5835a"/>` + head('#c8946a') +
+          `<ellipse cx="${x}" cy="${f(y + r * 0.38)}" rx="${f(r * 0.42)}" ry="${f(r * 0.3)}" fill="#f1dcc4"/>` + face(null);
+      case 'cat':
+        return `<path d="M${f(x - r * 0.9)} ${f(y - r * 0.2)} L${f(x - r * 0.75)} ${f(y - r * 1.25)} L${f(x - r * 0.1)} ${f(y - r * 0.8)} Z M${f(x + r * 0.9)} ${f(y - r * 0.2)} L${f(x + r * 0.75)} ${f(y - r * 1.25)} L${f(x + r * 0.1)} ${f(y - r * 0.8)} Z" fill="#f6b46a" stroke="rgba(0,0,0,.15)" stroke-width=".7"/>` + head('#f8c27e') +
+          `<path d="M${f(x - r * 0.3)} ${f(y - r * 0.85)} l${f(r * 0.1)} ${f(r * 0.35)} M${x} ${f(y - r * 0.95)} v${f(r * 0.38)} M${f(x + r * 0.3)} ${f(y - r * 0.85)} l${f(-r * 0.1)} ${f(r * 0.35)}" stroke="#e08f3c" stroke-width="${f(r * 0.1)}" stroke-linecap="round"/>` + face();
+      case 'hamster':
+        return `<circle cx="${f(x - r * 0.68)}" cy="${f(y - r * 0.78)}" r="${f(r * 0.26)}" fill="#e9b884"/><circle cx="${f(x + r * 0.68)}" cy="${f(y - r * 0.78)}" r="${f(r * 0.26)}" fill="#e9b884"/>` + head('#f4cf9c') +
+          `<ellipse cx="${x}" cy="${f(y + r * 0.42)}" rx="${f(r * 0.7)}" ry="${f(r * 0.45)}" fill="#fff7ea"/>` + face();
+      case 'puppy':
+        return head('#fffaf2') + `<ellipse cx="${f(x - r * 0.92)}" cy="${f(y - r * 0.05)}" rx="${f(r * 0.3)}" ry="${f(r * 0.62)}" fill="#c98b55" transform="rotate(18 ${f(x - r * 0.92)} ${f(y)})"/><ellipse cx="${f(x + r * 0.92)}" cy="${f(y - r * 0.05)}" rx="${f(r * 0.3)}" ry="${f(r * 0.62)}" fill="#c98b55" transform="rotate(-18 ${f(x + r * 0.92)} ${f(y)})"/>` +
+          `<ellipse cx="${f(x + r * 0.35)}" cy="${f(y - r * 0.15)}" rx="${f(r * 0.3)}" ry="${f(r * 0.26)}" fill="#e7c59f"/><ellipse cx="${x}" cy="${f(y + r * 0.2)}" rx="${f(r * 0.14)}" ry="${f(r * 0.1)}" fill="#2b2633"/>` + face();
+      case 'penguin':
+        return head('#2c3550', 'rgba(0,0,0,.3)') + `<ellipse cx="${x}" cy="${f(y + r * 0.15)}" rx="${f(r * 0.74)}" ry="${f(r * 0.7)}" fill="#fff"/>` + face(r * 0.02) +
+          `<path d="M${f(x - r * 0.18)} ${f(y + r * 0.2)} L${f(x + r * 0.18)} ${f(y + r * 0.2)} L${x} ${f(y + r * 0.42)} Z" fill="#ffb02e"/>`;
+      case 'panda':
+        return `<circle cx="${f(x - r * 0.75)}" cy="${f(y - r * 0.72)}" r="${f(r * 0.32)}" fill="#2b2633"/><circle cx="${f(x + r * 0.75)}" cy="${f(y - r * 0.72)}" r="${f(r * 0.32)}" fill="#2b2633"/>` + head('#fff') +
+          `<ellipse cx="${f(x - r * 0.38)}" cy="${f(y + r * 0.04)}" rx="${f(r * 0.26)}" ry="${f(r * 0.32)}" fill="#2b2633" transform="rotate(25 ${f(x - r * 0.38)} ${f(y)})"/><ellipse cx="${f(x + r * 0.38)}" cy="${f(y + r * 0.04)}" rx="${f(r * 0.26)}" ry="${f(r * 0.32)}" fill="#2b2633" transform="rotate(-25 ${f(x + r * 0.38)} ${f(y)})"/>` +
+          `<circle cx="${f(x - r * 0.38)}" cy="${f(y + r * 0.02)}" r="${f(r * 0.1)}" fill="#fff"/><circle cx="${f(x + r * 0.38)}" cy="${f(y + r * 0.02)}" r="${f(r * 0.1)}" fill="#fff"/>` +
+          `<ellipse cx="${x}" cy="${f(y + r * 0.3)}" rx="${f(r * 0.13)}" ry="${f(r * 0.09)}" fill="#2b2633"/>`;
+      case 'chick':
+        return `<path d="M${x} ${f(y - r * 0.95)} q${f(-r * 0.25)} ${f(-r * 0.5)} ${f(r * 0.05)} ${f(-r * 0.6)} M${x} ${f(y - r * 0.95)} q${f(r * 0.3)} ${f(-r * 0.4)} ${f(r * 0.4)} ${f(-r * 0.25)}" fill="none" stroke="#f2b600" stroke-width="${f(r * 0.14)}" stroke-linecap="round"/>` + head('#ffd84a') + face(null, '#c47a00') +
+          `<path d="M${f(x - r * 0.16)} ${f(y + r * 0.22)} L${f(x + r * 0.16)} ${f(y + r * 0.22)} L${x} ${f(y + r * 0.4)} Z" fill="#ff9a1f"/>`;
+    }
+    return head('#fff') + face();
+  }
 
   // 색을 밝게(amt > 0) 또는 어둡게(amt < 0)
   function shade(hex, amt) {
@@ -40,38 +128,48 @@
     return g;
   }
 
+  // 그림마다 색 id를 따로 둡니다(숨겨진 화면의 그림을 참조하면 색이 사라지는 문제 방지)
+  let carUid = 0;
   // 광택 있는 귀여운 자동차 (오른쪽을 보고 달림)
   function carSVG(i) {
-    const k = ((i % 8) + 8) % 8, c = CARS[k], id = 'car' + k;
-    const dark = shade(c.body, -0.38), light = shade(c.body, 0.42), deep = shade(c.body, -0.6);
-    return `<svg class="car-svg" viewBox="0 0 120 72" aria-hidden="true">
+    const k = ((i % 8) + 8) % 8, c = CARS[k], id = 'car' + k + '_' + (++carUid), s = SHAPES[c.kind];
+    const dark = shade(c.body, -0.38), lite = shade(c.body, 0.42), deep = shade(c.body, -0.6);
+    const [hx, hy, hr] = s.head;
+    const lights = {
+      bar: `<path d="M${s.lx} ${s.ly} L${s.lx + 8} ${s.ly + 2}" stroke="#fffbe6" stroke-width="2.4" stroke-linecap="round"/>`,
+      square: `<rect x="${s.lx}" y="${s.ly}" width="7" height="5" rx="1.5" fill="#fffbe6" stroke="${dark}" stroke-width=".6"/>`,
+      slim: `<path d="M${s.lx} ${s.ly} L${s.lx + 8} ${s.ly + 1.5} L${s.lx + 8} ${s.ly + 3.5} L${s.lx} ${s.ly + 2.5} Z" fill="#fffbe6" stroke="${dark}" stroke-width=".5"/>`,
+      round: `<circle cx="${s.lx + 3}" cy="${s.ly + 2}" r="3" fill="#fffbe6" stroke="${dark}" stroke-width=".6"/>`,
+      bigRound: `<circle cx="${s.lx + 2}" cy="${s.ly}" r="4.2" fill="#fffbe6" stroke="#a9adba" stroke-width="1"/>`
+    };
+    const light = `<circle cx="${s.lx + 5}" cy="${s.ly + 2}" r="7" fill="url(#${id}l)"/>` + lights[s.light];
+    return `<svg class="car-svg" viewBox="0 -14 120 86" aria-hidden="true">
       <defs>
-        <linearGradient id="${id}b" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${light}"/><stop offset=".42" stop-color="${c.body}"/><stop offset="1" stop-color="${dark}"/></linearGradient>
-        <linearGradient id="${id}w" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f2fbff"/><stop offset=".45" stop-color="#a9d4ee"/><stop offset="1" stop-color="#5b87a8"/></linearGradient>
+        <linearGradient id="${id}b" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${lite}"/><stop offset=".42" stop-color="${c.body}"/><stop offset="1" stop-color="${dark}"/></linearGradient>
+        <linearGradient id="${id}w" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#e9f5fc"/><stop offset=".5" stop-color="#b9d9ec"/><stop offset="1" stop-color="#7fa4c0"/></linearGradient>
+        <linearGradient id="${id}g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".45"/><stop offset=".35" stop-color="#fff" stop-opacity=".08"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>
         <radialGradient id="${id}s"><stop offset="0" stop-color="#000" stop-opacity=".38"/><stop offset="1" stop-color="#000" stop-opacity="0"/></radialGradient>
         <radialGradient id="${id}t" cx=".45" cy=".4" r=".6"><stop offset=".6" stop-color="#34343b"/><stop offset="1" stop-color="#121216"/></radialGradient>
         <radialGradient id="${id}r" cx=".35" cy=".3" r=".8"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#c9ccd6"/></radialGradient>
         <radialGradient id="${id}l"><stop offset="0" stop-color="#fffbe0"/><stop offset="1" stop-color="#ffe9a0" stop-opacity="0"/></radialGradient>
       </defs>
+        <clipPath id="${id}c"><rect x="0" y="-30" width="120" height="${s.belt + 30}"/></clipPath>
+      </defs>
       <ellipse cx="60" cy="65" rx="57" ry="6.5" fill="url(#${id}s)"/>
-      <path d="M33 32 C37 21 44 11.5 54 10.5 L75 10.5 C83 10.5 89 18 96 32 Z" fill="url(#${id}b)" stroke="${dark}" stroke-width="1.1"/>
-      <path d="M41.5 31 C44.5 22.5 49 16 56 15.2 L61.5 15.2 L61.5 31 Z" fill="url(#${id}w)"/>
-      <path d="M65.5 31 L65.5 15.2 L73.5 15.2 C80 15.8 84.5 22 87.5 31 Z" fill="url(#${id}w)"/>
-      <path d="M45 30 L53 16.5 L56.5 16.5 L48.5 30 Z M68 30 L72 16.5 L74 16.5 L70 30 Z" fill="#fff" opacity=".5"/>
-      <circle cx="76" cy="24.5" r="4.4" fill="${SKIN}"/>
-      <path d="M71.6 23.6 Q72.5 18.6 76.4 18.8 Q80.4 19 80.6 23.4 Q78 21.4 74 22.2 Z" fill="#2b2633"/>
-      <circle cx="78.2" cy="24.6" r=".7" fill="#2b2633"/>
-      <path d="M9 37 C9 32.5 13 30.5 21 30.5 L99 30.5 C108 30.5 114 33.5 115.5 40 L116.5 48 C116.5 53.5 113.5 56.5 108 56.5 L14 56.5 C9 56.5 6.5 53.5 6.5 48.5 Z" fill="url(#${id}b)" stroke="${dark}" stroke-width="1.1"/>
-      <path d="M15 34.6 C40 33.2 80 33.2 106 34.8" fill="none" stroke="#fff" stroke-opacity=".6" stroke-width="2.4" stroke-linecap="round"/>
-      <rect x="12" y="41" width="97" height="3.4" rx="1.7" fill="${c.stripe}" opacity=".95"/>
-      <path d="M63.5 31.5 V54" stroke="${deep}" stroke-opacity=".45" stroke-width=".9"/>
-      <rect x="67" y="37.4" width="6.5" height="1.9" rx=".95" fill="${deep}" opacity=".55"/>
-      <circle cx="113" cy="41" r="7" fill="url(#${id}l)"/>
-      <path d="M109.5 38 C113 37.8 115.4 39.6 115.6 43 L109.5 43 Z" fill="#fffbe6" stroke="${dark}" stroke-width=".6"/>
-      <rect x="6.6" y="37.8" width="3.2" height="5.4" rx="1.3" fill="#ff5b4f"/>
-      <rect x="103" y="50.5" width="14" height="4.2" rx="2.1" fill="#e3e5ec" stroke="#a9adba" stroke-width=".6"/>
-      <rect x="4" y="50.5" width="14" height="4.2" rx="2.1" fill="#e3e5ec" stroke="#a9adba" stroke-width=".6"/>
-      ${wheel(33, id, deep)}${wheel(89, id, deep)}
+      ${s.body.map(d => `<path d="${d}" fill="url(#${id}b)" stroke="${dark}" stroke-width="1.1" stroke-linejoin="round"/>`).join('')}
+      ${s.rails ? `<path d="${s.rails}" stroke="${deep}" stroke-width="2.2" stroke-linecap="round"/>` : ''}
+      ${s.win.map(d => `<path d="${d}" fill="url(#${id}w)"/>`).join('')}
+      <g clip-path="url(#${id}c)">${driver(c.driver, hx, hy, hr)}</g>
+      ${s.win.map(d => `<path d="${d}" fill="url(#${id}g)"/>`).join('')}
+      <path d="M${s.wheels[0] - 16} ${s.belt + 5} H${s.wheels[1] + 14}" stroke="#fff" stroke-opacity=".55" stroke-width="2.2" stroke-linecap="round"/>
+      <rect x="${s.wheels[0] - 14}" y="${s.belt + 10}" width="${s.wheels[1] - s.wheels[0] + 26}" height="3" rx="1.5" fill="${c.stripe}" opacity=".9"/>
+      ${s.bed ? `<path d="M8 36 H52" stroke="${deep}" stroke-width="1.6" stroke-linecap="round"/><path d="M8 40 H52" stroke="#fff" stroke-opacity=".3" stroke-width="1"/>` : ''}
+      ${s.grille ? `<rect x="113.5" y="40" width="4" height="9" rx="1" fill="#e9ebf1" stroke="#9ea3b1" stroke-width=".6"/><path d="M114.5 41.5 H117 M114.5 43.5 H117 M114.5 45.5 H117 M114.5 47.5 H117" stroke="#9ea3b1" stroke-width=".5"/>` : ''}
+      ${light}
+      <rect x="6.6" y="${s.belt + 6}" width="3" height="5" rx="1.2" fill="#ff5b4f"/>
+      <rect x="${s.wheels[1] + 9}" y="50.5" width="${Math.max(6, 118 - s.wheels[1] - 9)}" height="4" rx="2" fill="#e3e5ec" stroke="#a9adba" stroke-width=".6"/>
+      <rect x="4" y="50.5" width="${s.wheels[0] - 15}" height="4" rx="2" fill="#e3e5ec" stroke="#a9adba" stroke-width=".6"/>
+      ${wheel(s.wheels[0], id, deep)}${wheel(s.wheels[1], id, deep)}
     </svg>`;
   }
 

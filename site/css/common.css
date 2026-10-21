@@ -127,3 +127,6 @@ textarea { resize: vertical; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
 }
+
+/* 제목 윗줄: "이동규 선생님과 함께하는" */
+.title-top { display: block; font-size: .45em; font-weight: 600; letter-spacing: -0.01em; opacity: .75; margin-bottom: .15em; }
