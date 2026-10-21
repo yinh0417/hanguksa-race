@@ -175,3 +175,10 @@ body.phone { background: var(--cheong-deep); }
 .flash span { font-size: 15px; color: var(--ink-80); }
 
 .offline { position: fixed; top: 0; left: 0; right: 0; z-index: 60; background: var(--jeok); color: var(--baek); text-align: center; padding: 6px 10px; font-size: .95rem; }
+
+/* 출석번호 고르기 */
+.no-pick { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; }
+.no-opt { font-weight: 600; font-size: 17px; height: 44px; border: 0; border-radius: 11px; background: var(--parchment); color: var(--ink); cursor: pointer; transition: transform .12s ease; touch-action: manipulation; }
+.no-opt:active:not(:disabled) { transform: scale(.95); }
+.no-opt[aria-checked="true"] { background: var(--primary); color: #fff; }
+.no-opt:disabled { opacity: .3; text-decoration: line-through; cursor: not-allowed; }

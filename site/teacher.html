@@ -50,8 +50,9 @@
 
   <section id="tab-records" class="tab-body hidden" role="tabpanel">
     <h2>반 기록</h2>
-    <p class="hint">반마다 문제별 정답률이 남아요. 학생 개인 기록은 남기지 않아요.</p>
+    <p class="hint">반마다 문제별 정답률과, 출석번호별로 틀린 문제가 남아요. 닉네임과 실명은 남기지 않아요.</p>
     <div id="recClassPick" class="class-chips"></div>
+    <div id="recMode" class="seg hidden" role="group" aria-label="기록 보기 방식"><button data-mode="q" aria-pressed="true">문제별</button><button data-mode="s" aria-pressed="false">학생별 (추수지도)</button></div>
     <div id="recList" class="rec-list"></div>
   </section>
 </main>
@@ -173,6 +174,7 @@
   <div class="review-list" id="reviewList"></div>
 </main>
 
+<div id="printArea" class="print-area" aria-hidden="true"></div>
 <div class="toast-wrap" id="toasts" aria-live="polite"></div>
 
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>

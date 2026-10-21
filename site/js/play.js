@@ -8,7 +8,7 @@
   let room = null, uid = null, meta = null, questions = [], players = {}, states = {}, myP = null;
   let metaLoaded = false, playersLoaded = false, statesLoaded = false;
   let me = null, phase = 'idle', cur = null, order = [], lastIdx = -1, phaseUntil = 0;
-  let loop = null, hitsOff = null, carChoice = null, lastWrongAnswer = '', joinBuilt = false;
+  let loop = null, hitsOff = null, carChoice = null, noChoice = null, lastWrongAnswer = '', joinBuilt = false;
   const handled = new Set();
 
   // ---------- 도구 ----------
@@ -133,6 +133,23 @@
     if (meta.status === 'finished') endRace();
   }
 
+  // 이 판에서 다른 친구가 이미 고른 출석번호
+  function takenNumbers() {
+    const s = new Set();
+    Object.entries(players).forEach(([id, p]) => {
+      if (id !== uid && p && p.no && (p.status === 'pending' || p.status === 'approved')) s.add(p.no);
+    });
+    return s;
+  }
+  function markTakenNumbers() {
+    const taken = takenNumbers();
+    $$('#noPick .no-opt').forEach(b => {
+      const t = taken.has(+b.dataset.no);
+      b.disabled = t;
+      if (t && noChoice === +b.dataset.no) { noChoice = null; b.setAttribute('aria-checked', 'false'); }
+    });
+  }
+
   function showJoin(note) {
     if (!joinBuilt) {
       joinBuilt = true;
@@ -142,7 +159,15 @@
         carChoice = +b.dataset.car;
         $$('#carPick .car-opt').forEach(x => x.setAttribute('aria-checked', String(x === b)));
       }));
+      const max = C.studentsPerClass || 24;
+      $('#noPick').innerHTML = Array.from({ length: max }, (_, i) => `<button type="button" class="no-opt" role="radio" aria-checked="false" data-no="${i + 1}">${i + 1}</button>`).join('');
+      $$('#noPick .no-opt').forEach(b => b.addEventListener('click', () => {
+        if (b.disabled) return;
+        noChoice = +b.dataset.no;
+        $$('#noPick .no-opt').forEach(x => x.setAttribute('aria-checked', String(x === b)));
+      }));
     }
+    markTakenNumbers();
     const noteEl = $('#joinNote');
     noteEl.textContent = note || '';
     noteEl.classList.toggle('hidden', !note);
@@ -158,10 +183,12 @@
     const err = $('#joinErr');
     if (!nick) { err.textContent = '닉네임을 적어 주세요.'; return; }
     if (Array.from(nick).length > C.maxNick) { err.textContent = `닉네임은 ${C.maxNick}글자까지 쓸 수 있어요.`; return; }
+    if (noChoice == null) { err.textContent = '내 출석번호를 골라 주세요.'; return; }
+    if (takenNumbers().has(noChoice)) { err.textContent = `${noChoice}번은 이미 다른 친구가 골랐어요. 번호를 확인해 주세요.`; return; }
     if (carChoice == null) { err.textContent = '차를 하나 골라 주세요.'; return; }
     err.textContent = '';
     try {
-      await DB.set(`rooms/${room}/players/${uid}`, { nick, car: carChoice, status: 'pending', joinedAt: DB.now() });
+      await DB.set(`rooms/${room}/players/${uid}`, { nick, no: noChoice, car: carChoice, status: 'pending', joinedAt: DB.now() });
     } catch (ex) {
       console.warn(ex);
       err.textContent = '입장하지 못했어요. 다시 눌러 주세요.';

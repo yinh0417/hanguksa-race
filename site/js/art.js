@@ -19,20 +19,59 @@
     { name: '분홍', body: '#F07AAE', stripe: '#FDE0EC' }
   ];
 
+  // 색을 밝게(amt > 0) 또는 어둡게(amt < 0)
+  function shade(hex, amt) {
+    const n = parseInt(hex.slice(1), 16);
+    const t = amt < 0 ? 0 : 255, p = Math.abs(amt);
+    const ch = v => Math.round((t - v) * p + v);
+    const r = ch(n >> 16), g = ch((n >> 8) & 255), b = ch(n & 255);
+    return '#' + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
+  }
+
+  function wheel(cx, id, arch) {
+    let g = `<path d="M${cx - 13} 56 A13 13 0 0 1 ${cx + 13} 56 Z" fill="${arch}"/>`;
+    g += `<circle cx="${cx}" cy="56" r="10.5" fill="url(#${id}t)"/>`;
+    g += `<circle cx="${cx}" cy="56" r="6" fill="url(#${id}r)" stroke="#9aa0ae" stroke-width=".8"/>`;
+    for (let a = 0; a < 5; a++) {
+      const rad = (a * 72 - 90) * Math.PI / 180;
+      g += `<path d="M${cx} 56 L${(cx + Math.cos(rad) * 5.2).toFixed(2)} ${(56 + Math.sin(rad) * 5.2).toFixed(2)}" stroke="#b9bdc9" stroke-width="1.3" stroke-linecap="round"/>`;
+    }
+    g += `<circle cx="${cx}" cy="56" r="1.8" fill="#7c8291"/>`;
+    return g;
+  }
+
+  // 광택 있는 귀여운 자동차 (오른쪽을 보고 달림)
   function carSVG(i) {
-    const c = CARS[((i % 8) + 8) % 8];
+    const k = ((i % 8) + 8) % 8, c = CARS[k], id = 'car' + k;
+    const dark = shade(c.body, -0.38), light = shade(c.body, 0.42), deep = shade(c.body, -0.6);
     return `<svg class="car-svg" viewBox="0 0 120 72" aria-hidden="true">
-      <ellipse cx="60" cy="67" rx="50" ry="4" fill="rgba(34,33,58,.22)"/>
-      <path d="M33 31 L44 12 Q46 9 50 9 L76 9 Q80 9 82 12 L95 31 Z" fill="${c.body}" stroke="${INK}" stroke-width="3" stroke-linejoin="round"/>
-      <path d="M43 29 L50 15 L61 15 L61 29 Z" fill="#CFEAFB" stroke="${INK}" stroke-width="2" stroke-linejoin="round"/>
-      <path d="M66 29 L66 15 L77 15 L86 29 Z" fill="#CFEAFB" stroke="${INK}" stroke-width="2" stroke-linejoin="round"/>
-      <circle cx="74" cy="23" r="5" fill="${SKIN}" stroke="${INK}" stroke-width="1.5"/>
-      <path d="M69 21 Q74 15 79 21" fill="${INK}"/>
-      <rect x="6" y="29" width="108" height="27" rx="12" fill="${c.body}" stroke="${INK}" stroke-width="3"/>
-      <rect x="13" y="36" width="94" height="5" rx="2.5" fill="${c.stripe}"/>
-      <circle cx="107" cy="39" r="3.5" fill="#FFF3B0" stroke="${INK}" stroke-width="1.5"/>
-      <circle cx="32" cy="56" r="11" fill="${INK}"/><circle cx="32" cy="56" r="4.5" fill="#E9E7F2"/>
-      <circle cx="89" cy="56" r="11" fill="${INK}"/><circle cx="89" cy="56" r="4.5" fill="#E9E7F2"/>
+      <defs>
+        <linearGradient id="${id}b" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${light}"/><stop offset=".42" stop-color="${c.body}"/><stop offset="1" stop-color="${dark}"/></linearGradient>
+        <linearGradient id="${id}w" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f2fbff"/><stop offset=".45" stop-color="#a9d4ee"/><stop offset="1" stop-color="#5b87a8"/></linearGradient>
+        <radialGradient id="${id}s"><stop offset="0" stop-color="#000" stop-opacity=".38"/><stop offset="1" stop-color="#000" stop-opacity="0"/></radialGradient>
+        <radialGradient id="${id}t" cx=".45" cy=".4" r=".6"><stop offset=".6" stop-color="#34343b"/><stop offset="1" stop-color="#121216"/></radialGradient>
+        <radialGradient id="${id}r" cx=".35" cy=".3" r=".8"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#c9ccd6"/></radialGradient>
+        <radialGradient id="${id}l"><stop offset="0" stop-color="#fffbe0"/><stop offset="1" stop-color="#ffe9a0" stop-opacity="0"/></radialGradient>
+      </defs>
+      <ellipse cx="60" cy="65" rx="57" ry="6.5" fill="url(#${id}s)"/>
+      <path d="M33 32 C37 21 44 11.5 54 10.5 L75 10.5 C83 10.5 89 18 96 32 Z" fill="url(#${id}b)" stroke="${dark}" stroke-width="1.1"/>
+      <path d="M41.5 31 C44.5 22.5 49 16 56 15.2 L61.5 15.2 L61.5 31 Z" fill="url(#${id}w)"/>
+      <path d="M65.5 31 L65.5 15.2 L73.5 15.2 C80 15.8 84.5 22 87.5 31 Z" fill="url(#${id}w)"/>
+      <path d="M45 30 L53 16.5 L56.5 16.5 L48.5 30 Z M68 30 L72 16.5 L74 16.5 L70 30 Z" fill="#fff" opacity=".5"/>
+      <circle cx="76" cy="24.5" r="4.4" fill="${SKIN}"/>
+      <path d="M71.6 23.6 Q72.5 18.6 76.4 18.8 Q80.4 19 80.6 23.4 Q78 21.4 74 22.2 Z" fill="#2b2633"/>
+      <circle cx="78.2" cy="24.6" r=".7" fill="#2b2633"/>
+      <path d="M9 37 C9 32.5 13 30.5 21 30.5 L99 30.5 C108 30.5 114 33.5 115.5 40 L116.5 48 C116.5 53.5 113.5 56.5 108 56.5 L14 56.5 C9 56.5 6.5 53.5 6.5 48.5 Z" fill="url(#${id}b)" stroke="${dark}" stroke-width="1.1"/>
+      <path d="M15 34.6 C40 33.2 80 33.2 106 34.8" fill="none" stroke="#fff" stroke-opacity=".6" stroke-width="2.4" stroke-linecap="round"/>
+      <rect x="12" y="41" width="97" height="3.4" rx="1.7" fill="${c.stripe}" opacity=".95"/>
+      <path d="M63.5 31.5 V54" stroke="${deep}" stroke-opacity=".45" stroke-width=".9"/>
+      <rect x="67" y="37.4" width="6.5" height="1.9" rx=".95" fill="${deep}" opacity=".55"/>
+      <circle cx="113" cy="41" r="7" fill="url(#${id}l)"/>
+      <path d="M109.5 38 C113 37.8 115.4 39.6 115.6 43 L109.5 43 Z" fill="#fffbe6" stroke="${dark}" stroke-width=".6"/>
+      <rect x="6.6" y="37.8" width="3.2" height="5.4" rx="1.3" fill="#ff5b4f"/>
+      <rect x="103" y="50.5" width="14" height="4.2" rx="2.1" fill="#e3e5ec" stroke="#a9adba" stroke-width=".6"/>
+      <rect x="4" y="50.5" width="14" height="4.2" rx="2.1" fill="#e3e5ec" stroke="#a9adba" stroke-width=".6"/>
+      ${wheel(33, id, deep)}${wheel(89, id, deep)}
     </svg>`;
   }
 
@@ -56,6 +95,9 @@
       g += `<path d="M${p(a[0], a[1])} L${p(a[2], a[3])}" stroke="${INK}" stroke-width="${sw(2.5)}" stroke-linecap="round"/>`;
     });
     g += `<circle cx="${x}" cy="${(y - 37 * s).toFixed(1)}" r="${sw(6.5)}" fill="${SKIN}" stroke="${INK}" stroke-width="${sw(2)}"/>`;
+    // 얼굴: 눈과 볼
+    g += `<circle cx="${(x - 2.3 * s).toFixed(1)}" cy="${(y - 36.5 * s).toFixed(1)}" r="${sw(0.9)}" fill="#2b2633"/><circle cx="${(x + 2.3 * s).toFixed(1)}" cy="${(y - 36.5 * s).toFixed(1)}" r="${sw(0.9)}" fill="#2b2633"/>`;
+    g += `<circle cx="${(x - 3.8 * s).toFixed(1)}" cy="${(y - 34.2 * s).toFixed(1)}" r="${sw(1.2)}" fill="#f29a8a" opacity=".55"/><circle cx="${(x + 3.8 * s).toFixed(1)}" cy="${(y - 34.2 * s).toFixed(1)}" r="${sw(1.2)}" fill="#f29a8a" opacity=".55"/>`;
     if (o.hat === 'cap') {
       g += `<path d="M${p(-7, -39)} Q${p(0, -50)} ${p(7, -39)} Z" fill="${INK}"/><path d="M${p(3, -40)} L${p(11, -39)}" stroke="${INK}" stroke-width="${sw(2.5)}" stroke-linecap="round"/>`;
     } else if (o.hat === 'gat') {
@@ -76,11 +118,49 @@
       <path d="M${x + 10} ${top - 19} Q${x + w / 2} ${top - 24} ${x + w - 10} ${top - 19}" fill="none" stroke="${INK}" stroke-width="4" stroke-linecap="round"/>`;
   }
 
-  function sky(color) { return `<rect x="-200" y="-200" width="${W + 400}" height="${GROUND + 200}" fill="${color}"/>`; }
-  function ground(color) { return `<rect x="-200" y="${GROUND}" width="${W + 400}" height="${H - GROUND + 200}" fill="${color}"/><path d="M-200 ${GROUND} H${W + 200}" stroke="${INK}" stroke-width="2"/>`; }
+  // 장면마다 다른 그라디언트 id를 쓰려고 sceneSVG가 바꿔 주는 접두사
+  let P = 'z_', uid = 0;
+
+  // 하늘: 위는 짙고 지평선은 옅은 그라디언트 + 오른쪽 위 햇빛
+  function sky(color) {
+    return `<defs>
+        <linearGradient id="${P}sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${shade(color, -0.16)}"/><stop offset=".6" stop-color="${color}"/><stop offset="1" stop-color="${shade(color, 0.45)}"/></linearGradient>
+        <radialGradient id="${P}sun" cx=".82" cy=".08" r=".75"><stop offset="0" stop-color="#fffbe8" stop-opacity=".75"/><stop offset=".35" stop-color="#fffbe8" stop-opacity=".18"/><stop offset="1" stop-color="#fffbe8" stop-opacity="0"/></radialGradient>
+      </defs>
+      <rect x="-200" y="-200" width="${W + 400}" height="${GROUND + 200}" fill="url(#${P}sky)"/>
+      <rect x="-200" y="-200" width="${W + 400}" height="${GROUND + 200}" fill="url(#${P}sun)"/>
+      <g fill="#fff" opacity=".55"><ellipse cx="62" cy="34" rx="26" ry="7"/><ellipse cx="80" cy="30" rx="16" ry="7"/><ellipse cx="214" cy="52" rx="22" ry="5.5"/><ellipse cx="228" cy="48" rx="12" ry="5"/></g>`;
+  }
+  // 땅: 위는 밝고 아래로 갈수록 짙게, 지평선은 부드러운 그림자
+  function ground(color) {
+    return `<defs><linearGradient id="${P}gr" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${shade(color, 0.12)}"/><stop offset="1" stop-color="${shade(color, -0.2)}"/></linearGradient></defs>
+      <rect x="-200" y="${GROUND}" width="${W + 400}" height="${H - GROUND + 200}" fill="url(#${P}gr)"/>
+      <rect x="-200" y="${GROUND}" width="${W + 400}" height="3" fill="#000" opacity=".08"/>
+      <g stroke="#fff" stroke-opacity=".18" stroke-linecap="round"><path d="M-10 ${GROUND + 14} H60 M110 ${GROUND + 24} H190 M230 ${GROUND + 12} H310 M20 ${GROUND + 36} H90 M170 ${GROUND + 42} H260" stroke-width="1.6"/></g>`;
+  }
+  // 언덕: 먼 언덕(옅게)과 가까운 언덕을 겹쳐 깊이감
   function hills(color, base) {
     base = base || GROUND;
-    return `<path d="M-200 ${base - 22} Q40 ${base - 62} 110 ${base - 30} Q190 ${base - 70} 300 ${base - 34} Q400 ${base - 50} ${W + 200} ${base - 30} V${base} H-200 Z" fill="${color}"/>`;
+    const far = shade(color, 0.38);
+    return `<defs><linearGradient id="${P}hl${base}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${shade(color, 0.14)}"/><stop offset="1" stop-color="${shade(color, -0.12)}"/></linearGradient></defs>
+      <path d="M-200 ${base - 34} Q-10 ${base - 78} 80 ${base - 46} Q160 ${base - 86} 250 ${base - 50} Q330 ${base - 70} ${W + 200} ${base - 44} V${base} H-200 Z" fill="${far}" opacity=".85"/>
+      <path d="M-200 ${base - 22} Q40 ${base - 62} 110 ${base - 30} Q190 ${base - 70} 300 ${base - 34} Q400 ${base - 50} ${W + 200} ${base - 30} V${base} H-200 Z" fill="url(#${P}hl${base})"/>`;
+  }
+
+  // 마무리: 외곽선을 가늘고 부드럽게, 종이 질감과 아래쪽 그늘을 더합니다.
+  function finish(inner) {
+    inner = inner.replace(/<(path|rect|circle|ellipse|polygon|polyline|line)\b[^>]*>/g, tag => {
+      const isLine = /stroke-linecap="round"/.test(tag) && (!/\bfill="/.test(tag) || /fill="none"/.test(tag));
+      tag = tag.replace(/stroke-width="([\d.]+)"/, (m, v) => `stroke-width="${(+v * (isLine ? 0.85 : 0.55)).toFixed(2)}"`);
+      if (!isLine) tag = tag.replace(/stroke="#22213A"/, 'stroke="#2c2840" stroke-opacity=".72"');
+      return tag;
+    });
+    return inner + `<defs>
+        <filter id="${P}grain" filterUnits="userSpaceOnUse" x="-200" y="-200" width="700" height="600"><feTurbulence type="fractalNoise" baseFrequency=".85" numOctaves="2" stitchTiles="stitch"/><feColorMatrix values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 .07 0"/></filter>
+        <linearGradient id="${P}vig" x1="0" y1="0" x2="0" y2="1"><stop offset=".55" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".14"/></linearGradient>
+      </defs>
+      <rect x="-200" y="-200" width="700" height="600" filter="url(#${P}grain)"/>
+      <rect x="-200" y="-200" width="700" height="600" fill="url(#${P}vig)"/>`;
   }
   function label(x, y, text, size, fill, extra) {
     return `<text x="${x}" y="${y}" font-family="Jua, 'Malgun Gothic', sans-serif" font-size="${size}" fill="${fill}" text-anchor="middle" ${extra || ''}>${text}</text>`;
@@ -906,7 +986,8 @@
   function sceneSVG(eraId, k) {
     const e = GAME.era(eraId);
     const fn = SCENE_ART[e.id] && SCENE_ART[e.id][k];
-    const inner = fn ? fn() : placeholder(e.id, k, e.scenes[k]);
+    P = 's' + (++uid) + '_';
+    const inner = finish(fn ? fn() : placeholder(e.id, k, e.scenes[k]));
     return `<svg class="scene-svg" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMax slice" role="img" aria-label="${e.scenes[k]}">${inner}</svg>`;
   }
   function hasArt(eraId) { return !!SCENE_ART[eraId]; }

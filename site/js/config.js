@@ -20,6 +20,7 @@ window.APP_CONFIG = {
 
   // ③ 게임 숫자 (시범 수업 뒤 여기서 조정)
   classCount: 7,          // 반 개수
+  studentsPerClass: 24,   // 한 반 최대 학생 수(출석번호 1~이 숫자)
   questionsPerSet: 5,     // 세트당 문제 수
   raceSeconds: 180,       // 한 판 시간(초)
   finishCells: 15,        // 결승선까지 칸 수

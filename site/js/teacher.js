@@ -115,7 +115,7 @@
     renderClassChips($('#classPick'), n => { pickClass = n; renderClassChips($('#classPick'), null, pickClass); updateOpenBtn(); }, pickClass);
     renderClassChips($('#recClassPick'), n => loadRecords(n), null);
     DB.on('sets', v => { sets = v || {}; renderSetPick(); renderSetList(); }, denied);
-    $('#btnOpenRoom').addEventListener('click', createRoom);
+    $('#btnOpenRoom').addEventListener('click', () => { SOUND.unlock(); createRoom(); });
     $('#btnNewSet').addEventListener('click', () => openEditor(null));
     const demoLink = $('#demoPlayLink');
     if (demoLink) demoLink.href = 'play.html';
@@ -289,13 +289,29 @@
   });
 
   // ---------- 반 기록 ----------
+  let recClass = null, recList = [], recMode = 'q';
+  $$('#recMode [data-mode]').forEach(b => b.addEventListener('click', () => {
+    recMode = b.dataset.mode;
+    $$('#recMode [data-mode]').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
+    renderRecords();
+  }));
+
   async function loadRecords(n) {
+    recClass = n;
     renderClassChips($('#recClassPick'), null, n);
+    $('#recMode').classList.remove('hidden');
     const el = $('#recList');
     el.innerHTML = '<p class="hint">불러오는 중…</p>';
     const recs = await DB.get('records/' + n).catch(e => { denied(e); return null; });
-    const list = Object.values(recs || {}).sort((a, b) => b.at - a.at);
+    recList = Object.values(recs || {}).sort((a, b) => b.at - a.at);
+    renderRecords();
+  }
+
+  function renderRecords() {
+    const el = $('#recList'), n = recClass, list = recList;
+    if (!n) return;
     if (!list.length) { el.innerHTML = `<div class="empty">${n}반은 아직 기록이 없어요.</div>`; return; }
+    if (recMode === 's') { renderStudents(); return; }
     el.innerHTML = list.map(r => `
       <details class="rec">
         <summary><span class="rec-date">${fmtDate(r.at)}</span><strong>${esc(r.title)}</strong><span>${r.players}명 참여</span><span class="rec-rate">평균 정답률 ${pct(r.avgRate)}</span></summary>
@@ -305,6 +321,73 @@
             <p class="bar-label">정답률 ${pct(q.rate)} (${q.total}번 풀어서 ${q.c}번 맞힘)</p></li>`).join('')}
         </ol>
       </details>`).join('');
+  }
+
+  // 학생별 추수지도: 출석번호마다 틀린 문제를 단원별로 모읍니다.
+  function studentReview(no) {
+    const byKey = {};
+    recList.slice().reverse().forEach(r => {
+      const s = r.students && r.students['n' + no];
+      if (!s) return;
+      (r.questions || []).forEach((q, i) => {
+        const st = s[i];
+        if (!st) return;
+        const key = r.title + '\n' + q.q;
+        const it = byKey[key] || (byKey[key] = { title: r.title, q: q.q, answerText: q.answerText, c: 0, w: 0, t: 0, last: 0 });
+        it.c += st.c || 0; it.w += st.w || 0; it.t += st.t || 0; it.last = Math.max(it.last, r.at);
+      });
+    });
+    const items = Object.values(byKey).filter(it => it.w > 0 || (it.c === 0 && it.t > 0));
+    items.forEach(it => { it.missed = it.c === 0; });
+    items.sort((a, b) => (b.missed - a.missed) || (b.w - a.w));
+    const played = recList.some(r => r.students && r.students['n' + no]);
+    return { items, played };
+  }
+
+  let pickedStudent = null;
+  function renderStudents() {
+    const el = $('#recList');
+    const cards = [];
+    for (let no = 1; no <= (C.studentsPerClass || 24); no++) {
+      const { items, played } = studentReview(no);
+      const missed = items.filter(i => i.missed).length, fixed = items.length - missed;
+      cards.push(`<button class="stu-card ${pickedStudent === no ? 'on' : ''}" data-no="${no}" ${played ? '' : 'disabled'}>
+        <strong>${no}번</strong>
+        ${!played ? '<span class="stu-none">기록 없음</span>'
+          : items.length ? `${missed ? `<span class="stu-miss">못 맞힘 ${missed}</span>` : ''}${fixed ? `<span class="stu-fix">다시 맞힘 ${fixed}</span>` : ''}`
+          : '<span class="stu-ok">모두 맞힘</span>'}
+      </button>`);
+    }
+    el.innerHTML = `<p class="hint">번호를 누르면 그 학생이 틀린 문제가 단원별로 나와요. 끝내 못 맞힌 문제가 맨 위에 와요.</p>
+      <div class="stu-grid">${cards.join('')}</div><div id="stuDetail"></div>`;
+    $$('#recList .stu-card').forEach(b => b.addEventListener('click', () => { pickedStudent = +b.dataset.no; renderStudents(); }));
+    if (pickedStudent) renderStudentDetail(pickedStudent);
+  }
+
+  function studentSheet(no) {
+    const { items } = studentReview(no);
+    if (!items.length) return `<p class="hint">${no}번 학생은 틀린 문제가 없어요.</p>`;
+    const groups = {};
+    items.forEach(it => { (groups[it.title] = groups[it.title] || []).push(it); });
+    return Object.entries(groups).map(([title, its]) => `
+      <section class="stu-unit"><h4>${esc(title)}</h4>
+        <ol>${its.map(it => `
+          <li class="${it.missed ? 'missed' : ''}">
+            <p class="stu-q">${esc(it.q)}</p>
+            <p class="stu-a">정답 ${esc(it.answerText)}</p>
+            <p class="stu-meta">${it.missed ? '끝내 못 맞힘' : '틀렸다가 맞힘'}, 틀린 횟수 ${it.w}번${it.t ? `, 시간 초과 ${it.t}번` : ''}</p>
+          </li>`).join('')}</ol>
+      </section>`).join('');
+  }
+
+  function renderStudentDetail(no) {
+    $('#stuDetail').innerHTML = `<div class="stu-detail">
+      <div class="row-between"><h3>${recClass}반 ${no}번 복습 목록</h3><button class="btn small" id="stuPrint">인쇄하기</button></div>
+      ${studentSheet(no)}</div>`;
+    $('#stuPrint').addEventListener('click', () => {
+      $('#printArea').innerHTML = `<h1>${recClass}반 ${no}번 한국사 복습</h1><p class="print-sub">다시 풀어 볼 문제와 정답이에요. 정답을 가리고 먼저 풀어 보세요.</p>${studentSheet(no)}`;
+      window.print();
+    });
   }
 
   // ---------- 게임 열기 ----------
@@ -372,13 +455,13 @@
   function approvedList() {
     return Object.entries(players)
       .filter(([, p]) => p && p.status === 'approved')
-      .map(([uid, p]) => ({ uid, nick: p.nick, car: p.car || 0, approvedAt: p.approvedAt || p.joinedAt || 0 }))
+      .map(([uid, p]) => ({ uid, nick: p.nick, car: p.car || 0, no: p.no || null, approvedAt: p.approvedAt || p.joinedAt || 0 }))
       .sort((a, b) => a.approvedAt - b.approvedAt);
   }
   function pendingList() {
     return Object.entries(players)
       .filter(([, p]) => p && p.status === 'pending')
-      .map(([uid, p]) => ({ uid, nick: p.nick, car: p.car || 0, joinedAt: p.joinedAt || 0 }))
+      .map(([uid, p]) => ({ uid, nick: p.nick, car: p.car || 0, no: p.no || null, joinedAt: p.joinedAt || 0 }))
       .sort((a, b) => a.joinedAt - b.joinedAt);
   }
 
@@ -407,6 +490,7 @@
 
   // ---------- 대기실 ----------
   function renderLobby() {
+    SOUND.startBgm('lobby');
     $('#lbClass').textContent = meta.classNo + '반';
     $('#lbTitle').textContent = meta.title;
     $('#lbCode').textContent = room;
@@ -432,6 +516,7 @@
       const shown = revealUntil[p.uid] > now;
       return `<li class="pending-item">
         <div class="mini-car">${A.carSVG(p.car)}</div>
+        <span class="p-no">${p.no ? p.no + '번' : '번호 없음'}</span>
         <button class="nick-mask ${shown ? 'revealed' : ''}" data-peek="${p.uid}" aria-label="닉네임 3초 동안 보기">${shown ? esc(p.nick) : '●●●'}</button>
         <button class="btn small primary" data-ok="${p.uid}">승인</button>
         <button class="btn small danger" data-no="${p.uid}">거절</button>
@@ -467,6 +552,7 @@
   });
   $('#lbStart').addEventListener('click', async () => {
     SOUND.unlock();
+    SOUND.stopBgm();
     const startAt = DB.now() + 3600;
     await DB.update(`rooms/${room}/meta`, { status: 'racing', startAt, endAt: startAt + C.raceSeconds * 1000 });
   });
@@ -621,6 +707,21 @@
     await saveRecord();
   }
 
+  function studentStats(qs) {
+    const out = {};
+    approvedList().forEach(p => {
+      if (!p.no) return;
+      const st = (states[p.uid] && states[p.uid].q) || {};
+      const key = 'n' + p.no;
+      const prev = out[key] || qs.map(() => ({ c: 0, w: 0, t: 0 }));
+      out[key] = qs.map((q, i) => {
+        const s = st[i] || {};
+        return { c: prev[i].c + (s.c || 0), w: prev[i].w + (s.w || 0), t: prev[i].t + (s.t || 0) };
+      });
+    });
+    return out;
+  }
+
   async function saveRecord() {
     const m = await DB.get(`rooms/${room}/meta`);
     if (!m || m.recordKey) return;
@@ -635,7 +736,9 @@
       setId: m.setId || '',
       players: approvedList().length,
       avgRate: total ? c / total : null,
-      questions: qs.map((q, i) => ({ q: q.q, answerText: G.answerText(q), c: stats[i].c, w: stats[i].w, t: stats[i].t, total: stats[i].total, rate: stats[i].rate }))
+      questions: qs.map((q, i) => ({ q: q.q, answerText: G.answerText(q), c: stats[i].c, w: stats[i].w, t: stats[i].t, total: stats[i].total, rate: stats[i].rate })),
+      // 추수지도용: 출석번호별 문제마다 맞힘·틀림·시간 초과 횟수 (닉네임은 남기지 않음)
+      students: studentStats(qs)
     };
     try {
       const key = await DB.push('records/' + m.classNo, rec);
@@ -692,7 +795,6 @@
         <span class="ar-car">${A.carSVG(r.car)}</span>
         <span class="ar-nick">${esc(r.nick)}</span>
         <span class="ar-pos">${r.finishedAt ? '완주' : r.pos + '칸'}</span>
-        <span class="ar-acc">정답 ${r.correct}개, 정답률 ${r.correct + r.wrong ? Math.round(r.acc * 100) + '%' : '-'}</span>
       </li>`).join('') || '<li>참여한 학생이 없어요.</li>';
   }
   $('#rsReview').addEventListener('click', () => { renderReview(); show('#vReview'); });
@@ -726,6 +828,9 @@
   $('#rvEnd').addEventListener('click', () => {
     if (confirm('끝낼까요? 닉네임과 이번 판 화면은 지워지고, 반 기록(문제별 정답률)은 남아요.')) closeRoom();
   });
+
+  // 새로고침 뒤에는 첫 클릭 때 소리를 켭니다(브라우저 자동 재생 제한)
+  document.addEventListener('pointerdown', () => { SOUND.unlock(); if (meta && meta.status === 'lobby') SOUND.startBgm('lobby'); }, { once: true });
 
   boot();
 })();
