@@ -24,11 +24,12 @@ window.APP_CONFIG = {
   // ③ 게임 숫자 (시범 수업 뒤 여기서 조정)
   classCount: 7,          // 반 개수
   studentsPerClass: 24,   // 한 반 최대 학생 수(출석번호 1~이 숫자)
-  questionsPerSet: 5,     // 세트당 문제 수
+  questionsPerSet: 6,     // 세트당 문제 수 (O/X·4지선다 5개 + 단답형 1개)
   raceSeconds: 180,       // 한 판 시간(초)
   finishCells: 15,        // 결승선까지 칸 수
   cellsPerScene: 3,       // 몇 칸마다 배경 장면이 바뀌는지
-  timeLimit: { ox: 20, mc: 30 },  // 문제별 제한 시간(초)
+  timeLimit: { ox: 20, mc: 30, sa: 40 },  // 문제별 제한 시간(초), sa = 단답형
+  saHint: true,           // 단답형에 초성 힌트(예: ㅂㅇㄷ ㅈㅌ)를 보여 줄지
   penaltySeconds: 3,      // 오답 벌칙 시간(초)
   hitSeconds: 3,          // 물풍선·신기전에 맞았을 때 멈추는 시간(초)
   maxNick: 6,             // 닉네임 최대 글자 수

@@ -274,10 +274,27 @@
 
   function renderQuestion() {
     const q = cur.q;
-    $('#qType').textContent = q.type === 'ox' ? 'O/X 문제' : '4지선다 문제';
+    $('#qType').textContent = q.type === 'ox' ? 'O/X 문제' : q.type === 'sa' ? '단답형 문제 · 직접 써요' : '4지선다 문제';
     $('#qText').textContent = q.q;
     const box = $('#answers');
-    box.className = 'answers ' + (q.type === 'ox' ? 'is-ox' : 'is-mc');
+    box.className = 'answers ' + (q.type === 'ox' ? 'is-ox' : q.type === 'sa' ? 'is-sa' : 'is-mc');
+    if (q.type === 'sa') {
+      const len = String(q.answer).replace(/\s/g, '').length;
+      box.innerHTML = `<form class="sa-form" autocomplete="off">
+        ${C.saHint !== false ? `<p class="sa-hint">힌트 <b>${escapeHtml(G.choHint(q.answer))}</b> <span>${len}글자</span></p>` : ''}
+        <input class="sa-input" type="text" maxlength="30" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="정답을 써요" aria-label="정답 입력">
+        <button class="ans sa-submit" type="submit">제출</button>
+      </form>`;
+      const input = box.querySelector('.sa-input');
+      box.querySelector('.sa-form').addEventListener('submit', e => {
+        e.preventDefault();
+        if (!input.value.trim()) { input.focus(); return; }
+        answer(input.value, input);
+      });
+      setTimeout(() => input.focus(), 50);
+      updateStatus(true);
+      return;
+    }
     if (q.type === 'ox') {
       box.innerHTML = '<button class="ans ox-o" data-v="O" aria-label="O, 맞다">O</button><button class="ans ox-x" data-v="X" aria-label="X, 틀리다">X</button>';
     } else {
@@ -312,7 +329,8 @@
     const now = DB.now();
     if (now < blockedUntil()) return;
     const q = cur.q;
-    const ok = q.type === 'ox' ? v === q.answer : Number(v) === q.answer;
+    const ok = q.type === 'ox' ? v === q.answer : q.type === 'sa' ? G.checkShort(q, v) : Number(v) === q.answer;
+    if (q.type === 'sa') btn.readOnly = true;
     const st = stat(cur.i);
     if (ok) {
       st.c++;
@@ -337,7 +355,7 @@
       if (bad === 'fuel') me.frozenUntil = Math.max(me.frozenUntil || 0, until);
       else me.blindUntil = Math.max(me.blindUntil || 0, until);
       me.fx = { type: bad, at: now };
-      lastWrongAnswer = q.type === 'ox' ? q.answer : CIRCLED[cur.order.indexOf(q.answer)] + ' ' + q.choices[q.answer];
+      lastWrongAnswer = q.type !== 'mc' ? q.answer : CIRCLED[cur.order.indexOf(q.answer)] + ' ' + q.choices[q.answer];
       save();
       btn.classList.add('wrong');
       phase = 'penalty';

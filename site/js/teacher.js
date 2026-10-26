@@ -230,7 +230,7 @@
     $('#edEra').innerHTML = G.ERAS.map(e => `<option value="${e.id}">${esc(e.no + ' ' + e.name)}${A.hasArt(e.id) ? '' : ' (그림 준비 중)'}</option>`).join('');
     $('#edEra').value = s ? s.era : 'e7b';
     $('#edPaste').value = '';
-    edRows = s ? (s.questions || []).map(q => G.validateRow({ type: q.type, q: q.q, choices: (q.choices || ['', '', '', '']).slice(), answer: q.answer })) : [];
+    edRows = s ? (s.questions || []).map(q => G.validateRow({ type: q.type, q: q.q, choices: (q.choices || ['', '', '', '']).slice(), answer: q.answer, alt: (q.alt || []).join(', ') })) : [];
     renderEdRows();
     $('#edMsg').textContent = '';
     show('#vEditor');
@@ -243,19 +243,23 @@
       <div class="ed-row ${r.error ? 'has-err' : ''}" data-i="${i}">
         <div class="ed-row-head">
           <strong>${i + 1}번</strong>
-          <select data-f="type" aria-label="${i + 1}번 유형"><option value="ox" ${r.type === 'ox' ? 'selected' : ''}>O/X</option><option value="mc" ${r.type === 'mc' ? 'selected' : ''}>4지선다</option></select>
+          <select data-f="type" aria-label="${i + 1}번 유형"><option value="ox" ${r.type === 'ox' ? 'selected' : ''}>O/X</option><option value="mc" ${r.type === 'mc' ? 'selected' : ''}>4지선다</option><option value="sa" ${r.type === 'sa' ? 'selected' : ''}>단답형</option></select>
           <button class="btn small ghost" data-f="del">빼기</button>
         </div>
         <input type="text" data-f="q" value="${esc(r.q)}" placeholder="문제" aria-label="${i + 1}번 문제">
         ${r.type === 'mc' ? `<div class="ed-choices">${r.choices.map((c, k) => `<label class="ed-choice"><span>${'①②③④'[k]}</span><input type="text" data-f="c${k}" value="${esc(c)}" aria-label="${i + 1}번 보기 ${k + 1}"></label>`).join('')}</div>` : ''}
-        <label class="ed-answer">정답
+        ${r.type === 'sa' ? `<div class="ed-sa">
+          <label class="ed-answer">정답 <input type="text" data-f="answer" value="${esc(r.answer || '')}" placeholder="예: 봉오동 전투" aria-label="${i + 1}번 정답"></label>
+          <label class="ed-answer">함께 맞다고 할 답 <input type="text" data-f="alt" value="${esc(r.alt || '')}" placeholder="쉼표로 나눠요. 예: 봉오동" aria-label="${i + 1}번 다른 정답"></label>
+          <p class="hint">띄어쓰기와 가운뎃점(·)은 달라도 맞다고 봐요.${C.saHint !== false && r.answer ? ` 학생 힌트: ${esc(G.choHint(r.answer))}` : ''}</p>
+        </div>` : `<label class="ed-answer">정답
           <select data-f="answer">
             ${r.type === 'ox'
               ? ['O', 'X'].map(v => `<option value="${v}" ${r.answer === v ? 'selected' : ''}>${v}</option>`).join('')
               : [0, 1, 2, 3].map(k => `<option value="${k}" ${r.answer === k ? 'selected' : ''}>${'①②③④'[k]}</option>`).join('')}
             ${r.answer == null ? '<option value="" selected>고르기</option>' : ''}
           </select>
-        </label>
+        </label>`}
         ${r.error ? `<p class="err">${esc(r.error)}</p>` : ''}
       </div>`).join('');
     $$('#edRows .ed-row').forEach(rowEl => {
@@ -267,14 +271,15 @@
           const r = edRows[i];
           if (f === 'type') { r.type = inp.value; r.answer = null; G.validateRow(r); renderEdRows(); return; }
           if (f === 'q') r.q = inp.value;
-          else if (f === 'answer') r.answer = inp.value === '' ? null : (r.type === 'ox' ? inp.value : +inp.value);
+          else if (f === 'answer') r.answer = inp.value === '' ? null : (r.type === 'mc' ? +inp.value : inp.value);
+          else if (f === 'alt') r.alt = inp.value;
           else if (/^c\d$/.test(f)) r.choices[+f[1]] = inp.value;
           G.validateRow(r);
           rowEl.classList.toggle('has-err', !!r.error);
           const errEl = rowEl.querySelector('.err');
           if (r.error) { if (errEl) errEl.textContent = r.error; else rowEl.insertAdjacentHTML('beforeend', `<p class="err">${esc(r.error)}</p>`); }
           else if (errEl) errEl.remove();
-          if (f === 'answer') renderEdRows();
+          if (f === 'answer' && r.type !== 'sa') renderEdRows();
         });
       });
     });
@@ -1054,7 +1059,9 @@
     const worst = rated.length ? rated.reduce((a, b) => (b.rate < a.rate ? b : a)) : null;
     $('#reviewList').innerHTML = (questions || []).map((q, i) => {
       const st = stats[i];
-      const body = q.type === 'ox'
+      const body = q.type === 'sa'
+        ? `<div class="rv-sa"><span class="rv-sa-hint">힌트 ${esc(G.choHint(q.answer))}</span><span class="rv-sa-answer">${esc(q.answer)}</span></div>`
+        : q.type === 'ox'
         ? `<div class="rv-ox"><span class="ox o" data-correct="${q.answer === 'O'}">O</span><span class="ox x" data-correct="${q.answer === 'X'}">X</span></div>`
         : `<ol class="rv-choices">${q.choices.map((c, k) => `<li data-correct="${q.answer === k}"><b>${'①②③④'[k]}</b> ${esc(c)}</li>`).join('')}</ol>`;
       return `<article class="rv-card ${worst && worst.i === i ? 'worst' : ''}">

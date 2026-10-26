@@ -113,20 +113,39 @@
 
   function answerText(q) {
     if (q.type === 'ox') return q.answer;
+    if (q.type === 'sa') return q.answer;
     return '①②③④'[q.answer] + ' ' + q.choices[q.answer];
+  }
+
+  // ---------- 단답형 채점 ----------
+  // 띄어쓰기·가운뎃점·기호는 무시합니다 (예: "3.1운동" = "3·1 운동")
+  function normalizeAnswer(s) {
+    return String(s || '').toLowerCase().replace(/[\s.,·•ㆍ\-_'"「」『』()!?~]/g, '');
+  }
+  function checkShort(q, typed) {
+    const t = normalizeAnswer(typed);
+    if (!t) return false;
+    return [q.answer].concat(q.alt || []).some(a => normalizeAnswer(a) === t);
+  }
+  // 초성 힌트: "봉오동 전투" → "ㅂㅇㄷ ㅈㅌ"
+  const CHO = 'ㄱㄲㄴㄷㄸㄹㅁㅂㅃㅅㅆㅇㅈㅉㅊㅋㅌㅍㅎ';
+  function choHint(s) {
+    return String(s || '').replace(/[가-힣]/g, ch => CHO[Math.floor((ch.charCodeAt(0) - 0xAC00) / 588)]);
   }
 
   // ---------- 엑셀·구글 시트 붙여넣기 ----------
   const TEMPLATE = [
     ['유형', '문제', '보기1', '보기2', '보기3', '보기4', '정답'],
     ['OX', '물산 장려 운동은 우리 기업이 만든 물건을 쓰자는 운동이었다.', '', '', '', '', 'O'],
-    ['4지선다', '1927년 민족주의 세력과 사회주의 세력이 함께 만든 단체는?', '신민회', '독립 협회', '신간회', '의열단', '3']
+    ['4지선다', '1927년 민족주의 세력과 사회주의 세력이 함께 만든 단체는?', '신민회', '독립 협회', '신간회', '의열단', '3'],
+    ['단답형', '한글 맞춤법 통일안을 만든 단체 이름은? (보기 칸에는 함께 맞다고 할 답을 적어요)', '조선어학회', '', '', '', '조선어 학회']
   ].map(r => r.join('\t')).join('\n');
 
   function parseType(raw) {
     const s = String(raw || '').replace(/\s/g, '').toLowerCase();
     if (/^(ox|o\/x|o·x|오엑스|ㅇㅌ)$/.test(s)) return 'ox';
     if (/4|사지|선다|객관/.test(s)) return 'mc';
+    if (/단답|주관|입력|서술|빈칸/.test(s)) return 'sa';
     return null;
   }
   function parseOX(raw) {
@@ -161,14 +180,17 @@
     const q = cells[1] || '';
     const choices = [cells[2] || '', cells[3] || '', cells[4] || '', cells[5] || ''];
     const row = { type: type || 'mc', q, choices, answer: null, error: null };
-    if (!type) row.error = '유형은 OX 또는 4지선다로 적어 주세요.';
+    if (!type) row.error = '유형은 OX, 4지선다, 단답형 중 하나로 적어 주세요.';
     if (type === 'ox') row.answer = parseOX(cells[6]);
     if (type === 'mc') row.answer = parseMC(cells[6], choices);
+    if (type === 'sa') { row.answer = (cells[6] || '').trim() || null; row.choices = ['', '', '', '']; row.alt = choices.filter(c => c.trim()).join(', '); }
     return validateRow(row);
   }
   function validateRow(row) {
     row.error = null;
     if (!row.q.trim()) row.error = '문제가 비어 있어요.';
+    else if (row.type === 'sa' && !String(row.answer || '').trim()) row.error = '단답형 정답을 적어 주세요.';
+    else if (row.type === 'sa') return row;
     else if (row.type === 'mc' && row.choices.some(c => !String(c).trim())) row.error = '보기 4개를 모두 채워 주세요.';
     else if (row.type === 'ox' && !['O', 'X'].includes(row.answer)) row.error = '정답은 O 또는 X로 적어 주세요.';
     else if (row.type === 'mc' && !(typeof row.answer === 'number' && row.answer >= 0 && row.answer <= 3)) row.error = '정답은 1~4 중 하나로 적어 주세요.';
@@ -176,6 +198,10 @@
   }
   function cleanQuestion(row) {
     if (row.type === 'ox') return { type: 'ox', q: row.q.trim(), answer: row.answer };
+    if (row.type === 'sa') {
+      const alt = (Array.isArray(row.alt) ? row.alt : String(row.alt || '').split(',')).map(a => String(a).trim()).filter(Boolean);
+      return alt.length ? { type: 'sa', q: row.q.trim(), answer: String(row.answer).trim(), alt } : { type: 'sa', q: row.q.trim(), answer: String(row.answer).trim() };
+    }
     return { type: 'mc', q: row.q.trim(), choices: row.choices.map(c => String(c).trim()), answer: row.answer };
   }
 
@@ -219,7 +245,7 @@
     bannedWordIn, normalizeNick,
     ITEMS, ERAS, era, shuffle, nextOrder, rollGoodItem, rollBadItem, ranking, attackTarget,
     accuracy, sceneIndex, questionStats, answerText, TEMPLATE, parseSheet, validateRow,
-    cleanQuestion, SAMPLE_7B,
-    timeLimit: q => (q.type === 'ox' ? C.timeLimit.ox : C.timeLimit.mc) * 1000
+    cleanQuestion, SAMPLE_7B, checkShort, choHint,
+    timeLimit: q => (q.type === 'ox' ? C.timeLimit.ox : q.type === 'sa' ? (C.timeLimit.sa || 40) : C.timeLimit.mc) * 1000
   };
 })();
