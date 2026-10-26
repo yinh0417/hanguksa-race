@@ -645,3 +645,63 @@
 .rv-sa-hint { color: var(--ink-48); letter-spacing: .1em; }
 .rv-sa-answer { visibility: hidden; font-weight: 700; color: var(--green); border: 1px solid var(--line); border-radius: 11px; padding: .2em .6em; }
 .show-answer .rv-sa-answer { visibility: visible; }
+
+/* 새 아이템 효과: 천리마 부스터(불꽃 꼬리), 도깨비 부적(무지개 빛), 마름쇠·비격진천뢰(맞음) */
+.fx-flame, .fx-aura { position: absolute; display: none; pointer-events: none; }
+.fx-flame {
+  right: 88%; top: 22%; width: 120%; height: 56%; z-index: -1; border-radius: 50% 0 0 50%;
+  background: radial-gradient(ellipse at 100% 50%, #fff6c2 0 18%, #ffd23f 30%, #ff7a1a 55%, rgba(255,59,48,.55) 75%, transparent 78%);
+  filter: blur(1px); transform-origin: 100% 50%; animation: flame .12s infinite alternate;
+}
+.turbo .fx-flame { display: block; }
+.turbo .car-svg { filter: drop-shadow(0 0 6px #ff9f0a); }
+@keyframes flame { from { transform: scaleX(.85) scaleY(.92); opacity: .85; } to { transform: scaleX(1.12) scaleY(1.05); opacity: 1; } }
+.fx-aura {
+  inset: -24% -12%; border-radius: 50%; z-index: -1;
+  background: conic-gradient(from 0deg, #ff3b30, #ff9f0a, #ffd60a, #34c759, #0a84ff, #bf5af2, #ff3b30);
+  filter: blur(8px); opacity: .85; animation: aura 1s linear infinite;
+}
+.guarded .fx-aura { display: block; }
+.guarded .car-svg { animation: twinkle .5s infinite alternate; }
+@keyframes aura { to { transform: rotate(360deg); } }
+@keyframes twinkle { to { filter: brightness(1.35) drop-shadow(0 0 6px #fff); } }
+.fx-float.fx-turbo { background: #ff9f0a; color: #fff; }
+.fx-float.fx-star { background: linear-gradient(90deg, #ff3b30, #ffd60a, #34c759, #0a84ff, #bf5af2); color: #fff; }
+.fx-float.fx-caltrop, .fx-float.fx-thunder { background: #ffe9e7; color: var(--red); }
+
+/* 레이스 배경: 단원 장면이 화면 가득, 문제를 풀 때마다 다음 장면으로 */
+.circuit { background: #1d1d1f; }
+.race-bg { position: absolute; inset: 0; overflow: hidden; }
+.bg-layer { position: absolute; inset: 0; opacity: 0; transition: opacity .9s ease; }
+.bg-layer.on { opacity: 1; }
+.bg-layer .scene-svg { display: block; width: 100%; height: 100%; transform-origin: 50% 70%; }
+.bg-layer.kb .scene-svg { animation: kenburns 9s ease-out forwards; }
+@keyframes kenburns { from { transform: scale(1.02); } to { transform: scale(1.12); } }
+.bg-shade { position: absolute; inset: 0; pointer-events: none;
+  background: radial-gradient(ellipse at 50% 50%, rgba(0,0,0,0) 45%, rgba(0,0,0,.35) 100%), rgba(0,0,0,.12); }
+.bg-caption {
+  position: absolute; left: 16px; bottom: 14px; z-index: 1; margin: 0; pointer-events: none;
+  display: flex; align-items: center; gap: 10px; max-width: 60%;
+  font: 700 clamp(18px, 3.2vh, 34px)/1.2 var(--font-body); color: #fff; letter-spacing: -0.02em;
+  background: rgba(0,0,0,.55); backdrop-filter: blur(6px); border-radius: 14px; padding: 8px 16px 8px 10px;
+}
+.bg-caption b { display: inline-grid; place-items: center; width: 1.5em; height: 1.5em; border-radius: 50%; background: #ffd60a; color: #1d1d1f; font-size: .8em; }
+.bg-caption.pop { animation: cap-in .6s ease-out; }
+@keyframes cap-in { from { transform: translateY(16px); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) {
+  .bg-layer { transition-duration: .9s !important; }
+  .bg-layer.kb .scene-svg { animation-duration: 9s !important; }
+  .bg-caption.pop { animation-duration: .6s !important; }
+  .fx-flame { animation-duration: .12s !important; animation-iteration-count: infinite !important; }
+  .fx-aura { animation-duration: 1s !important; animation-iteration-count: infinite !important; }
+}
+.fx-hit { position: absolute; display: none; left: 50%; top: -70%; transform: translateX(-50%); font-size: calc(var(--car-w) * .45); pointer-events: none; z-index: 3; }
+.spiked .fx-hit { display: block; animation: hit-bob .4s infinite alternate; }
+.spiked .car-svg { animation: shake-car .25s infinite; filter: grayscale(.5) brightness(.85); }
+@keyframes hit-bob { to { transform: translate(-50%, -12%); } }
+@keyframes shake-car { 25% { transform: translateX(-3%); } 75% { transform: translateX(3%); } }
+.bg-caption { bottom: auto; top: 12px; }
+@media (prefers-reduced-motion: reduce) {
+  .spiked .fx-hit { animation-duration: .4s !important; animation-iteration-count: infinite !important; }
+  .spiked .car-svg { animation-duration: .25s !important; animation-iteration-count: infinite !important; }
+}

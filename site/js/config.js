@@ -54,6 +54,10 @@ window.APP_CONFIG = {
     shield:    { kind: "self",   icon: "🛡️", name: "거북선 방패", desc: "친구의 공격을 1번 막아요" },
     balloon:   { kind: "attack", icon: "💦", name: "물풍선",      desc: "바로 앞 친구를 3초 멈춰요" },
     lightning: { kind: "attack", icon: "🚀", name: "신기전",      desc: "1위를 3초 멈춰요" },
+    turbo:     { kind: "use",    icon: "🔥", name: "천리마 부스터", desc: "3초 동안 저절로 3칸 질주" },
+    star:      { kind: "use",    icon: "✨", name: "도깨비 부적", desc: "8초 동안 공격도 벌칙도 안 받아요" },
+    caltrop:   { kind: "attack", icon: "✳️", name: "마름쇠",      desc: "바로 뒤 친구를 3초 멈춰요" },
+    thunder:   { kind: "attack", icon: "💥", name: "비격진천뢰", desc: "나보다 앞선 친구 모두 2초 멈춰요" },
     fuel:      { kind: "bad",    icon: "🛢️", name: "오염 연료",   desc: "3초 동안 멈춰요" },
     ink:       { kind: "bad",    icon: "🖌️", name: "먹물",        desc: "3초 동안 문제가 가려져요" }
   }

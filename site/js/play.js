@@ -4,6 +4,7 @@
   const $ = s => document.querySelector(s);
   const $$ = s => Array.from(document.querySelectorAll(s));
   const CIRCLED = '①②③④';
+  const HIT_TYPES = ['balloon', 'lightning', 'caltrop', 'thunder']; // 친구가 던져서 맞는 아이템
 
   let room = null, uid = null, meta = null, questions = [], players = {}, states = {}, myP = null;
   let metaLoaded = false, playersLoaded = false, statesLoaded = false;
@@ -339,7 +340,7 @@
       const r = myRank();
       move(1, now);
       let sub = '앞으로 1칸';
-      if (!me.finishedAt) sub = applyItem(G.rollGoodItem(r.rank, r.n, { holdingAttack: !!me.hold, hasShield: !!me.shield }), now);
+      if (!me.finishedAt) sub = applyItem(G.rollGoodItem(r.rank, r.n, { holding: !!me.hold, hasShield: !!me.shield }), now);
       save();
       btn.classList.add('right');
       flash('good', '정답!', sub);
@@ -350,12 +351,22 @@
       st.w++;
       me.openQ = null;
       me.wrong++;
+      lastWrongAnswer = q.type !== 'mc' ? q.answer : CIRCLED[cur.order.indexOf(q.answer)] + ' ' + q.choices[q.answer];
+      if (now < (me.guardUntil || 0)) {
+        // 도깨비 부적: 벌칙 없이 정답만 보여 주고 넘어가요
+        save();
+        btn.classList.add('wrong');
+        flash('good', `${C.items.star.icon} 부적이 벌칙을 막았어요`, '정답은 ' + lastWrongAnswer);
+        phase = 'feedback';
+        phaseUntil = now + 1500;
+        updateStatus(true);
+        return;
+      }
       const bad = G.rollBadItem();
       const until = now + C.penaltySeconds * 1000;
       if (bad === 'fuel') me.frozenUntil = Math.max(me.frozenUntil || 0, until);
       else me.blindUntil = Math.max(me.blindUntil || 0, until);
       me.fx = { type: bad, at: now };
-      lastWrongAnswer = q.type !== 'mc' ? q.answer : CIRCLED[cur.order.indexOf(q.answer)] + ' ' + q.choices[q.answer];
       save();
       btn.classList.add('wrong');
       phase = 'penalty';
@@ -385,17 +396,21 @@
         DB.remove(`rooms/${room}/hits/${uid}/${k}`);
         if (me.finishedAt || phase === 'over') return;
         const now = DB.now();
-        const it = C.items[h.type] || C.items.balloon;
-        if (me.shield) {
+        const type = HIT_TYPES.includes(h.type) ? h.type : 'balloon';
+        const it = C.items[type] || C.items.balloon;
+        if (now < (me.guardUntil || 0)) {
+          me.fx = { type: 'block', at: now };
+          flash('good', `${C.items.star.icon} 부적 덕분에 끄떡없어요!`, `${h.nick || '친구'}의 ${it.name}`);
+        } else if (me.shield) {
           me.shield = false;
           me.fx = { type: 'block', at: now };
           flash('good', `${C.items.shield.icon} 방패로 막았어요!`, `${h.nick || '친구'}의 ${it.name}`);
         } else {
           const before = Math.max(now, blockedUntil());
-          me.frozenUntil = Math.max(me.frozenUntil || 0, now) + C.hitSeconds * 1000;
+          me.frozenUntil = Math.max(me.frozenUntil || 0, now) + (type === 'thunder' ? 2 : C.hitSeconds) * 1000;
           const added = Math.max(0, blockedUntil() - before);
           if (phase === 'question' && cur) cur.deadline += added;
-          me.fx = { type: h.type === 'lightning' ? 'lightning' : 'balloon', at: now, by: h.nick || '친구' };
+          me.fx = { type, at: now, by: h.nick || '친구' };
         }
         save();
         renderItem();
@@ -405,17 +420,39 @@
 
   $('#itemBtn').addEventListener('click', async () => {
     if (!me || !me.hold || phase === 'over' || phase === 'done' || phase === 'idle') return;
+    const type = me.hold, it = C.items[type], now = DB.now();
+    if (type === 'turbo') {
+      // 천리마 부스터: 3초 동안 1초마다 1칸씩, 모두 3칸 저절로 달려요
+      me.hold = null;
+      me.turboLeft = 3;
+      me.turboNext = now + 250;
+      me.turboUntil = now + 3250;
+      me.fx = { type: 'turbo', at: now };
+      save();
+      renderItem();
+      flash('good', `${it.icon} ${it.name}!`, '3초 동안 3칸 질주해요');
+      return;
+    }
+    if (type === 'star') {
+      me.hold = null;
+      me.guardUntil = now + 8000;
+      me.fx = { type: 'star', at: now };
+      save();
+      renderItem();
+      flash('good', `${it.icon} ${it.name}!`, '8초 동안 무적이에요');
+      return;
+    }
     const r = myRank();
-    const target = G.attackTarget(me.hold, uid, r.ranked);
-    if (!target) { toast('지금은 맞힐 친구가 없어요. 조금 뒤에 다시 눌러 보세요.'); return; }
-    const type = me.hold, it = C.items[type];
+    const found = G.attackTarget(type, uid, r.ranked);
+    const targets = Array.isArray(found) ? found : found ? [found] : [];
+    if (!targets.length) { toast(type === 'caltrop' ? '지금은 뒤에 친구가 없어요. 조금 뒤에 다시 눌러 보세요.' : '지금은 맞힐 친구가 없어요. 조금 뒤에 다시 눌러 보세요.'); return; }
     me.hold = null;
-    me.fx = { type: 'throw', at: DB.now(), item: type };
+    me.fx = { type: 'throw', at: now, item: type };
     save();
     renderItem();
     try {
-      await DB.push(`rooms/${room}/hits/${target.uid}`, { type, from: uid, nick: myP.nick, at: DB.now() });
-      flash('good', `${it.icon} ${it.name} 발사!`, `${target.nick}에게 날아갔어요`);
+      await Promise.all(targets.map(t => DB.push(`rooms/${room}/hits/${t.uid}`, { type, from: uid, nick: myP.nick, at: DB.now() })));
+      flash('good', `${it.icon} ${it.name} 발사!`, targets.length > 1 ? `앞선 친구 ${targets.length}명에게 쾅!` : `${targets[0].nick}에게 날아갔어요`);
     } catch (e) { console.warn(e); }
   });
 
@@ -427,8 +464,20 @@
       btn.dataset.item = me.hold;
       btn.classList.remove('hidden');
     } else btn.classList.add('hidden');
-    $('#shieldMark').classList.toggle('hidden', !(me && me.shield));
-    $('#shieldMark').textContent = `${C.items.shield.icon} ${C.items.shield.name} 있음`;
+    renderMarks();
+  }
+  // 지금 걸려 있는 내 효과: 부적(무적), 부스터 질주, 방패
+  let lastMarks = '';
+  function renderMarks() {
+    const now = DB.now(), marks = [];
+    if (me && now < (me.guardUntil || 0)) marks.push(`${C.items.star.icon} 무적 ${Math.ceil((me.guardUntil - now) / 1000)}초`);
+    if (me && me.turboLeft > 0) marks.push(`${C.items.turbo.icon} 질주 중 (${me.turboLeft}칸 남음)`);
+    if (me && me.shield) marks.push(`${C.items.shield.icon} ${C.items.shield.name} 있음`);
+    const text = marks.join(' · ');
+    if (text === lastMarks) return;
+    lastMarks = text;
+    $('#shieldMark').classList.toggle('hidden', !text);
+    $('#shieldMark').textContent = text;
   }
 
   let lastStatus = '';
@@ -457,10 +506,10 @@
     const ov = $('#overlay');
     const fx = me.fx || {};
     let kind, icon, title, sub;
-    if ((fx.type === 'balloon' || fx.type === 'lightning') && now < (me.frozenUntil || 0)) {
+    if (HIT_TYPES.includes(fx.type) && now < (me.frozenUntil || 0)) {
       const it = C.items[fx.type];
       kind = 'hit'; icon = it.icon;
-      title = `${fx.by || '친구'}의 ${it.name}에 ${fx.type === 'balloon' ? '갇혔어요' : '맞았어요'}!`;
+      title = `${fx.by || '친구'}의 ${it.name}에 ${fx.type === 'balloon' ? '갇혔어요' : fx.type === 'caltrop' ? '바퀴가 찔렸어요' : '맞았어요'}!`;
       sub = '조금만 기다리면 풀려요';
     } else if (now < (me.blindUntil || 0)) {
       kind = 'ink'; icon = C.items.ink.icon; title = `${C.items.ink.name}! 앞이 안 보여요`; sub = '정답은 ' + lastWrongAnswer;
@@ -521,6 +570,22 @@
     if (meta.status === 'finished' || (meta.endAt && now >= meta.endAt)) { endRace(); return; }
     $('#stTime').textContent = fmt(meta.endAt - now);
     if (phase === 'done') return;
+
+    // 천리마 부스터: 문제를 푸는 동안에도 차가 저절로 달려요(맞아서 멈추면 그동안은 쉬어요)
+    if (me.turboLeft > 0 && now >= (me.turboNext || 0) && !me.finishedAt) {
+      if (now < (me.frozenUntil || 0)) me.turboNext = me.frozenUntil;
+      else {
+        me.turboLeft--;
+        me.turboNext = now + 1000;
+        me.turboUntil = Math.max(me.turboUntil || 0, me.turboLeft ? now + 1100 : now + 600);
+        move(1, now);
+        save();
+        updateStatus(true);
+        if (me.finishedAt) { me.fx = { type: 'finish', at: now }; save(); finished(); return; }
+      }
+    }
+
+    renderMarks();
 
     const block = blockedUntil();
     if (now < block) showOverlay(now, block); else hideOverlay();

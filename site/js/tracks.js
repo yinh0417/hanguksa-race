@@ -151,18 +151,19 @@
     // 진행 비율(0~1)을 길 위 거리로: 한 줄 코스는 출발 대기 자리(startS) 다음부터 셉니다
     g.startS = 0;
     g.sAt = f => (g.closed ? f * g.P : g.startS + f * (g.P - g.startS - 1));
-    g.svg = k => drawTrack(g, W, H, rect, k);
+    g.svg = (k, opts) => drawTrack(g, W, H, rect, k, opts || {});
     return g;
   }
 
-  function drawTrack(g, W, H, rect, k) {
+  // opts.bare: 잔디·장식 없이 길만 그려요(뒤에 장면 그림을 크게 깔 때)
+  function drawTrack(g, W, H, rect, k, opts) {
     const th = g.theme, TW = g.TW, p = g.path, P = g.P;
     const r = rng(g.type.length * 977 + Math.round(W) + Math.round(H));
     let s = `<defs>
         <pattern id="bgp" width="80" height="80" patternUnits="userSpaceOnUse"><rect width="80" height="80" fill="${th.bg[0]}"/><rect width="40" height="80" fill="${th.bg[1]}"/></pattern>
         <pattern id="checker" width="8" height="8" patternUnits="userSpaceOnUse"><rect width="8" height="8" fill="#fff"/><rect width="4" height="4" fill="#1d1d1f"/><rect x="4" y="4" width="4" height="4" fill="#1d1d1f"/></pattern>
-      </defs><rect width="${W}" height="${H}" fill="url(#bgp)"/>`;
-    if (th.sea) {
+      </defs>${opts.bare ? "" : `<rect width="${W}" height="${H}" fill="url(#bgp)"/>`}`;
+    if (th.sea && !opts.bare) {
       const y0 = rect.y + rect.h * 0.8;
       let wave = `M0 ${y0}`;
       for (let x = 0; x <= W + 40; x += 40) wave += ` Q${x + 20} ${y0 - 10} ${x + 40} ${y0}`;
@@ -170,7 +171,7 @@
       for (let i = 0; i < 6; i++) s += `<path d="M${(W * (i + 0.3) / 6).toFixed(0)} ${(y0 + 26 + (i % 2) * 14).toFixed(0)} q14 -8 28 0" stroke="#fff" stroke-width="2" fill="none" opacity=".6"/>`;
     }
     // 장식: 길에서 떨어진 곳에만
-    if (th.deco) {
+    if (th.deco && !opts.bare) {
       for (let i = 0, placed = 0; i < 160 && placed < 34; i++) {
         const x = rect.x + r() * rect.w, y = rect.y + r() * rect.h;
         if (th.sea && y > rect.y + rect.h * 0.78) continue;

@@ -41,13 +41,18 @@
     return table[table.length - 1][0];
   }
 
-  // 정답을 맞혔을 때 받는 좋은 아이템. 뒤쪽 절반일수록 강한 아이템이 잘 나옵니다.
+  // 정답을 맞혔을 때 받는 좋은 아이템. 뒤쪽 절반일수록 강한 아이템이 잘 나옵니다(마리오카트처럼).
+  // self = 바로 효과, use·attack = 손에 들고 있다가 버튼을 눌러 씀(한 번에 하나만)
+  const AHEAD_ATTACKS = ['balloon', 'lightning', 'thunder'];
   function rollGoodItem(rank, n, opts) {
     const lower = n > 1 && (rank - 1) / (n - 1) >= 0.5;
     let table = lower
-      ? [['boost2', 40], ['balloon', 25], ['lightning', 20], ['boost1', 15]]
-      : [['boost1', 50], ['shield', 30], ['balloon', 20]];
-    if (opts.holdingAttack || rank === 1 || n < 2) table = table.filter(([k]) => ITEMS[k].kind === 'self');
+      ? [['turbo', 22], ['boost2', 18], ['balloon', 14], ['lightning', 10], ['thunder', 8], ['star', 12], ['boost1', 16]]
+      : [['boost1', 34], ['shield', 20], ['caltrop', 20], ['balloon', 10], ['star', 8], ['turbo', 8]];
+    table = table.filter(([k]) => ITEMS[k]);
+    if (opts.holding) table = table.filter(([k]) => ITEMS[k].kind === 'self');
+    if (n < 2) table = table.filter(([k]) => ITEMS[k].kind !== 'attack');
+    if (rank === 1) table = table.filter(([k]) => !AHEAD_ATTACKS.includes(k));
     if (opts.hasShield) table = table.filter(([k]) => k !== 'shield');
     if (!table.length) table = [['boost1', 1]];
     return pick(table);
@@ -92,6 +97,8 @@
     const me = ranked.find(r => r.uid === myUid);
     const myRank = me ? me.rank : Infinity;
     const ahead = alive.filter(r => r.rank < myRank);
+    if (type === 'thunder') return ahead.length ? ahead : null;      // 앞선 친구 모두
+    if (type === 'caltrop') return alive.find(r => r.rank > myRank) || null; // 바로 뒤 친구
     if (ahead.length) return ahead[ahead.length - 1];
     return alive.find(r => r.rank > myRank) || null;
   }

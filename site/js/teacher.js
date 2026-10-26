@@ -564,7 +564,7 @@
     lastCount = p;
   }
   function onStates() {
-    if (meta && meta.status === 'racing') updateRace();
+    if (meta && meta.status === 'racing') { updateRace(); updateBackdrop(); }
   }
 
   // ---------- 대기실 ----------
@@ -658,15 +658,11 @@
     if (key === raceBuiltFor) return;
     const eraChanged = !raceBuiltFor.startsWith(meta.era + '|');
     raceBuiltFor = key;
-    const e = G.era(meta.era);
-    if (eraChanged) {
-      $('#infield').innerHTML = e.scenes.map((name, k) => `
-        <div class="scene">${A.sceneSVG(e.id, k)}<span class="scene-name">${'①②③④⑤'[k]} ${esc(name)}</span></div>`).join('');
-    }
+    if (eraChanged) updateBackdrop(true);
     $('#lanes').innerHTML = ap.map(p => `
       <div class="racer" data-uid="${p.uid}">
         <span class="tag"><b class="rank-badge"></b>${esc(p.nick)}</span>
-        <div class="car-box">${A.carSVG(p.car)}<span class="fx-bubble"></span><span class="fx-shield">🛡️</span><span class="fx-bolt">⚡</span></div>
+        <div class="car-box"><span class="fx-flame"></span><span class="fx-aura"></span><span class="fx-hit"></span>${A.carSVG(p.car)}<span class="fx-bubble"></span><span class="fx-shield">🛡️</span><span class="fx-bolt">⚡</span></div>
       </div>`).join('');
     lastRankSig = '';
     layoutRace();
@@ -676,33 +672,41 @@
   }
 
   // ---------- 레이스 코스 (코스 5종은 tracks.js) ----------
-  // 게임을 열 때 정해진 코스(meta.track)를 그립니다. 경기장 서킷은 장면을 코스 안쪽에,
-  // 나머지 코스는 장면 5개를 화면 위쪽에 나란히 보여 줍니다.
+  // 게임을 열 때 정해진 코스(meta.track)를 그립니다. 길 뒤에는 단원 장면이 화면 가득 깔려요.
   let geo = null;
   function trackType() { return (meta && meta.track) || 'oval'; }
 
-  // 경기장 서킷 안쪽에 장면 5개: 한 줄(5개)과 두 줄(3개 + 2개) 중 더 크게 보이는 배치
-  function placeInfield(g) {
-    const ri = g.R - g.TW / 2 - 12, gap = 8;
-    let best = { area: 0 };
-    [1, 2].forEach(rows => {
-      const cols = rows === 1 ? 5 : 3;
-      for (let h = ri * 1.9; h > 30; h -= 3) {
-        const half = Math.sqrt(Math.max(0, ri * ri - (h / 2) * (h / 2)));
-        const total = g.L + 2 * half - 12;
-        const pw = (total - gap * (cols - 1)) / cols, ph = (h - gap * (rows - 1)) / rows;
-        if (pw / ph >= 1.45) {
-          if (pw * ph > best.area) best = { area: pw * ph, rows, h, total, pw, ph };
-          break;
-        }
-      }
-    });
-    if (!best.rows) best = { rows: 1, h: 40, total: g.L, pw: g.L / 5, ph: 40 };
-    const el = $('#infield');
-    Object.assign(el.style, { left: (g.cx - best.total / 2) + 'px', top: (g.cy - best.h / 2) + 'px', width: best.total + 'px', height: best.h + 'px', gap: gap + 'px' });
-    el.classList.toggle('two-rows', best.rows === 2);
-    el.style.setProperty('--pw', best.pw + 'px');
-    el.style.setProperty('--ph', best.ph + 'px');
+  // ---------- 배경: 학생들이 문제를 풀 때마다 단원의 주요 장면이 화면 가득 바뀌어요 ----------
+  // 너무 자주 바뀌면 어지러워서 한 장면은 적어도 BG_HOLD 동안 보여 줍니다(①→②→…→⑤→① 차례로).
+  const BG_HOLD = 5000;
+  let bgIdx = -1, bgAt = 0, bgSolved = 0, bgFront = 0, bgRoom = null;
+  function solvedCount() {
+    return Object.values(states || {}).reduce((n, s) => n + ((s && ((s.correct || 0) + (s.wrong || 0))) || 0), 0);
+  }
+  function showBackdrop(k) {
+    const e = G.era(meta.era);
+    const layers = $$('#raceBg .bg-layer');
+    bgFront = 1 - bgFront;
+    const el = layers[bgFront];
+    el.innerHTML = A.sceneSVG(e.id, k);
+    el.classList.remove('kb');
+    void el.offsetWidth; // 천천히 다가가는 움직임을 처음부터 다시
+    el.classList.add('kb');
+    layers.forEach((l, i) => l.classList.toggle('on', i === bgFront));
+    const cap = $('#bgCaption');
+    cap.innerHTML = `<b>${'①②③④⑤'[k]}</b>${esc(e.scenes[k])}`;
+    cap.classList.remove('pop');
+    void cap.offsetWidth;
+    cap.classList.add('pop');
+    bgIdx = k;
+    bgAt = DB.now();
+  }
+  function updateBackdrop(reset) {
+    if (!meta) return;
+    const n = solvedCount();
+    if (reset || bgIdx < 0 || bgRoom !== room) { bgRoom = room; bgSolved = n; showBackdrop(0); return; }
+    if (n < bgSolved) bgSolved = n; // 새 판이 시작됨
+    if (n > bgSolved && DB.now() - bgAt >= BG_HOLD) { bgSolved = n; showBackdrop((bgIdx + 1) % 5); }
   }
 
   function layoutRace() {
@@ -712,16 +716,7 @@
     if (!Wd || !Ht) return;
     const n = Math.max(approvedList().length, 1), k = Math.min(n, 3);
     const type = trackType();
-    let rect = { x: 0, y: 0, w: Wd, h: Ht };
-    const inf = $('#infield');
-    if (type !== 'oval') {
-      const gap = 8, pw = (Wd - 16 - gap * 4) / 5, ph = Math.min(pw / 1.5, Ht * 0.26);
-      Object.assign(inf.style, { left: '8px', top: '8px', width: (Wd - 16) + 'px', height: ph + 'px', gap: gap + 'px' });
-      inf.classList.remove('two-rows');
-      inf.style.setProperty('--pw', pw + 'px');
-      inf.style.setProperty('--ph', ph + 'px');
-      rect = { x: 0, y: ph + 16, w: Wd, h: Ht - ph - 16 };
-    }
+    const rect = { x: 0, y: 0, w: Wd, h: Ht };
     geo = TRACKS.build(type, Wd, Ht, rect);
     geo.k = k;
     const laneW = geo.TW * 0.86 / k;
@@ -732,8 +727,7 @@
     geo.startS = geo.closed ? 0 : Math.min(geo.P * 0.15, (groups - 1) * geo.carW * 0.95 + geo.carW * 0.6);
     const svg = $('#circuitSvg');
     svg.setAttribute('viewBox', `0 0 ${Wd} ${Ht}`);
-    svg.innerHTML = geo.svg(k);
-    if (type === 'oval') placeInfield(geo);
+    svg.innerHTML = geo.svg(k, { bare: true });
     circ.dataset.track = type;
     circ.style.setProperty('--car-w', geo.carW + 'px');
     circ.style.setProperty('--tag-size', Math.max(10, Math.min(carH * 0.3, 18)) + 'px');
@@ -775,6 +769,10 @@
     block: () => C.items.shield.icon + ' 막았다!',
     balloon: () => C.items.balloon.icon + ' 갇혔다!',
     lightning: () => C.items.lightning.icon + ' 맞았다!',
+    turbo: () => C.items.turbo.icon + ' 질주!',
+    star: () => C.items.star.icon + ' 무적!',
+    caltrop: () => C.items.caltrop.icon + ' 펑크!',
+    thunder: () => C.items.thunder.icon + ' 쾅!',
     fuel: () => C.items.fuel.icon,
     ink: () => C.items.ink.icon,
     finish: () => '🏁 완주!'
@@ -794,11 +792,16 @@
       const fx = s.fx || {};
       const age = now - (fx.at || 0);
       racer.classList.toggle('trapped', now < (s.frozenUntil || 0) && (fx.type === 'balloon' || fx.type === 'lightning'));
+      const spiked = now < (s.frozenUntil || 0) && (fx.type === 'caltrop' || fx.type === 'thunder');
+      racer.classList.toggle('spiked', spiked);
+      if (spiked) racer.querySelector('.fx-hit').textContent = C.items[fx.type].icon;
+      racer.classList.toggle('turbo', now < (s.turboUntil || 0));
+      racer.classList.toggle('guarded', now < (s.guardUntil || 0));
       racer.classList.toggle('smoking', now < (s.frozenUntil || 0) && fx.type === 'fuel');
       racer.classList.toggle('inked', now < (s.blindUntil || 0));
       racer.classList.toggle('shielded', !!s.shield);
       racer.classList.toggle('boosting', (fx.type === 'boost1' || fx.type === 'boost2') && age < 900);
-      racer.classList.toggle('struck', fx.type === 'lightning' && age < 800);
+      racer.classList.toggle('struck', (fx.type === 'lightning' || fx.type === 'thunder') && age < 800);
       racer.classList.toggle('done', !!s.finishedAt);
       const r = rankOf[p.uid];
       const badge = racer.querySelector('.rank-badge');
@@ -852,6 +855,7 @@
         if (left > 0 && sec <= 10 && sec !== lastTickSec) { lastTickSec = sec; SOUND.play('tick'); }
       }
       updateRace();
+      updateBackdrop();
       const ap = approvedList();
       const allDone = ap.length > 0 && ap.every(p => states[p.uid] && states[p.uid].finishedAt);
       if (now >= meta.endAt || (now > meta.startAt && allDone)) finishRace();
