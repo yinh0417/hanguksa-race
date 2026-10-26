@@ -163,7 +163,7 @@
         <pattern id="bgp" width="80" height="80" patternUnits="userSpaceOnUse"><rect width="80" height="80" fill="${th.bg[0]}"/><rect width="40" height="80" fill="${th.bg[1]}"/></pattern>
         <pattern id="checker" width="8" height="8" patternUnits="userSpaceOnUse"><rect width="8" height="8" fill="#fff"/><rect width="4" height="4" fill="#1d1d1f"/><rect x="4" y="4" width="4" height="4" fill="#1d1d1f"/></pattern>
       </defs>${opts.bare ? "" : `<rect width="${W}" height="${H}" fill="url(#bgp)"/>`}`;
-    if (th.sea && !opts.bare) {
+    if (th.sea) {
       const y0 = rect.y + rect.h * 0.8;
       let wave = `M0 ${y0}`;
       for (let x = 0; x <= W + 40; x += 40) wave += ` Q${x + 20} ${y0 - 10} ${x + 40} ${y0}`;

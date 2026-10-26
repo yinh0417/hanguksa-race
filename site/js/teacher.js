@@ -693,6 +693,11 @@
     void el.offsetWidth; // 천천히 다가가는 움직임을 처음부터 다시
     el.classList.add('kb');
     layers.forEach((l, i) => l.classList.toggle('on', i === bgFront));
+    const scr = $('#bgScreen');
+    scr.innerHTML = A.sceneSVG(e.id, k);
+    scr.classList.remove('flip');
+    void scr.offsetWidth;
+    scr.classList.add('flip');
     const cap = $('#bgCaption');
     cap.innerHTML = `<b>${'①②③④⑤'[k]}</b>${esc(e.scenes[k])}`;
     cap.classList.remove('pop');
@@ -700,6 +705,22 @@
     cap.classList.add('pop');
     bgIdx = k;
     bgAt = DB.now();
+  }
+  // 경기장 서킷: 코스 안쪽에 대형 전광판을 세우고 장면을 잘리지 않게 크게 보여 줘요
+  // (안쪽 모양 = 양 끝이 반원인 직사각형, 그 안에 들어가는 가장 큰 3:2 화면)
+  function placeScreen(g) {
+    const el = $('#bgScreen');
+    if (!g) { el.classList.add('hidden'); return; }
+    const ri = g.R - g.TW / 2 - 14;
+    let best = null;
+    for (let h = ri * 2; h > 20; h -= 2) {
+      const w = h * 1.5, half = Math.sqrt(Math.max(0, ri * ri - (h / 2) * (h / 2)));
+      if (w / 2 <= g.L / 2 + half) { best = { w, h }; break; }
+    }
+    if (!best) { el.classList.add('hidden'); return; }
+    Object.assign(el.style, { left: (g.cx - best.w / 2) + 'px', top: (g.cy - best.h / 2) + 'px', width: best.w + 'px', height: best.h + 'px' });
+    el.classList.remove('hidden');
+    if (bgIdx >= 0 && !el.innerHTML) el.innerHTML = A.sceneSVG(G.era(meta.era).id, bgIdx);
   }
   function updateBackdrop(reset) {
     if (!meta) return;
@@ -728,6 +749,7 @@
     const svg = $('#circuitSvg');
     svg.setAttribute('viewBox', `0 0 ${Wd} ${Ht}`);
     svg.innerHTML = geo.svg(k, { bare: true });
+    placeScreen(type === 'oval' ? geo : null);
     circ.dataset.track = type;
     circ.style.setProperty('--car-w', geo.carW + 'px');
     circ.style.setProperty('--tag-size', Math.max(10, Math.min(carH * 0.3, 18)) + 'px');

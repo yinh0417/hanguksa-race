@@ -277,6 +277,11 @@
     const q = cur.q;
     $('#qType').textContent = q.type === 'ox' ? 'O/X 문제' : q.type === 'sa' ? '단답형 문제 · 직접 써요' : '4지선다 문제';
     $('#qText').textContent = q.q;
+    // 그림: O/X·단답형은 문제 카드 오른쪽, 4지선다는 선지마다
+    const qPic = q.type === 'mc' ? '' : window.PICS.forQuestion(q);
+    $('#qPic').innerHTML = qPic;
+    $('#qCard').classList.toggle('has-pic', !!qPic);
+    const choicePics = q.type === 'mc' ? window.PICS.forChoices(q.choices) : [];
     const box = $('#answers');
     box.className = 'answers ' + (q.type === 'ox' ? 'is-ox' : q.type === 'sa' ? 'is-sa' : 'is-mc');
     if (q.type === 'sa') {
@@ -299,7 +304,7 @@
     if (q.type === 'ox') {
       box.innerHTML = '<button class="ans ox-o" data-v="O" aria-label="O, 맞다">O</button><button class="ans ox-x" data-v="X" aria-label="X, 틀리다">X</button>';
     } else {
-      box.innerHTML = cur.order.map((k, pos) => `<button class="ans mc mc${pos}" data-v="${k}"><b>${pos + 1}</b><span>${escapeHtml(q.choices[k])}</span></button>`).join('');
+      box.innerHTML = cur.order.map((k, pos) => `<button class="ans mc mc${pos}" data-v="${k}"><b>${pos + 1}</b><span>${escapeHtml(q.choices[k])}</span><i class="ch-pic" aria-hidden="true">${choicePics[k]}</i></button>`).join('');
     }
     box.querySelectorAll('.ans').forEach(b => b.addEventListener('click', () => answer(b.dataset.v, b)));
     updateStatus(true);
@@ -491,6 +496,16 @@
     // 왼쪽 위: 참여 인원 중 지금 몇 등인지
     $('#stPos').textContent = `${r.rank}등 / ${r.n}명`;
     $('#stScene').textContent = `지금 지나는 곳: ${e.scenes[G.sceneIndex(me.pos)]} (${me.pos}/${C.finishCells}칸)`;
+    // 배경: 지금 지나는 곳의 단원 장면을 화면 가득(문제 카드는 그 위에)
+    const key = e.id + G.sceneIndex(me.pos);
+    const bg = $('#stuBg');
+    if (bg.dataset.key !== key) {
+      bg.dataset.key = key;
+      bg.innerHTML = A.sceneSVG(e.id, G.sceneIndex(me.pos));
+      bg.classList.remove('in');
+      void bg.offsetWidth;
+      bg.classList.add('in');
+    }
   }
 
   let flashTimer = null;

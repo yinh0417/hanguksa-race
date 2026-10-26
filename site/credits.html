@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>문제 사진 출처</title>
+<link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" rel="stylesheet">
+<link rel="stylesheet" href="css/common.css">
+<style>
+  body { background: var(--canvas, #fff); color: var(--ink, #1d1d1f); padding: 24px 16px; }
+  main { max-width: 760px; margin: 0 auto; }
+  h1 { font-size: 26px; margin: 0 0 6px; }
+  .lead { color: var(--ink-48, #7a7a7a); margin: 0 0 20px; }
+  ul { list-style: none; padding: 0; margin: 0; display: grid; gap: 14px; }
+  li { display: grid; grid-template-columns: 96px 1fr; gap: 14px; align-items: center; }
+  li img { width: 96px; height: 96px; object-fit: cover; border-radius: 12px; background: #e8e8ed; }
+  li p { margin: 2px 0; }
+  .src { font-size: 14px; color: var(--ink-48, #7a7a7a); word-break: break-all; }
+</style>
+</head>
+<body>
+<main>
+  <h1>문제 사진 출처</h1>
+  <p class="lead">학생 화면의 문제 사진은 위키미디어 공용(Wikimedia Commons)에서 누구나 쓸 수 있는 자료(대부분 저작권 보호 기간이 끝난 퍼블릭 도메인)를 작게 줄여 썼어요. 사진을 못 찾은 낱말에는 대한민국 임시 정부가 쓴 태극기를 보여 줘요.</p>
+  <ul id="list"></ul>
+</main>
+<script src="js/pictures.js"></script>
+<script>
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;" }[c]));
+  const row = p => `<li><img src="${p.src}" alt="${esc(p.note)}">
+    <div><p><b>${esc(p.note)}</b></p>${p.keys.length ? `<p>쓰이는 낱말: ${p.keys.map(esc).join(", ")}</p>` : ""}
+    <p class="src">${esc(p.license)} · <a href="${p.page}" target="_blank" rel="noopener">위키미디어 공용 원본 보기</a></p></div></li>`;
+  document.getElementById("list").innerHTML = [PICS.FALLBACK].concat(PICS.PHOTOS).map(row).join("");
+</script>
+</body>
+</html>
