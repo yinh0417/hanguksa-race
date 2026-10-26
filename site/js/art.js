@@ -1,5 +1,5 @@
 /*
- * 그림: 자동차 8대와 시대별 배경 장면
+ * 그림: 탈것 25종과 시대별 배경 장면
  * 모든 그림은 코드로 그린 평면 그림입니다. 장면 하나를 바꾸려면
  * SCENE_ART의 해당 함수만 고치면 됩니다.
  */
@@ -8,16 +8,34 @@
   const SKIN = '#F2C7A0';
   const W = 300, H = 200, GROUND = 150; // 장면 한 칸의 크기
 
-  // 차 8종: 실제 차 종류의 느낌만 살린 창작 디자인(상표·로고 없음), 운전자도 차마다 다른 동물
+  // 탈것 25종: 실제 종류의 느낌만 살린 창작 디자인(상표·로고·국가 표식 없음), 운전자는 귀여운 동물
+  // 순서를 바꾸면 이미 고른 학생의 차가 달라지니, 새 탈것은 맨 뒤에 붙여 주세요.
   const CARS = [
-    { name: '전기차',   kind: 'ev',     driver: 'rabbit',  body: '#E2412E', stripe: '#FFD9CF' },
-    { name: 'SUV',      kind: 'suv',    driver: 'bear',    body: '#F28C28', stripe: '#FFE6C2' },
-    { name: '스포츠카', kind: 'sport',  driver: 'cat',     body: '#F5C242', stripe: '#FFF6D2' },
-    { name: '고급 세단', kind: 'luxury', driver: 'hamster', body: '#2E9E5B', stripe: '#CDEFD9' },
-    { name: '해치백',   kind: 'hatch',  driver: 'puppy',   body: '#3FB6E8', stripe: '#D8F2FC' },
-    { name: '픽업트럭', kind: 'pickup', driver: 'penguin', body: '#2350B8', stripe: '#CFDBF7' },
-    { name: '박스카',   kind: 'box',    driver: 'panda',   body: '#8A55D6', stripe: '#E6D9F8' },
-    { name: '레트로카', kind: 'retro',  driver: 'chick',   body: '#F07AAE', stripe: '#FDE0EC' }
+    { name: '전기차',   group: '자동차', kind: 'ev',     driver: 'rabbit',  body: '#E2412E', stripe: '#FFD9CF' },
+    { name: 'SUV',      group: '자동차', kind: 'suv',    driver: 'bear',    body: '#F28C28', stripe: '#FFE6C2' },
+    { name: '스포츠카', group: '자동차', kind: 'sport',  driver: 'cat',     body: '#F5C242', stripe: '#FFF6D2' },
+    { name: '고급 세단', group: '자동차', kind: 'luxury', driver: 'hamster', body: '#2E9E5B', stripe: '#CDEFD9' },
+    { name: '해치백',   group: '자동차', kind: 'hatch',  driver: 'puppy',   body: '#3FB6E8', stripe: '#D8F2FC' },
+    { name: '픽업트럭', group: '자동차', kind: 'pickup', driver: 'penguin', body: '#2350B8', stripe: '#CFDBF7' },
+    { name: '박스카',   group: '자동차', kind: 'box',    driver: 'panda',   body: '#8A55D6', stripe: '#E6D9F8' },
+    { name: '레트로카', group: '자동차', kind: 'retro',  driver: 'chick',   body: '#F07AAE', stripe: '#FDE0EC' },
+    { name: '돌바퀴 수레', group: '역사 속 탈것', kind: 'stonecart', driver: 'bear',    body: '#A0703F', stripe: '#E9D2B0' },
+    { name: '가마',       group: '역사 속 탈것', kind: 'gama',      driver: 'cat',     body: '#B3262E', stripe: '#F5C242' },
+    { name: '말마차',     group: '역사 속 탈것', kind: 'carriage',  driver: 'rabbit',  body: '#2C5AA0', stripe: '#F5C242' },
+    { name: '신기전 화차', group: '역사 속 탈것', kind: 'hwacha',    driver: 'penguin', body: '#8B5A2B', stripe: '#E2412E' },
+    { name: '인력거',     group: '역사 속 탈것', kind: 'rickshaw',  driver: 'hamster', body: '#2A2A35', stripe: '#C9A227' },
+    { name: '한성 전차',  group: '역사 속 탈것', kind: 'tram',      driver: 'puppy',   body: '#C9A15A', stripe: '#7A4E2D' },
+    { name: '증기 기관차', group: '역사 속 탈것', kind: 'steam',     driver: 'panda',   body: '#34343F', stripe: '#E2412E' },
+    { name: '경운기',     group: '역사 속 탈것', kind: 'tiller',    driver: 'chick',   body: '#2F7FD1', stripe: '#D8E9FA' },
+    { name: '전차(탱크)', group: '일하는 차·군용 차', kind: 'tank',      driver: 'bear',    body: '#5E6B3A', stripe: '#8E9A5E' },
+    { name: '자주포',     group: '일하는 차·군용 차', kind: 'spg',       driver: 'puppy',   body: '#6E7550', stripe: '#9AA27A' },
+    { name: '군용 지프',  group: '일하는 차·군용 차', kind: 'jeep',      driver: 'cat',     body: '#5B6B33', stripe: '#AEB98A' },
+    { name: '군용 트럭',  group: '일하는 차·군용 차', kind: 'mtruck',    driver: 'panda',   body: '#56632F', stripe: '#A3AD7C' },
+    { name: '구급차',     group: '일하는 차·군용 차', kind: 'ambulance', driver: 'rabbit',  body: '#F4F5F7', stripe: '#E2412E' },
+    { name: '경찰차',     group: '일하는 차·군용 차', kind: 'police',    driver: 'penguin', body: '#1F3B8C', stripe: '#FFFFFF' },
+    { name: '소방차',     group: '일하는 차·군용 차', kind: 'fire',      driver: 'hamster', body: '#D7261E', stripe: '#FFD84A' },
+    { name: '시내버스',   group: '일하는 차·군용 차', kind: 'bus',       driver: 'chick',   body: '#2F9E44', stripe: '#D7F5DF' },
+    { name: '택시',       group: '일하는 차·군용 차', kind: 'taxi',      driver: 'puppy',   body: '#F7A11A', stripe: '#FFF0C8' }
   ];
 
   // 차 모양: 몸체, 창문, 창문 아랫선(운전자가 보이는 높이), 운전자 위치, 바퀴 위치, 앞등 위치
@@ -61,8 +79,66 @@
       body: ['M8 50 C8 44 12 42 16 41 C20 24 36 12 58 12 C80 12 96 24 102 40 C110 41 114 45 114 50 L114 52 C114 55 112 57 109 57 L13 57 C10 57 8 55 8 52 Z'],
       win: ['M28 38 C32 26 42 18 55 17 L56 38 Z', 'M60 38 L60 17 C74 18 84 26 89 38 Z'], belt: 38,
       head: [73, 28, 9.5], wheels: [30, 90], light: 'bigRound', lx: 106, ly: 43
+    },
+    // 일하는 차·군용 차 (extra: 몸체 위에 덧그리는 장식)
+    jeep: {
+      body: ['M6 50 L6 33 C6 30 8 28 11 28 L104 28 C108 28 111 30 112 33 L117 40 L117 51 C117 54 115 56 112 56 L10 56 C8 56 6 54 6 50 Z'],
+      win: ['M76 28 L82 11 L85 11 L79 28 Z'], belt: 28,
+      head: [62, 19, 9.5], wheels: [28, 94], light: 'round', lx: 109, ly: 33,
+      extra: P => `<circle cx="9" cy="40" r="8" fill="#2a2a30"/><circle cx="9" cy="40" r="3.6" fill="#8a8f80"/>` + camo(P, [[40, 40, 9, 4], [70, 46, 7, 3.5], [96, 38, 6, 3]])
+    },
+    mtruck: {
+      body: ['M5 50 L5 18 C5 10 10 6 18 6 L66 6 C73 6 76 10 76 16 L76 50 Z', 'M5 48 L78 48 L78 22 L97 22 C100 22 102 24 103 27 L109 36 C114 37 117 40 117 44 L117 53 C117 55 115 57 113 57 L9 57 C6 57 5 55 5 53 Z'],
+      win: ['M82 35 L82 26 L97 26 C99 26 100 27 101 29 L104 35 Z'], belt: 35,
+      head: [91, 29, 7.5], wheels: [24, 50, 96], light: 'square', lx: 110, ly: 40,
+      extra: P => [20, 36, 52, 66].map(x => `<path d="M${x} 8 V48" stroke="${P.deep}" stroke-width="1.6" opacity=".35"/>`).join('') + `<path d="M8 30 H74" stroke="${P.deep}" stroke-width="1" opacity=".3"/>`
+    },
+    ambulance: {
+      body: ['M7 53 L7 11 C7 8 9 6 12 6 L78 6 L78 18 L96 18 C100 18 102 20 104 24 L111 34 C115 35 117 38 117 42 L117 53 C117 55 115 57 113 57 L11 57 C8 57 7 55 7 53 Z'],
+      win: ['M82 32 L82 22 L97 22 C99 22 100 23 101 25 L105 32 Z', 'M12 22 L12 12 L26 12 L26 22 Z'], belt: 32,
+      head: [91, 26, 7.5], wheels: [28, 96], light: 'square', lx: 110, ly: 38,
+      extra: () => `<rect x="44" y="12" width="7" height="20" rx="1" fill="#E2412E"/><rect x="37.5" y="18.5" width="20" height="7" rx="1" fill="#E2412E"/>` +
+        lightbar(56, 1, 18) + `<text x="66" y="53" font-size="7" font-weight="800" fill="#E2412E" text-anchor="middle" font-family="Pretendard Variable, sans-serif">119 구급</text>`
+    },
+    fire: {
+      body: ['M6 53 L6 18 C6 15 8 13 11 13 L80 13 L80 16 L96 16 C100 16 102 18 104 22 L111 34 C115 35 117 38 117 42 L117 53 C117 55 115 57 113 57 L10 57 C7 57 6 55 6 53 Z'],
+      win: ['M84 32 L84 20 L97 20 C99 20 100 21 101 23 L106 32 Z'], belt: 32,
+      head: [93, 26, 7.5], wheels: [24, 50, 96], light: 'square', lx: 110, ly: 38,
+      extra: P => {
+        let g = `<path d="M14 10 V13 M74 10 V13" stroke="#9ea3b1" stroke-width="2"/><path d="M8 4.5 H84 M8 9.5 H84" stroke="#e3e5ec" stroke-width="1.8" stroke-linecap="round"/>`;
+        for (let x = 12; x <= 82; x += 7) g += `<path d="M${x} 4.5 V9.5" stroke="#e3e5ec" stroke-width="1.2"/>`;
+        g += `<path d="M30 18 V31 M54 18 V31" stroke="${P.deep}" stroke-width="1" opacity=".5"/>`;
+        return g + lightbar(84, 11, 12) + `<text x="42" y="29" font-size="9" font-weight="800" fill="#fff" text-anchor="middle" font-family="Pretendard Variable, sans-serif">119</text>`;
+      }
+    },
+    bus: {
+      body: ['M6 53 L6 10 C6 7 8 5 11 5 L108 5 C113 5 116 9 117 14 L118 50 C118 54 116 57 112 57 L10 57 C7 57 6 55 6 53 Z'],
+      win: ['M11 30 L11 11 L29 11 L29 30 Z', 'M33 30 L33 11 L51 11 L51 30 Z', 'M55 30 L55 11 L73 11 L73 30 Z', 'M77 30 L77 11 L95 11 L95 30 Z', 'M99 30 L99 11 L111 11 C113 11 114 13 114 15 L116 30 Z'], belt: 30,
+      head: [107, 22, 7], wheels: [26, 94], light: 'square', lx: 111, ly: 40,
+      extra: P => driver('bear', 20, 24, 5.5) + driver('cat', 42, 24, 5.5) + driver('rabbit', 64, 25, 5.5) +
+        `<rect x="79" y="33" width="14" height="20" rx="1.5" fill="none" stroke="${P.dark}" stroke-width="1"/><path d="M86 33 V53" stroke="${P.dark}" stroke-width=".8"/>`
     }
   };
+  // 경찰차·택시는 고급 세단 모양에 장식만 더해요
+  SHAPES.police = Object.assign({}, SHAPES.luxury, {
+    extra: P => lightbar(49, 10, 28) + `<rect x="34" y="37" width="54" height="12" rx="3" fill="#fff"/><text x="61" y="46.5" font-size="8.5" font-weight="800" fill="${P.c.body}" text-anchor="middle" font-family="Pretendard Variable, sans-serif">경찰</text>`
+  });
+  SHAPES.taxi = Object.assign({}, SHAPES.luxury, {
+    extra: () => {
+      let g = `<path d="M54 16 L56 8 L70 8 L72 16 Z" fill="#fff" stroke="#c9ccd6" stroke-width=".8"/><text x="63" y="14.5" font-size="5.6" font-weight="800" fill="#22213A" text-anchor="middle" font-family="Pretendard Variable, sans-serif">택시</text>`;
+      for (let x = 30, k = 0; x < 92; x += 4, k++) g += `<rect x="${x}" y="${k % 2 ? 44 : 41}" width="4" height="3" fill="#22213A"/>`;
+      return g;
+    }
+  });
+
+  // 빨강·파랑 경광등
+  function lightbar(x, y, w) {
+    return `<rect x="${x}" y="${y}" width="${w}" height="5.5" rx="2" fill="#ff3b30"/><rect x="${x + w / 2}" y="${y}" width="${w / 2}" height="5.5" rx="2" fill="#0a84ff"/><rect x="${x + 1.5}" y="${y + 1}" width="${w - 3}" height="1.4" rx=".7" fill="#fff" opacity=".6"/>`;
+  }
+  // 얼룩무늬: [x, y, 가로 반지름, 세로 반지름]
+  function camo(P, blobs) {
+    return blobs.map(([x, y, rx, ry], i) => `<ellipse cx="${x}" cy="${y}" rx="${rx}" ry="${ry}" fill="${i % 2 ? P.deep : P.c.stripe}" opacity=".55" transform="rotate(${(i * 23) % 40 - 20} ${x} ${y})"/>`).join('');
+  }
 
   // 귀여운 동물 운전자 (창작 캐릭터)
   function driver(kind, x, y, r) {
@@ -128,22 +204,180 @@
     return g;
   }
 
+  // ---------- 따로 그리는 탈것 (역사 속 탈것, 전차·자주포, 경운기) ----------
+  const f1 = n => (+n).toFixed(1);
+  // 나무 바퀴(바큇살)
+  function spokeWheel(cx, cy, r, rim, n) {
+    let g = `<circle cx="${cx}" cy="${cy}" r="${f1(r * 0.9)}" fill="none" stroke="${rim}" stroke-width="${f1(r * 0.2)}"/>`;
+    for (let a = 0; a < (n || 8); a++) {
+      const t = a * Math.PI * 2 / (n || 8);
+      g += `<path d="M${cx} ${cy} L${f1(cx + Math.cos(t) * r * 0.85)} ${f1(cy + Math.sin(t) * r * 0.85)}" stroke="${rim}" stroke-width="${f1(r * 0.1)}"/>`;
+    }
+    return g + `<circle cx="${cx}" cy="${cy}" r="${f1(r * 0.24)}" fill="${rim}"/><circle cx="${cx}" cy="${cy}" r="${f1(r * 0.1)}" fill="#d9c09a"/>`;
+  }
+  // 돌바퀴
+  function stoneWheel(cx, cy, r) {
+    return `<circle cx="${cx}" cy="${cy}" r="${r}" fill="#8f8b84" stroke="#5c5852" stroke-width="1.6"/>
+      <path d="M${f1(cx - r * 0.65)} ${f1(cy - r * 0.2)} q${f1(r * 0.25)} ${f1(-r * 0.45)} ${f1(r * 0.7)} ${f1(-r * 0.45)}" stroke="#bdb8ae" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+      <circle cx="${f1(cx + r * 0.45)}" cy="${f1(cy + r * 0.4)}" r="1.2" fill="#6e6a63"/><circle cx="${f1(cx - r * 0.35)}" cy="${f1(cy + r * 0.5)}" r="1" fill="#6e6a63"/>
+      <circle cx="${cx}" cy="${cy}" r="${f1(r * 0.28)}" fill="#4a463f"/>`;
+  }
+  // 무한궤도(전차·자주포)
+  function treads(x0, x1) {
+    let g = `<rect x="${x0}" y="46" width="${x1 - x0}" height="20" rx="10" fill="#2f3229" stroke="#1b1d17" stroke-width="1.2"/>`;
+    g += `<path d="M${x0 + 8} 46.8 H${x1 - 8} M${x0 + 8} 65.2 H${x1 - 8}" stroke="#5b5f52" stroke-width="1.6" stroke-dasharray="3 3"/>`;
+    const n = Math.round((x1 - x0 - 12) / 16);
+    for (let i = 0; i <= n; i++) {
+      const cx = f1(x0 + 10 + i * (x1 - x0 - 20) / n);
+      g += `<circle cx="${cx}" cy="56" r="6.5" fill="#4b4f43" stroke="#1b1d17" stroke-width="1"/><circle cx="${cx}" cy="56" r="2" fill="#8a8f80"/>`;
+    }
+    return g;
+  }
+  // 앉아 있는 운전자(몸통 + 얼굴)
+  function seated(c, x, y, r, shirt) {
+    return `<rect x="${f1(x - r * 0.85)}" y="${f1(y + r * 0.6)}" width="${f1(r * 1.7)}" height="${f1(r * 1.5)}" rx="${f1(r * 0.5)}" fill="${shirt}" stroke="rgba(0,0,0,.2)" stroke-width=".7"/>` + driver(c.driver, x, y, r);
+  }
+  // 창문 안에만 운전자가 보이게
+  function inWindow(P, key, rects, inner) {
+    return `<defs><clipPath id="${P.id}${key}">${rects.map(([x, y, w, h]) => `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="2"/>`).join('')}</clipPath></defs>` +
+      rects.map(([x, y, w, h]) => `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="2" fill="url(#${P.id}w)"/>`).join('') +
+      `<g clip-path="url(#${P.id}${key})">${inner}</g>` +
+      rects.map(([x, y, w, h]) => `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="2" fill="url(#${P.id}g)"/>`).join('');
+  }
+  const BODY = P => `fill="url(#${P.id}b)" stroke="${P.dark}" stroke-width="1.1" stroke-linejoin="round"`;
+  const WOOD = '#5a3a1e';
+
+  const SPECIAL = {
+    // 선사 시대: 통나무 판자에 돌바퀴
+    stonecart: P => `
+      <path d="M92 46 L119 54" stroke="#6b4423" stroke-width="3" stroke-linecap="round"/>
+      ${seated(P.c, 54, 17, 9, P.c.stripe)}
+      <rect x="12" y="28" width="82" height="12" rx="2" ${BODY(P)}/>
+      <path d="M30 28 V40 M50 28 V40 M70 28 V40" stroke="${P.dark}" stroke-width="1" opacity=".6"/>
+      <rect x="8" y="40" width="90" height="7" rx="2" fill="${P.deep}"/>
+      ${stoneWheel(32, 54, 12)}${stoneWheel(78, 54, 12)}`,
+    // 조선: 가마꾼 두 사람이 메는 가마
+    gama: P => `
+      <path d="M2 45 H118" stroke="#6b4423" stroke-width="3" stroke-linecap="round"/>
+      ${person(12, 66, { s: 0.72, body: '#f4efe2' })}${person(108, 66, { s: 0.72, body: '#f4efe2' })}
+      <path d="M30 46 L30 18 L90 18 L90 46 Z" ${BODY(P)}/>
+      ${inWindow(P, 'k', [[42, 22, 36, 18]], driver(P.c.driver, 60, 33, 9))}
+      <rect x="42" y="22" width="36" height="18" rx="2" fill="none" stroke="${P.c.stripe}" stroke-width="2"/>
+      <path d="M30 44 H90 M30 21 H90" stroke="${P.c.stripe}" stroke-width="1.6"/>
+      <path d="M18 20 Q28 18 32 12 L88 12 Q92 18 102 20 L102 21.5 Q60 18 18 21.5 Z" fill="#2f2c3a"/>
+      <path d="M40 12 Q60 3 80 12 Z" fill="#2f2c3a"/><circle cx="60" cy="5" r="2.2" fill="${P.c.stripe}"/>`,
+    // 말이 끄는 마차
+    carriage: P => `
+      <path d="M8 46 L8 20 C8 14 12 12 18 12 L62 12 C68 12 70 16 70 20 L70 46 Z" ${BODY(P)}/>
+      ${inWindow(P, 'k', [[16, 18, 42, 16]], driver(P.c.driver, 37, 29, 8.5))}
+      <path d="M6 12 H72" stroke="${P.deep}" stroke-width="3" stroke-linecap="round"/>
+      <path d="M8 38 H70" stroke="${P.c.stripe}" stroke-width="1.8"/>
+      ${spokeWheel(22, 54, 12, WOOD)}${spokeWheel(58, 56, 10, WOOD)}
+      <path d="M68 42 L94 39" stroke="#6b4423" stroke-width="2.2" stroke-linecap="round"/>
+      <path d="M81 34 q-9 2 -10 14" stroke="#3b2414" stroke-width="3" fill="none" stroke-linecap="round"/>
+      <path d="M87 44 L85 64 M93 45 L93 64 M102 45 L104 64 M108 43 L110 64" stroke="#7a4a22" stroke-width="3.2" stroke-linecap="round"/>
+      <path d="M83.5 65 h3.5 M91.5 65 h3.5 M102.5 65 h3.5 M108.5 65 h3.5" stroke="#2b2633" stroke-width="2.2" stroke-linecap="round"/>
+      <ellipse cx="96" cy="38" rx="16" ry="9" fill="#9a6331" stroke="#6b4423" stroke-width="1"/>
+      <path d="M104 34 L109 19 L117 21 L114 30 L109 38 Z" fill="#9a6331" stroke="#6b4423" stroke-width="1" stroke-linejoin="round"/>
+      <ellipse cx="115" cy="23" rx="5.5" ry="3.8" fill="#9a6331" stroke="#6b4423" stroke-width="1" transform="rotate(30 115 23)"/>
+      <path d="M109 18 l1.5 -5 l2.5 5" fill="#9a6331" stroke="#6b4423" stroke-width=".8"/>
+      <path d="M107 18 Q102 25 104 34" stroke="#3b2414" stroke-width="2.6" fill="none" stroke-linecap="round"/>
+      <circle cx="113.5" cy="21" r="1.1" fill="#2b2633"/>
+      <path d="M94 33.5 L104 33" stroke="${P.c.stripe}" stroke-width="1.6"/>`,
+    // 조선 신기전 화차: 바퀴 수레에 로켓 화살 발사틀
+    hwacha: P => {
+      let rockets = '';
+      [23, 30, 37].forEach(y => { rockets += `<path d="M93 ${y} H110" stroke="#e8d9b5" stroke-width="1.6"/><path d="M110 ${y - 2.2} L115.5 ${y} L110 ${y + 2.2} Z" fill="${P.c.stripe}"/>`; });
+      let holes = '';
+      for (let r = 0; r < 3; r++) for (let k = 0; k < 7; k++) holes += `<circle cx="${43 + k * 7.5}" cy="${23 + r * 7}" r="2" fill="#3b2414"/>`;
+      return `
+      <path d="M2 37 L18 42" stroke="#6b4423" stroke-width="3" stroke-linecap="round"/>
+      ${seated(P.c, 22, 21, 8.5, '#f4efe2')}
+      <g transform="rotate(-16 66 34)"><rect x="38" y="17" width="56" height="25" rx="2" ${BODY(P)}/>${holes}${rockets}</g>
+      <rect x="12" y="40" width="86" height="7" rx="2" fill="${P.deep}"/>
+      ${spokeWheel(36, 54, 12, WOOD)}${spokeWheel(82, 54, 12, WOOD)}`;
+    },
+    // 개항기 인력거: 사람이 끄는 바퀴 두 개 수레
+    rickshaw: P => `
+      <path d="M58 46 L100 53" stroke="#3b2414" stroke-width="2.4" stroke-linecap="round"/>
+      ${person(109, 66, { s: 0.6, body: '#f4efe2', arms: 'reach-l', hat: 'gat' })}
+      <path d="M14 40 C12 22 22 8 40 8 L46 8 L44 14 C30 14 24 24 26 40 Z" ${BODY(P)}/>
+      ${seated(P.c, 44, 23, 9, P.c.stripe)}
+      <path d="M20 48 L22 34 L62 34 C66 34 66 38 64 42 L58 48 Z" ${BODY(P)}/>
+      <path d="M22 37 H62" stroke="${P.c.stripe}" stroke-width="1.4"/>
+      ${spokeWheel(38, 50, 16, '#2b2633', 12)}`,
+    // 1899년 한성 전차: 지붕 위 전깃줄 막대
+    tram: P => `
+      <path d="M62 7 L92 -10" stroke="#55565e" stroke-width="1.6" stroke-linecap="round"/><circle cx="92" cy="-10" r="2" fill="#55565e"/>
+      <rect x="4" y="5" width="112" height="7" rx="3" fill="${P.deep}"/>
+      <rect x="8" y="12" width="104" height="42" rx="5" ${BODY(P)}/>
+      ${inWindow(P, 'k', [[14, 17, 18, 16], [36, 17, 18, 16], [58, 17, 18, 16], [80, 17, 18, 16]],
+        driver('bear', 23, 29, 6.5) + driver('cat', 45, 29, 6.5) + driver('rabbit', 67, 30, 6.5) + driver(P.c.driver, 89, 28, 7.5))}
+      <rect x="8" y="38" width="104" height="16" rx="3" fill="${P.c.stripe}"/>
+      <text x="60" y="49.5" font-size="7" font-weight="800" fill="#f5e7c6" text-anchor="middle" font-family="Pretendard Variable, sans-serif">1899</text>
+      <circle cx="112" cy="44" r="2.6" fill="#fffbe6" stroke="${P.dark}" stroke-width=".6"/>
+      <rect x="16" y="54" width="88" height="4" fill="#3a3a40"/>
+      <circle cx="30" cy="58" r="8" fill="#2b2633"/><circle cx="30" cy="58" r="3" fill="#9aa0ae"/>
+      <circle cx="90" cy="58" r="8" fill="#2b2633"/><circle cx="90" cy="58" r="3" fill="#9aa0ae"/>`,
+    // 1899년 경인선 증기 기관차
+    steam: P => {
+      let wheels = '';
+      [24, 54, 84].forEach(cx => { wheels += `<circle cx="${cx}" cy="56" r="10" fill="${P.c.stripe}" stroke="#1d1d22" stroke-width="2"/><circle cx="${cx}" cy="56" r="3" fill="#1d1d22"/>`; });
+      return `
+      <circle cx="99" cy="1" r="5" fill="#fff" opacity=".9"/><circle cx="107" cy="-6" r="6" fill="#fff" opacity=".8"/><circle cx="116" cy="-11" r="4" fill="#fff" opacity=".7"/>
+      <path d="M93 26 L95 10 L91 6 L105 6 L101 10 L103 26 Z" fill="#2b2b33"/>
+      <rect x="40" y="24" width="72" height="24" rx="11" ${BODY(P)}/>
+      <path d="M62 24 V48 M84 24 V48" stroke="${P.c.stripe}" stroke-width="2"/>
+      <path d="M68 24 Q75 13 82 24 Z" fill="#d4a72c" stroke="#9c7a1c" stroke-width=".8"/>
+      <path d="M6 52 L6 12 L3 12 L3 7 L45 7 L45 12 L42 12 L42 52 Z" ${BODY(P)}/>
+      ${inWindow(P, 'k', [[12, 16, 22, 16]], driver(P.c.driver, 23, 28, 8))}
+      <circle cx="112" cy="32" r="3.6" fill="#fffbe6" stroke="#a9adba" stroke-width="1"/>
+      <path d="M104 49 L119 61 L104 61 Z" fill="${P.c.stripe}" stroke="#1d1d22" stroke-width="1"/>
+      <rect x="4" y="47" width="104" height="5" fill="#1d1d22"/>
+      ${wheels}<path d="M24 53 L84 53" stroke="#c9ccd6" stroke-width="2.4" stroke-linecap="round"/>`;
+    },
+    // 새마을 시대의 경운기
+    tiller: P => `
+      <rect x="6" y="30" width="56" height="18" rx="2" fill="#b88a55" stroke="#7a5530" stroke-width="1.1"/>
+      <path d="M6 36 H62 M6 42 H62" stroke="#7a5530" stroke-width=".8" opacity=".6"/>
+      ${seated(P.c, 56, 19, 8.5, P.c.stripe)}
+      <path d="M90 38 L63 26" stroke="#3a3a40" stroke-width="2.6" stroke-linecap="round"/><circle cx="63" cy="26" r="2" fill="#2b2633"/>
+      <path d="M84 26 V10" stroke="#3a3a40" stroke-width="2.6" stroke-linecap="round"/><circle cx="83" cy="5" r="3.5" fill="#cfd2da" opacity=".85"/><circle cx="78" cy="0" r="2.6" fill="#cfd2da" opacity=".7"/>
+      <path d="M62 46 L80 46" stroke="${P.dark}" stroke-width="2.2"/>
+      <rect x="76" y="24" width="32" height="20" rx="4" ${BODY(P)}/>
+      <path d="M102 28 V40 M105 28 V40" stroke="${P.deep}" stroke-width="1.2"/>
+      ${wheel(30, P.id, '#7a5530')}
+      <circle cx="96" cy="52" r="14" fill="#2a2a30"/><circle cx="96" cy="52" r="7.5" fill="${P.c.body}" stroke="#1d1d22" stroke-width="1"/><circle cx="96" cy="52" r="2.4" fill="#1d1d22"/>
+      ${Array.from({ length: 10 }, (_, k) => { const t = k * Math.PI / 5; return `<path d="M${f1(96 + Math.cos(t) * 11)} ${f1(52 + Math.sin(t) * 11)} L${f1(96 + Math.cos(t) * 14.5)} ${f1(52 + Math.sin(t) * 14.5)}" stroke="#55565e" stroke-width="2.4"/>`; }).join('')}`,
+    // 전차(탱크)
+    tank: P => `
+      ${driver(P.c.driver, 56, 10, 8)}
+      ${treads(6, 114)}
+      <path d="M8 46 L14 34 L104 34 L116 44 L116 46 Z" ${BODY(P)}/>
+      <rect x="84" y="23" width="30" height="4.5" rx="1.5" fill="${P.deep}"/><rect x="112" y="21.8" width="6" height="7" rx="1" fill="${P.deep}"/>
+      <path d="M34 34 L38 22 C39 19 42 18 46 18 L76 18 C80 18 83 20 85 24 L88 34 Z" ${BODY(P)}/>
+      <ellipse cx="56" cy="18.5" rx="10" ry="2.4" fill="${P.deep}"/>
+      ${camo(P, [[50, 26, 8, 3.5], [72, 28, 6, 3], [24, 40, 9, 3], [92, 40, 8, 3]])}`,
+    // 자주포: 큰 포탑과 긴 포신
+    spg: P => `
+      ${driver(P.c.driver, 40, 3, 7.5)}
+      ${treads(4, 116)}
+      <path d="M6 46 L10 36 L108 36 L116 44 L116 46 Z" ${BODY(P)}/>
+      <g transform="rotate(-10 90 20)"><rect x="88" y="17.5" width="29" height="5" rx="1.5" fill="${P.deep}"/><rect x="113" y="16" width="6" height="8" rx="1" fill="${P.deep}"/></g>
+      <path d="M22 36 L24 14 C24 11 26 10 29 10 L84 10 C88 10 90 12 91 15 L94 36 Z" ${BODY(P)}/>
+      <ellipse cx="40" cy="10.5" rx="9" ry="2.2" fill="${P.deep}"/>
+      <path d="M28 22 H88" stroke="${P.deep}" stroke-width="1" opacity=".4"/>
+      ${camo(P, [[46, 18, 9, 3.5], [74, 28, 8, 3], [20, 41, 8, 2.6], [100, 41, 7, 2.6]])}`
+  };
+
   // 그림마다 색 id를 따로 둡니다(숨겨진 화면의 그림을 참조하면 색이 사라지는 문제 방지)
   let carUid = 0;
-  // 광택 있는 귀여운 자동차 (오른쪽을 보고 달림)
+  // 광택 있는 귀여운 탈것 (오른쪽을 보고 달림)
   function carSVG(i) {
-    const k = ((i % 8) + 8) % 8, c = CARS[k], id = 'car' + k + '_' + (++carUid), s = SHAPES[c.kind];
+    const n = CARS.length, k = ((i % n) + n) % n, c = CARS[k], id = 'car' + k + '_' + (++carUid);
     const dark = shade(c.body, -0.38), lite = shade(c.body, 0.42), deep = shade(c.body, -0.6);
-    const [hx, hy, hr] = s.head;
-    const lights = {
-      bar: `<path d="M${s.lx} ${s.ly} L${s.lx + 8} ${s.ly + 2}" stroke="#fffbe6" stroke-width="2.4" stroke-linecap="round"/>`,
-      square: `<rect x="${s.lx}" y="${s.ly}" width="7" height="5" rx="1.5" fill="#fffbe6" stroke="${dark}" stroke-width=".6"/>`,
-      slim: `<path d="M${s.lx} ${s.ly} L${s.lx + 8} ${s.ly + 1.5} L${s.lx + 8} ${s.ly + 3.5} L${s.lx} ${s.ly + 2.5} Z" fill="#fffbe6" stroke="${dark}" stroke-width=".5"/>`,
-      round: `<circle cx="${s.lx + 3}" cy="${s.ly + 2}" r="3" fill="#fffbe6" stroke="${dark}" stroke-width=".6"/>`,
-      bigRound: `<circle cx="${s.lx + 2}" cy="${s.ly}" r="4.2" fill="#fffbe6" stroke="#a9adba" stroke-width="1"/>`
-    };
-    const light = `<circle cx="${s.lx + 5}" cy="${s.ly + 2}" r="7" fill="url(#${id}l)"/>` + lights[s.light];
-    return `<svg class="car-svg" viewBox="0 -14 120 86" aria-hidden="true">
+    const P = { c, id, dark, lite, deep };
+    const top = `<svg class="car-svg" viewBox="0 -14 120 86" aria-hidden="true">
       <defs>
         <linearGradient id="${id}b" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${lite}"/><stop offset=".42" stop-color="${c.body}"/><stop offset="1" stop-color="${dark}"/></linearGradient>
         <linearGradient id="${id}w" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#e9f5fc"/><stop offset=".5" stop-color="#b9d9ec"/><stop offset="1" stop-color="#7fa4c0"/></linearGradient>
@@ -153,23 +387,37 @@
         <radialGradient id="${id}r" cx=".35" cy=".3" r=".8"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#c9ccd6"/></radialGradient>
         <radialGradient id="${id}l"><stop offset="0" stop-color="#fffbe0"/><stop offset="1" stop-color="#ffe9a0" stop-opacity="0"/></radialGradient>
       </defs>
-        <clipPath id="${id}c"><rect x="0" y="-30" width="120" height="${s.belt + 30}"/></clipPath>
-      </defs>
-      <ellipse cx="60" cy="65" rx="57" ry="6.5" fill="url(#${id}s)"/>
+      <ellipse cx="60" cy="65" rx="57" ry="6.5" fill="url(#${id}s)"/>`;
+    if (SPECIAL[c.kind]) return top + SPECIAL[c.kind](P) + '</svg>';
+
+    const s = SHAPES[c.kind];
+    const [hx, hy, hr] = s.head;
+    const w0 = s.wheels[0], wN = s.wheels[s.wheels.length - 1];
+    const lights = {
+      bar: `<path d="M${s.lx} ${s.ly} L${s.lx + 8} ${s.ly + 2}" stroke="#fffbe6" stroke-width="2.4" stroke-linecap="round"/>`,
+      square: `<rect x="${s.lx}" y="${s.ly}" width="7" height="5" rx="1.5" fill="#fffbe6" stroke="${dark}" stroke-width=".6"/>`,
+      slim: `<path d="M${s.lx} ${s.ly} L${s.lx + 8} ${s.ly + 1.5} L${s.lx + 8} ${s.ly + 3.5} L${s.lx} ${s.ly + 2.5} Z" fill="#fffbe6" stroke="${dark}" stroke-width=".5"/>`,
+      round: `<circle cx="${s.lx + 3}" cy="${s.ly + 2}" r="3" fill="#fffbe6" stroke="${dark}" stroke-width=".6"/>`,
+      bigRound: `<circle cx="${s.lx + 2}" cy="${s.ly}" r="4.2" fill="#fffbe6" stroke="#a9adba" stroke-width="1"/>`
+    };
+    const light = `<circle cx="${s.lx + 5}" cy="${s.ly + 2}" r="7" fill="url(#${id}l)"/>` + lights[s.light];
+    return top + `
+      <defs><clipPath id="${id}c"><rect x="0" y="-30" width="120" height="${s.belt + 30}"/></clipPath></defs>
       ${s.body.map(d => `<path d="${d}" fill="url(#${id}b)" stroke="${dark}" stroke-width="1.1" stroke-linejoin="round"/>`).join('')}
       ${s.rails ? `<path d="${s.rails}" stroke="${deep}" stroke-width="2.2" stroke-linecap="round"/>` : ''}
       ${s.win.map(d => `<path d="${d}" fill="url(#${id}w)"/>`).join('')}
       <g clip-path="url(#${id}c)">${driver(c.driver, hx, hy, hr)}</g>
       ${s.win.map(d => `<path d="${d}" fill="url(#${id}g)"/>`).join('')}
-      <path d="M${s.wheels[0] - 16} ${s.belt + 5} H${s.wheels[1] + 14}" stroke="#fff" stroke-opacity=".55" stroke-width="2.2" stroke-linecap="round"/>
-      <rect x="${s.wheels[0] - 14}" y="${s.belt + 10}" width="${s.wheels[1] - s.wheels[0] + 26}" height="3" rx="1.5" fill="${c.stripe}" opacity=".9"/>
+      <path d="M${w0 - 16} ${s.belt + 5} H${wN + 14}" stroke="#fff" stroke-opacity=".55" stroke-width="2.2" stroke-linecap="round"/>
+      <rect x="${w0 - 14}" y="${s.belt + 10}" width="${wN - w0 + 26}" height="3" rx="1.5" fill="${c.stripe}" opacity=".9"/>
       ${s.bed ? `<path d="M8 36 H52" stroke="${deep}" stroke-width="1.6" stroke-linecap="round"/><path d="M8 40 H52" stroke="#fff" stroke-opacity=".3" stroke-width="1"/>` : ''}
       ${s.grille ? `<rect x="113.5" y="40" width="4" height="9" rx="1" fill="#e9ebf1" stroke="#9ea3b1" stroke-width=".6"/><path d="M114.5 41.5 H117 M114.5 43.5 H117 M114.5 45.5 H117 M114.5 47.5 H117" stroke="#9ea3b1" stroke-width=".5"/>` : ''}
+      ${s.extra ? s.extra(P) : ''}
       ${light}
       <rect x="6.6" y="${s.belt + 6}" width="3" height="5" rx="1.2" fill="#ff5b4f"/>
-      <rect x="${s.wheels[1] + 9}" y="50.5" width="${Math.max(6, 118 - s.wheels[1] - 9)}" height="4" rx="2" fill="#e3e5ec" stroke="#a9adba" stroke-width=".6"/>
-      <rect x="4" y="50.5" width="${s.wheels[0] - 15}" height="4" rx="2" fill="#e3e5ec" stroke="#a9adba" stroke-width=".6"/>
-      ${wheel(s.wheels[0], id, deep)}${wheel(s.wheels[1], id, deep)}
+      <rect x="${wN + 9}" y="50.5" width="${Math.max(6, 118 - wN - 9)}" height="4" rx="2" fill="#e3e5ec" stroke="#a9adba" stroke-width=".6"/>
+      <rect x="4" y="50.5" width="${w0 - 15}" height="4" rx="2" fill="#e3e5ec" stroke="#a9adba" stroke-width=".6"/>
+      ${s.wheels.map(w => wheel(w, id, deep)).join('')}
     </svg>`;
   }
 

@@ -160,8 +160,8 @@
   function showJoin(note) {
     if (!joinBuilt) {
       joinBuilt = true;
-      $('#carPick').innerHTML = A.CARS.map((c, i) => `
-        <button type="button" class="car-opt" role="radio" aria-checked="false" data-car="${i}" aria-label="${c.name} 차">${A.carSVG(i)}<span>${c.name}</span></button>`).join('');
+      $('#carPick').innerHTML = A.CARS.map((c, i) => (i === 0 || c.group !== A.CARS[i - 1].group ? `<p class="car-group">${c.group}</p>` : '') + `
+        <button type="button" class="car-opt" role="radio" aria-checked="false" data-car="${i}" aria-label="${c.name}">${A.carSVG(i)}<span>${c.name}</span></button>`).join('');
       $$('#carPick .car-opt').forEach(b => b.addEventListener('click', () => {
         carChoice = +b.dataset.car;
         $$('#carPick .car-opt').forEach(x => x.setAttribute('aria-checked', String(x === b)));
@@ -202,7 +202,7 @@
     if (G.bannedWordIn(nick)) { err.textContent = BANNED_MSG; $('#nickInput').focus(); return; }
     if (noChoice == null) { err.textContent = '내 출석번호를 골라 주세요.'; return; }
     if (takenNumbers().has(noChoice)) { err.textContent = `${noChoice}번은 이미 다른 친구가 골랐어요. 번호를 확인해 주세요.`; return; }
-    if (carChoice == null) { err.textContent = '차를 하나 골라 주세요.'; return; }
+    if (carChoice == null) { err.textContent = '탈것을 하나 골라 주세요.'; return; }
     err.textContent = '';
     try {
       await DB.set(`rooms/${room}/players/${uid}`, { nick, no: noChoice, car: carChoice, status: 'pending', joinedAt: DB.now() });
