@@ -3,13 +3,12 @@
   const C = window.APP_CONFIG, G = window.GAME, A = window.ART;
   const $ = s => document.querySelector(s);
   const $$ = s => Array.from(document.querySelectorAll(s));
-  const CIRCLED = '①②③④';
   const HIT_TYPES = ['balloon', 'lightning', 'caltrop', 'thunder']; // 친구가 던져서 맞는 아이템
 
   let room = null, uid = null, meta = null, questions = [], players = {}, states = {}, myP = null;
   let metaLoaded = false, playersLoaded = false, statesLoaded = false;
   let me = null, phase = 'idle', cur = null, order = [], lastIdx = -1, phaseUntil = 0;
-  let loop = null, hitsOff = null, carChoice = null, noChoice = null, lastWrongAnswer = '', joinBuilt = false;
+  let loop = null, hitsOff = null, carChoice = null, noChoice = null, joinBuilt = false;
   const handled = new Set();
 
   // ---------- 도구 ----------
@@ -245,15 +244,15 @@
 
   // 가장 적게 나온 문제부터 냅니다. 나온 횟수(s)를 내 기록에 저장하므로
   // 휴대폰이 다시 연결되거나 새로고침되어도 5문제가 골고루 나옵니다.
+  // 아직 덜 맞힌 문제부터 냅니다(맞힌 횟수가 적은 것 → 그중 나온 횟수가 적은 것).
+  // 그래서 모든 문제를 한 번씩 맞혀야 같은 문제가 다시 나오고, 시간이 지나 넘어간 문제도 나중에 다시 나와요.
   function pickQuestion() {
     const n = questions.length;
-    const seen = k => (me.q[k] && me.q[k].s) || 0;
+    const score = k => { const s = me.q[k] || {}; return (s.c || 0) * 1000 + (s.s || 0); };
     const last = me.lastQ == null ? -1 : me.lastQ;
-    let min = Infinity;
-    for (let k = 0; k < n; k++) min = Math.min(min, seen(k));
-    let cand = [];
-    for (let k = 0; k < n; k++) if (seen(k) === min && (n === 1 || k !== last)) cand.push(k);
-    if (!cand.length) for (let k = 0; k < n; k++) if (k !== last) cand.push(k);
+    const ks = [...Array(n).keys()].filter(k => n === 1 || k !== last);
+    const min = Math.min(...ks.map(score));
+    const cand = ks.filter(k => score(k) === min);
     return cand[Math.floor(Math.random() * cand.length)];
   }
 
@@ -261,7 +260,8 @@
     // 다시 연결된 경우, 화면에 떠 있던(아직 답하지 않은) 문제를 그대로 이어서 냅니다
     const i = resume != null ? resume : pickQuestion();
     lastIdx = i;
-    if (resume == null) { const st = stat(i); st.s = (st.s || 0) + 1; }
+    // 새 문제면 틀린 기록(지운 선지, 틀린 횟수)을 비워요. 다시 연결돼서 이어 풀 때는 그대로 둬요.
+    if (resume == null) { const st = stat(i); st.s = (st.s || 0) + 1; me.tried = []; me.miss = 0; }
     me.lastQ = i;
     me.openQ = i;
     save();
@@ -275,7 +275,8 @@
 
   function renderQuestion() {
     const q = cur.q;
-    $('#qType').textContent = q.type === 'ox' ? 'O/X 문제' : q.type === 'sa' ? '단답형 문제 · 직접 써요' : '4지선다 문제';
+    const tried = me.tried || [], miss = me.miss || 0;
+    $('#qType').textContent = (q.type === 'ox' ? 'O/X 문제' : q.type === 'sa' ? '단답형 문제 · 직접 써요' : '4지선다 문제') + (miss ? ' · 다시 도전!' : '');
     $('#qText').textContent = q.q;
     // 그림: O/X·단답형은 문제 카드 오른쪽, 4지선다는 선지마다
     const qPic = q.type === 'mc' ? '' : window.PICS.forQuestion(q);
@@ -287,7 +288,8 @@
     if (q.type === 'sa') {
       const len = String(q.answer).replace(/\s/g, '').length;
       box.innerHTML = `<form class="sa-form" autocomplete="off">
-        ${C.saHint !== false ? `<p class="sa-hint">힌트 <b>${escapeHtml(G.choHint(q.answer))}</b> <span>${len}글자</span></p>` : ''}
+        ${miss >= 2 ? `<p class="sa-hint reveal">정답은 <b>${escapeHtml(q.answer)}</b> <span>그대로 써 봐요</span></p>`
+          : C.saHint !== false ? `<p class="sa-hint">힌트 <b>${escapeHtml(G.choHint(q.answer))}</b> <span>${len}글자</span></p>` : ''}
         <input class="sa-input" type="text" maxlength="30" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="정답을 써요" aria-label="정답 입력">
         <button class="ans sa-submit" type="submit">제출</button>
       </form>`;
@@ -302,9 +304,11 @@
       return;
     }
     if (q.type === 'ox') {
-      box.innerHTML = '<button class="ans ox-o" data-v="O" aria-label="O, 맞다">O</button><button class="ans ox-x" data-v="X" aria-label="X, 틀리다">X</button>';
+      const off = v => (tried.includes(v) ? ' tried" disabled aria-disabled="true' : '');
+      box.innerHTML = `<button class="ans ox-o${off('O')}" data-v="O" aria-label="O, 맞다">O</button><button class="ans ox-x${off('X')}" data-v="X" aria-label="X, 틀리다">X</button>`;
     } else {
-      box.innerHTML = cur.order.map((k, pos) => `<button class="ans mc mc${pos}" data-v="${k}"><b>${pos + 1}</b><span>${escapeHtml(q.choices[k])}</span><i class="ch-pic" aria-hidden="true">${choicePics[k]}</i></button>`).join('');
+      // 틀린 선지는 흐리게 지워 두고 남은 것 중에서 다시 골라요
+      box.innerHTML = cur.order.map((k, pos) => `<button class="ans mc mc${pos}${tried.includes(k) ? ' tried" disabled aria-disabled="true' : ''}" data-v="${k}"><b>${pos + 1}</b><span>${escapeHtml(q.choices[k])}</span><i class="ch-pic" aria-hidden="true">${choicePics[k]}</i></button>`).join('');
     }
     box.querySelectorAll('.ans').forEach(b => b.addEventListener('click', () => answer(b.dataset.v, b)));
     updateStatus(true);
@@ -353,22 +357,27 @@
       phase = 'feedback';
       phaseUntil = now + 900;
     } else {
+      // 틀리면 다음 문제로 넘어가지 않고, 맞힐 때까지 같은 문제를 다시 풀어요(정답은 알려 주지 않아요)
       st.w++;
-      me.openQ = null;
       me.wrong++;
-      lastWrongAnswer = q.type !== 'mc' ? q.answer : CIRCLED[cur.order.indexOf(q.answer)] + ' ' + q.choices[q.answer];
+      me.miss = (me.miss || 0) + 1;
+      if (q.type !== 'sa') me.tried = (me.tried || []).concat(q.type === 'mc' ? Number(v) : v);
+      me.openQ = cur.i;
+      cur.retry = true;
       if (now < (me.guardUntil || 0)) {
-        // 도깨비 부적: 벌칙 없이 정답만 보여 주고 넘어가요
+        // 도깨비 부적: 벌칙 없이 바로 다시 풀어요
         save();
         btn.classList.add('wrong');
-        flash('good', `${C.items.star.icon} 부적이 벌칙을 막았어요`, '정답은 ' + lastWrongAnswer);
-        phase = 'feedback';
-        phaseUntil = now + 1500;
+        flash('good', `${C.items.star.icon} 부적이 벌칙을 막았어요`, '다시 풀어 봐요');
+        phase = 'penalty';
+        phaseUntil = now + 1200;
+        cur.deadline += 1200;
         updateStatus(true);
         return;
       }
       const bad = G.rollBadItem();
       const until = now + C.penaltySeconds * 1000;
+      cur.deadline += C.penaltySeconds * 1000; // 벌칙 시간은 문제 푸는 시간에서 빼지 않아요
       if (bad === 'fuel') me.frozenUntil = Math.max(me.frozenUntil || 0, until);
       else me.blindUntil = Math.max(me.blindUntil || 0, until);
       me.fx = { type: bad, at: now };
@@ -385,7 +394,7 @@
     me.openQ = null;
     me.timeouts++;
     save();
-    flash('time', '시간이 지났어요', '다음 문제로 넘어가요');
+    flash('time', '시간이 지났어요', '이 문제는 나중에 다시 나와요');
     phase = 'feedback';
     phaseUntil = now + 700;
   }
@@ -527,9 +536,9 @@
       title = `${fx.by || '친구'}의 ${it.name}에 ${fx.type === 'balloon' ? '갇혔어요' : fx.type === 'caltrop' ? '바퀴가 찔렸어요' : '맞았어요'}!`;
       sub = '조금만 기다리면 풀려요';
     } else if (now < (me.blindUntil || 0)) {
-      kind = 'ink'; icon = C.items.ink.icon; title = `${C.items.ink.name}! 앞이 안 보여요`; sub = '정답은 ' + lastWrongAnswer;
+      kind = 'ink'; icon = C.items.ink.icon; title = `${C.items.ink.name}! 앞이 안 보여요`; sub = '틀렸어요. 끝나면 같은 문제를 다시 풀어요';
     } else {
-      kind = 'fuel'; icon = C.items.fuel.icon; title = `${C.items.fuel.name}! 엔진이 멈췄어요`; sub = '정답은 ' + lastWrongAnswer;
+      kind = 'fuel'; icon = C.items.fuel.icon; title = `${C.items.fuel.name}! 엔진이 멈췄어요`; sub = '틀렸어요. 끝나면 같은 문제를 다시 풀어요';
     }
     ov.className = 'overlay ' + kind;
     $('#ovIcon').textContent = icon;
@@ -607,7 +616,9 @@
 
     if (phase === 'feedback' || phase === 'penalty') {
       if (now >= phaseUntil && now >= block) {
-        if (me.finishedAt) finished(); else nextQuestion();
+        if (me.finishedAt) finished();
+        else if (cur && cur.retry) { cur.retry = false; phase = 'question'; renderQuestion(); } // 틀린 문제 다시 풀기
+        else nextQuestion();
       }
       return;
     }

@@ -224,3 +224,9 @@ body.phone { background: var(--cheong-deep); }
 .q-pic .pic-photo { width: 100%; height: 100%; object-fit: cover; object-position: 50% 25%; }
 /* 임시 정부 태극기: 잘리지 않게 통째로, 흰 바탕에 */
 .ch-pic .pic-flag, .q-pic .pic-flag { object-fit: contain; object-position: center; background: #fff; padding: 6px; box-sizing: border-box; filter: none; }
+
+/* 틀린 선지: 흐리게 지워서 다시 고를 수 없게 */
+.ans.tried { opacity: .55; background: #c7c7cc !important; text-decoration: line-through; pointer-events: none; }
+.ans.tried .ch-pic { filter: grayscale(1); }
+.sa-hint.reveal b { letter-spacing: 0; background: #ffd60a; color: #1d1d1f; }
+.race-screen .sa-hint { justify-self: center; background: rgba(0,0,0,.6); border-radius: 12px; padding: 6px 12px; }

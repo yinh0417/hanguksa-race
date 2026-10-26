@@ -28,7 +28,7 @@ window.APP_CONFIG = {
   raceSeconds: 180,       // 한 판 시간(초)
   finishCells: 15,        // 결승선까지 칸 수
   cellsPerScene: 3,       // 몇 칸마다 배경 장면이 바뀌는지
-  timeLimit: { ox: 20, mc: 30, sa: 40 },  // 문제별 제한 시간(초), sa = 단답형
+  timeLimit: { ox: 15, mc: 25, sa: 35 },  // 문제별 제한 시간(초), sa = 단답형. 틀려서 다시 풀어도 이 시간 안에서 이어져요
   saHint: true,           // 단답형에 초성 힌트(예: ㅂㅇㄷ ㅈㅌ)를 보여 줄지
   penaltySeconds: 3,      // 오답 벌칙 시간(초)
   hitSeconds: 3,          // 물풍선·신기전에 맞았을 때 멈추는 시간(초)
