@@ -106,7 +106,7 @@
           <h3>승인 기다리는 친구 <span id="lbPendCount">0</span>명</h3>
           <button id="lbApproveAll" class="btn small primary" disabled>모두 승인</button>
         </div>
-        <p class="hint">닉네임은 가려져 있어요. 누르면 3초 동안만 보여요.</p>
+        <p class="hint">거절하면 닉네임을 다시 입력하게 하고, 강퇴하면 이번 게임에 다시 들어올 수 없어요. 금칙어가 섞인 닉네임은 승인되지 않아요.</p>
         <ul id="lbPending" class="pending-list"></ul>
       </div>
     </div>
@@ -121,7 +121,15 @@
     <div id="rcTimer" class="timer" aria-live="off">3:00</div>
     <div class="rh-right">
       <button id="rcPending" class="btn small yellow hidden">승인 대기 <span id="rcPendCount">0</span></button>
-      <div class="mini-join"><div id="rcQR" class="qr mini"></div><span>입장 코드<strong id="rcCode"></strong></span></div>
+      <div class="qr-wrap" id="qrWrap">
+        <button id="qrBtn" class="btn small qr-btn" aria-expanded="false" aria-controls="qrPop">재접속 QR <strong id="rcCode"></strong></button>
+        <div id="qrPop" class="qr-pop" role="dialog" aria-label="재접속 QR">
+          <div id="rcQR" class="qr big"></div>
+          <p class="qr-pop-code">입장 코드 <strong id="rcCode2"></strong></p>
+          <p class="qr-pop-hint">와이파이가 끊긴 친구는 이 QR을 다시 찍어요. 원래 자리에서 이어서 달려요.</p>
+          <p class="qr-pop-pin" id="qrPinNote">클릭하면 계속 띄워 둬요</p>
+        </div>
+      </div>
       <button id="rcMusic" class="btn small">음악 목록</button>
       <button id="rcMute" class="btn small" aria-label="소리 켜고 끄기">소리 끄기</button>
       <button id="rcStop" class="btn small danger">끝내기</button>

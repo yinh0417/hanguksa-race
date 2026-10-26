@@ -188,7 +188,35 @@
     { type: 'mc', q: '한글 맞춤법 통일안을 만들고 「우리말 큰사전」을 펴내려 한 단체는?', choices: ['조선어 학회', '신간회', '근우회', '조선 교육회'], answer: 0 }
   ];
 
+  // ---------- 닉네임 금칙어 ----------
+  // 욕설, 조롱·비하, 패드립, 성적인 말을 막습니다. config.js의 bannedWords로 더할 수 있어요.
+  const BANNED_DEFAULT = [
+    // 욕설
+    '시발', '씨발', '씨바', '시바', '씨빨', '시빨', '쉬발', '슈발', '씹', '십새', '좆', '존나', '졸라', '존니', '좃', '개새', '개색', '개세', '새끼', '색기', '섀끼', '쌔끼', '병신', '븅신', '빙신', '병쉰', '지랄', '염병', '옘병', '썅', '쌍놈', '쌍년', '개년', '년아', '놈아', '미친', '미췬', '미틴', '또라이', '돌아이', '꺼져', '닥쳐', '뒤져', '뒈져', '디져', '죽어', '죽을래', '엿먹', '개같', '개빡', '빡대가리', '대가리', '꼴통', '등신', '멍청', '찐따', '찌질',
+    // 초성 욕설
+    'ㅅㅂ', 'ㅆㅂ', 'ㅂㅅ', 'ㅄ', 'ㅈㄴ', 'ㅈㄹ', 'ㄲㅈ', 'ㄷㅊ', 'ㅁㅊ', 'ㅅㄲ', 'ㅗ',
+    // 패드립
+    '느금', '니애미', '니엄마', '니어미', '니애비', '니아빠', '애미', '애비', '에미', '에비', '니미', '엠창', '엄창', '느개비', '느그애미', '부모없',
+    // 조롱·비하
+    '장애', '애자', '틀딱', '급식충', '한남', '한녀', '김치녀', '맘충', '충이', '일베', '홍어', '짱깨', '쪽바리', '흑형', '깜둥', '뚱땡', '돼지새', '거지새', '난쟁이', '정신병',
+    // 성적인 말
+    '섹스', '섹시', '야동', '자위', '보지', '자지', '꼬추', '가슴', '젖', '빨통', '창녀', '창년', '걸레',
+    // 영어
+    'fuck', 'shit', 'bitch', 'sex', 'dick', 'pussy', 'porn', 'asshole', 'fck', 'sibal', 'ssibal', 'tlqkf', 'qudtls'
+  ];
+  // 띄어쓰기·숫자·기호를 지우고 비교합니다 (예: "시 1 발" → "시발")
+  function normalizeNick(s) {
+    return String(s || '').toLowerCase().replace(/[\s0-9!-/:-@[-`{-~·•ㆍ_*~^]/g, '');
+  }
+  function bannedWordIn(nick) {
+    const n = normalizeNick(nick);
+    if (!n) return null;
+    const list = BANNED_DEFAULT.concat((C.bannedWords || []).map(String));
+    return list.find(w => w && n.includes(normalizeNick(w))) || null;
+  }
+
   window.GAME = {
+    bannedWordIn, normalizeNick,
     ITEMS, ERAS, era, shuffle, nextOrder, rollGoodItem, rollBadItem, ranking, attackTarget,
     accuracy, sceneIndex, questionStats, answerText, TEMPLATE, parseSheet, validateRow,
     cleanQuestion, SAMPLE_7B,

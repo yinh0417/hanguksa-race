@@ -182,3 +182,4 @@ body.phone { background: var(--cheong-deep); }
 .no-opt:active:not(:disabled) { transform: scale(.95); }
 .no-opt[aria-checked="true"] { background: var(--primary); color: #fff; }
 .no-opt:disabled { opacity: .3; text-decoration: line-through; cursor: not-allowed; }
+#nickInput.bad { border-color: var(--red); box-shadow: 0 0 0 3px rgba(255,59,48,.18); }

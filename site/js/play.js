@@ -120,6 +120,12 @@
       return;
     }
     if (phase === 'over') return;
+    if (myP && myP.status === 'kicked') {
+      stopAll();
+      forgetLast();
+      msg('이번 게임에서 나가게 되었어요', '선생님이 이 게임에서 내보냈어요. 궁금한 점은 선생님께 말씀드려 주세요.');
+      return;
+    }
     if (!myP) { showJoin(); return; }
     if (myP.status === 'rejected') { showJoin('선생님이 닉네임을 바꿔 달라고 했어요. 다른 닉네임으로 다시 입장해 주세요.'); return; }
     if (myP.status === 'pending') { showWait('pending'); return; }
@@ -177,12 +183,22 @@
     }
   }
 
+  // 닉네임 금칙어: 입력하는 동안 바로 알려 주고 입장 버튼을 막습니다
+  const BANNED_MSG = '사용할 수 없는 말이 들어 있어요. 친구가 기분 나쁘지 않은 닉네임으로 바꿔 주세요.';
+  $('#nickInput').addEventListener('input', () => {
+    const bad = G.bannedWordIn($('#nickInput').value);
+    $('#joinErr').textContent = bad ? BANNED_MSG : '';
+    $('#nickInput').classList.toggle('bad', !!bad);
+    $('#joinForm button[type=submit]').disabled = !!bad;
+  });
+
   $('#joinForm').addEventListener('submit', async e => {
     e.preventDefault();
     const nick = $('#nickInput').value.trim();
     const err = $('#joinErr');
     if (!nick) { err.textContent = '닉네임을 적어 주세요.'; return; }
     if (Array.from(nick).length > C.maxNick) { err.textContent = `닉네임은 ${C.maxNick}글자까지 쓸 수 있어요.`; return; }
+    if (G.bannedWordIn(nick)) { err.textContent = BANNED_MSG; $('#nickInput').focus(); return; }
     if (noChoice == null) { err.textContent = '내 출석번호를 골라 주세요.'; return; }
     if (takenNumbers().has(noChoice)) { err.textContent = `${noChoice}번은 이미 다른 친구가 골랐어요. 번호를 확인해 주세요.`; return; }
     if (carChoice == null) { err.textContent = '차를 하나 골라 주세요.'; return; }

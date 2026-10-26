@@ -575,8 +575,9 @@
     const ap = approvedList();
     $('#lbCount').textContent = ap.length;
     $('#lbApproved').innerHTML = ap.length
-      ? ap.map(p => `<div class="roster-item"><div class="mini-car">${A.carSVG(p.car)}</div><span>${esc(p.nick)}</span></div>`).join('')
+      ? ap.map(p => `<div class="roster-item"><div class="mini-car">${A.carSVG(p.car)}</div><span>${esc(p.nick)}</span><button class="kick-x" data-kick="${p.uid}" title="${esc(p.nick)} 강퇴" aria-label="${esc(p.nick)} 강퇴">강퇴</button></div>`).join('')
       : '<p class="roster-empty">아직 아무도 없어요. QR을 찍고 들어와 주세요.</p>';
+    $$('#lbApproved [data-kick]').forEach(b => b.addEventListener('click', () => kick(b.dataset.kick)));
     renderPendingList($('#lbPending'));
     const pend = pendingList();
     $('#lbPendCount').textContent = pend.length;
@@ -584,26 +585,23 @@
     $('#lbStart').disabled = !ap.length;
   }
 
+  // 승인 대기: 닉네임은 선생님 화면에 그대로 보이고, 금칙어가 섞여 있으면 경고를 붙입니다
   function renderPendingList(el) {
-    const now = Date.now();
     const pend = pendingList();
     el.innerHTML = pend.length ? pend.map(p => {
-      const shown = revealUntil[p.uid] > now;
-      return `<li class="pending-item">
+      const bad = G.bannedWordIn(p.nick);
+      return `<li class="pending-item ${bad ? 'is-bad' : ''}">
         <div class="mini-car">${A.carSVG(p.car)}</div>
         <span class="p-no">${p.no ? p.no + '번' : '번호 없음'}</span>
-        <button class="nick-mask ${shown ? 'revealed' : ''}" data-peek="${p.uid}" aria-label="닉네임 3초 동안 보기">${shown ? esc(p.nick) : '●●●'}</button>
-        <button class="btn small primary" data-ok="${p.uid}">승인</button>
-        <button class="btn small danger" data-no="${p.uid}">거절</button>
+        <span class="nick-show">${esc(p.nick)}${bad ? '<b class="bad-flag">금칙어</b>' : ''}</span>
+        <button class="btn small primary" data-ok="${p.uid}" ${bad ? 'disabled' : ''}>승인</button>
+        <button class="btn small" data-no="${p.uid}" title="닉네임을 다시 입력하게 해요">거절</button>
+        <button class="btn small danger" data-kick="${p.uid}" title="이번 게임에서 내보내요">강퇴</button>
       </li>`;
     }).join('') : '<li class="pending-empty">기다리는 친구가 없어요.</li>';
-    el.querySelectorAll('[data-peek]').forEach(b => b.addEventListener('click', () => {
-      revealUntil[b.dataset.peek] = Date.now() + 3000;
-      rerenderPending();
-      setTimeout(rerenderPending, 3050);
-    }));
     el.querySelectorAll('[data-ok]').forEach(b => b.addEventListener('click', () => approve(b.dataset.ok)));
     el.querySelectorAll('[data-no]').forEach(b => b.addEventListener('click', () => reject(b.dataset.no)));
+    el.querySelectorAll('[data-kick]').forEach(b => b.addEventListener('click', () => kick(b.dataset.kick)));
   }
   function rerenderPending() {
     if (!meta) return;
@@ -616,10 +614,17 @@
   function reject(uid) {
     return DB.update(`rooms/${room}/players/${uid}`, { status: 'rejected' });
   }
+  // 강퇴: 이번 게임에서 내보내고 다시 들어오지 못하게 합니다
+  function kick(uid) {
+    const p = players[uid];
+    if (!p) return;
+    if (!confirm(`'${p.nick}'${p.no ? ` (${p.no}번)` : ''} 학생을 이번 게임에서 강퇴할까요? 이 게임에는 다시 들어올 수 없어요.`)) return;
+    return DB.update(`rooms/${room}/players/${uid}`, { status: 'kicked' }).then(() => toast(`${p.nick} 학생을 강퇴했어요.`));
+  }
   $('#lbApproveAll').addEventListener('click', () => {
     const t = DB.now();
     const upd = {};
-    pendingList().forEach((p, i) => { upd[`${p.uid}/status`] = 'approved'; upd[`${p.uid}/approvedAt`] = t + i; });
+    pendingList().filter(p => !G.bannedWordIn(p.nick)).forEach((p, i) => { upd[`${p.uid}/status`] = 'approved'; upd[`${p.uid}/approvedAt`] = t + i; });
     DB.update(`rooms/${room}/players`, upd);
   });
   $('#lbClose').addEventListener('click', () => {
@@ -641,7 +646,8 @@
     $('#rcTitle').textContent = meta.title;
     $('#rcCode').textContent = room;
     const mini = $('#rcQR');
-    if (mini.dataset.code !== room) { renderQR(mini, playUrl(room), 3); mini.dataset.code = room; }
+    if (mini.dataset.code !== room) { renderQR(mini, playUrl(room), 6); mini.dataset.code = room; }
+    $('#rcCode2').textContent = room;
     updateMuteBtn();
     renderPendingPop();
     if (key === raceBuiltFor) return;
@@ -932,6 +938,12 @@
     renderMusicPop();
   }
   $('#lbMusic').addEventListener('click', toggleMusicPop);
+  // 재접속 QR: 마우스를 올리면 잠깐 보이고, 클릭하면 계속 띄워 둡니다
+  $('#qrBtn').addEventListener('click', () => {
+    const pinned = $('#qrWrap').classList.toggle('pinned');
+    $('#qrBtn').setAttribute('aria-expanded', String(pinned));
+    $('#qrPinNote').textContent = pinned ? '다시 클릭하면 닫혀요' : '클릭하면 계속 띄워 둬요';
+  });
   $('#rcMusic').addEventListener('click', toggleMusicPop);
   $('#mpClose').addEventListener('click', () => $('#musicPop').classList.add('hidden'));
   $('#mpNext').addEventListener('click', () => { SOUND.unlock(); SOUND.nextSong(); renderMusicPop(); });
