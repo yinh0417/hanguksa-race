@@ -240,19 +240,21 @@
       catch (ex) {
         if (!denied(ex)) throw ex;
         await DB.refreshAuth();
-        await save();
+        try { await save(); }
+        catch (ex2) {
+          // 그래도 거절되면 로그인이 망가진 것이라, 새 접속 번호로 다시 로그인해서 한 번 더 해 봐요
+          if (!denied(ex2)) throw ex2;
+          await DB.signOut();
+          uid = (await DB.signInStudent()).uid;
+          await save();
+        }
       }
     } catch (ex) {
       console.warn(ex);
       const why = ex && (ex.code || ex.message) || '';
-      // Firebase 규칙이 옛날(닉네임 6글자까지) 그대로면 긴 닉네임만 거절돼요
-      const tooLong = denied(ex) && Array.from(nick).length > 6;
       joinError(why === 'timeout'
         ? '인터넷 연결이 약해서 들어가지 못했어요. 와이파이를 확인하고 다시 눌러 주세요.'
-        : tooLong
-          ? '닉네임을 6글자 이하로 줄여서 다시 눌러 주세요.'
-          : `입장하지 못했어요. 다시 눌러 주세요. 계속 안 되면 선생님께 알려 주세요. (${why || '알 수 없는 오류'})`,
-        tooLong ? $('#nickInput') : undefined);
+        : `입장하지 못했어요. 다시 눌러 주세요. 계속 안 되면 선생님께 알려 주세요. (${why || '알 수 없는 오류'})`);
     } finally {
       joining = false;
       btn.disabled = !!G.bannedWordIn($('#nickInput').value);
