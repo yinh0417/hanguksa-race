@@ -336,21 +336,37 @@
 
   // 아이템을 쓰면 1초 동안 화면 가득 큰 글자와 내 탈것이 달려 나가는 장면을 보여 줘요
   let fxTimer = null;
-  function itemFx(type, sub) {
+  // opt.kind 'block': 방패·부적이 친구 공격을 막아 내는 장면(opt.incoming: 날아온 아이템 아이콘)
+  function itemFx(type, sub, opt) {
+    opt = opt || {};
     const it = C.items[type] || {};
-    const kind = type === 'shield' ? 'shield' : type === 'star' ? 'star' : ['boost1', 'boost2', 'turbo'].includes(type) ? 'boost' : 'throw';
+    const kind = opt.kind || (type === 'shield' ? 'shield' : type === 'star' ? 'star' : ['boost1', 'boost2', 'turbo'].includes(type) ? 'boost' : 'throw');
     const pop = $('#fxPop');
-    pop.className = `fx-pop ${kind}`;
-    $('#fxTitle').textContent = `${it.icon || ''} ${it.name || ''} ${kind === 'throw' ? '발사!' : '사용!'}`;
+    pop.className = `fx-pop ${kind} fx-${type}`;
+    $('#fxTitle').textContent = opt.title || `${it.icon || ''} ${it.name || ''} ${kind === 'throw' ? '발사!' : '사용!'}`;
     $('#fxSub').textContent = sub || it.desc || '';
-    $('#fxCar').innerHTML = A.carSVG((myP && myP.car) || 0);
-    $('#fxProj').textContent = kind === 'throw' ? (it.icon || '') : '';
+    $('#fxCar').innerHTML = A.carSVG((myP && myP.car) || 0) + (kind === 'shield' || kind === 'block' ? '<i class="dome"></i>' : '');
+    $('#fxProj').innerHTML = projHTML(kind, type, opt.incoming);
     $('#fxLines').innerHTML = kind === 'boost' ? Array.from({ length: 9 }, (_, i) => `<i style="top:${8 + i * 10}%;width:${30 + (i * 37) % 45}%;animation-delay:${(i * 0.07).toFixed(2)}s"></i>`).join('') : '';
     void pop.offsetWidth; // 애니메이션을 처음부터 다시
     pop.classList.add('go');
     clearTimeout(fxTimer);
     fxTimer = setTimeout(() => pop.classList.add('hidden'), 1100);
-    if (navigator.vibrate) navigator.vibrate(kind === 'throw' ? [40, 30, 40] : 60);
+    // 휴대폰 진동(화면을 한 번이라도 누른 뒤에만 브라우저가 허락해요)
+    if (navigator.vibrate && (!navigator.userActivation || navigator.userActivation.hasBeenActive)) navigator.vibrate(kind === 'throw' ? [40, 30, 40] : 60);
+  }
+
+  // 아이템마다 날아가는 모습: 신기전(불꼬리 로켓 3발과 폭발), 물풍선(포물선을 그리며 날아가 터짐),
+  // 마름쇠(뒤로 흩뿌림), 비격진천뢰(큰 충격파), 막기(날아온 아이템이 방패에 튕겨 나감)
+  function projHTML(kind, type, incoming) {
+    if (kind === 'block') return `<span class="incoming">${incoming || ''}</span>`;
+    if (kind !== 'throw') return '';
+    const icon = (C.items[type] || {}).icon || '';
+    if (type === 'lightning') return [0, 1, 2].map(i => `<span class="rk" style="--i:${i}">${icon}</span>`).join('') + '<i class="boom"></i>';
+    if (type === 'balloon') return '<span class="wb"></span>' + Array.from({ length: 8 }, (_, i) => `<b class="drop" style="--a:${i * 45}deg"></b>`).join('') + '<i class="splash"></i>';
+    if (type === 'caltrop') return Array.from({ length: 5 }, (_, i) => `<span class="sp" style="--x:${-34 - i * 18}px;--y:${18 + (i % 2) * 16}px;--r:${i * 80 + 40}deg;--d:${(i * 0.06).toFixed(2)}s">${icon}</span>`).join('');
+    if (type === 'thunder') return '<i class="shock"></i><i class="shock s2"></i><span class="bang">' + icon + '</span>';
+    return `<span class="wb"></span>`;
   }
 
   function applyItem(item, now) {
@@ -450,11 +466,11 @@
         const it = C.items[type] || C.items.balloon;
         if (now < (me.guardUntil || 0)) {
           me.fx = { type: 'block', at: now };
-          flash('good', `${C.items.star.icon} 부적 덕분에 끄떡없어요!`, `${h.nick || '친구'}의 ${it.name}`);
+          itemFx('star', `${h.nick || '친구'}의 ${josa(it.name, '을', '를')} 막아 냈어요`, { kind: 'block', title: `${C.items.star.icon} 부적 덕분에 끄떡없어요!`, incoming: it.icon });
         } else if (me.shield) {
           me.shield = false;
           me.fx = { type: 'block', at: now };
-          flash('good', `${C.items.shield.icon} 방패로 막았어요!`, `${h.nick || '친구'}의 ${it.name}`);
+          itemFx('shield', `${h.nick || '친구'}의 ${josa(it.name, '을', '를')} 막아 냈어요`, { kind: 'block', title: `${C.items.shield.icon} 방패로 막았어요!`, incoming: it.icon });
         } else {
           const before = Math.max(now, blockedUntil());
           me.frozenUntil = Math.max(me.frozenUntil || 0, now) + (type === 'thunder' ? 2 : C.hitSeconds) * 1000;
@@ -577,8 +593,10 @@
       kind = 'fuel'; icon = C.items.fuel.icon; title = `${C.items.fuel.name}! 엔진이 멈췄어요`; sub = '틀렸어요. 끝나면 같은 문제를 다시 풀어요';
     }
     ov.className = 'overlay ' + kind;
-    // 내 탈것이 연기를 뿜으며 멈추고(오염 연료), 먹물을 뒤집어쓰고(먹물), 물풍선에 갇혀요(맞음)
-    if (ov.dataset.kind !== kind || !$('#ovCar').innerHTML) { ov.dataset.kind = kind; $('#ovCar').innerHTML = A.carSVG((myP && myP.car) || 0); }
+    // 내 탈것이 연기를 뿜으며 멈추고(오염 연료), 먹물을 뒤집어쓰고(먹물), 맞은 아이템마다 다르게 당해요
+    // (물풍선: 물방울 막에 갇혀 둥둥, 신기전·비격진천뢰: 폭발에 빙글 돌며 어질어질, 마름쇠: 바퀴가 찔려 덜컹)
+    const fxKey = kind === 'hit' ? fx.type : kind;
+    if (ov.dataset.fx !== fxKey || !$('#ovCar').innerHTML) { ov.dataset.fx = fxKey; $('#ovCar').innerHTML = A.carSVG((myP && myP.car) || 0); }
     $('#ovIcon').textContent = icon;
     $('#ovTitle').textContent = title;
     $('#ovSub').textContent = sub;

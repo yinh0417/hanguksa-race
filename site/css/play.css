@@ -255,7 +255,6 @@ body.phone { background: var(--cheong-deep); }
 .fx-car .car-svg { width: 100%; display: block; }
 .fx-lines { position: absolute; inset: 0; }
 .fx-lines i { position: absolute; right: -50%; height: 3px; border-radius: 3px; background: linear-gradient(90deg, rgba(255,255,255,0), rgba(255,255,255,.9)); animation: fx-streak .35s linear infinite; }
-.fx-proj { position: absolute; left: 60%; top: 40%; font-size: 44px; opacity: 0; }
 .fx-pop.go .fx-title { animation: fx-zoom .45s cubic-bezier(.2,1.6,.4,1) both; }
 .fx-pop.go .fx-sub { animation: fx-fade .3s .2s ease-out both; }
 /* 부스터: 왼쪽에서 들어와 쌩 하고 오른쪽으로 빠져나가요(불꽃 꼬리) */
@@ -264,12 +263,8 @@ body.phone { background: var(--cheong-deep); }
   background: radial-gradient(ellipse at 100% 50%, #fff6c2 0 18%, #ffd23f 32%, #ff7a1a 58%, rgba(255,59,48,0) 80%); animation: flame .1s infinite alternate; }
 /* 부적: 무지개 빛을 내며 커졌다 작아져요 */
 .fx-pop.star.go .fx-car { animation: fx-star 1s ease-in-out both; }
-/* 방패: 금빛 막이 퍼져요 */
-.fx-pop.shield .fx-car::after { content: ''; position: absolute; inset: -30% -12%; border-radius: 50%; border: 5px solid #ffd60a; box-shadow: 0 0 24px #ffd60a, inset 0 0 24px rgba(255,214,10,.6); }
-.fx-pop.shield.go .fx-car::after { animation: fx-ring .8s ease-out both; }
 /* 공격: 내 탈것이 움찔하며 아이템이 오른쪽으로 날아가요 */
 .fx-pop.throw.go .fx-car { animation: fx-recoil .5s ease-out both; }
-.fx-pop.throw.go .fx-proj { animation: fx-shot .8s .1s ease-in both; }
 @keyframes fx-zoom { from { transform: scale(.3); opacity: 0; } 60% { transform: scale(1.12); opacity: 1; } to { transform: scale(1); } }
 @keyframes fx-fade { from { opacity: 0; transform: translateY(8px); } }
 @keyframes fx-dash { 0% { left: -45%; } 38% { left: 46%; } 62% { left: 54%; } 100% { left: 160%; } }
@@ -277,9 +272,7 @@ body.phone { background: var(--cheong-deep); }
 @keyframes fx-star { 0% { transform: translate(-50%, -50%) scale(.6); filter: hue-rotate(0) drop-shadow(0 0 0 #fff); }
   50% { transform: translate(-50%, -50%) scale(1.15) rotate(-4deg); filter: hue-rotate(180deg) drop-shadow(0 0 16px #fff); }
   100% { transform: translate(-50%, -50%) scale(1); filter: hue-rotate(360deg) drop-shadow(0 0 8px #ffd60a); } }
-@keyframes fx-ring { from { transform: scale(.4); opacity: 0; } 60% { opacity: 1; } to { transform: scale(1.1); opacity: .9; } }
 @keyframes fx-recoil { 0% { transform: translate(-50%, -50%); } 25% { transform: translate(-56%, -50%) rotate(-3deg); } 100% { transform: translate(-50%, -50%); } }
-@keyframes fx-shot { 0% { left: 58%; opacity: 1; transform: scale(.6); } 100% { left: 130%; opacity: 1; transform: scale(1.8) rotate(25deg); } }
 
 /* ===== 오답 벌칙 화면의 내 탈것 ===== */
 .ov-car { position: relative; width: 58%; max-width: 260px; }
@@ -311,9 +304,7 @@ body.phone { background: var(--cheong-deep); }
   .fx-pop.go .fx-sub { animation-duration: .3s !important; }
   .fx-pop.boost.go .fx-car { animation-duration: 1.05s !important; }
   .fx-pop.star.go .fx-car { animation-duration: 1s !important; }
-  .fx-pop.shield.go .fx-car::after { animation-duration: .8s !important; }
   .fx-pop.throw.go .fx-car { animation-duration: .5s !important; }
-  .fx-pop.throw.go .fx-proj { animation-duration: .8s !important; }
   .fx-lines i { animation-duration: .35s !important; animation-iteration-count: infinite !important; }
   .overlay.fuel .ov-car { animation-duration: 3s !important; }
   .overlay.fuel .ov-car .car-svg, .overlay.fuel .ov-car::before, .overlay.fuel .ov-car::after,
@@ -321,3 +312,91 @@ body.phone { background: var(--cheong-deep); }
 }
 @keyframes flame { from { transform: scaleX(.85) scaleY(.92); opacity: .85; } to { transform: scaleX(1.12) scaleY(1.05); opacity: 1; } }
 @keyframes wobble { to { transform: scale(1.06, .95); } }
+
+/* ===== 아이템별 장면: 신기전·물풍선·마름쇠·비격진천뢰 던지기, 거북선 방패·막기 ===== */
+.fx-proj { position: absolute; inset: 0; pointer-events: none; }
+.fx-proj > * { position: absolute; }
+.fx-pop.throw .fx-car { left: 32%; width: 50%; }
+.fx-pop.fx-caltrop .fx-car { left: 62%; }
+.fx-pop.fx-lightning { background: radial-gradient(circle at 70% 40%, rgba(255,120,30,.6), rgba(30,8,0,.9) 70%); }
+.fx-pop.fx-balloon { background: radial-gradient(circle at 70% 50%, rgba(60,170,255,.6), rgba(0,14,30,.9) 70%); }
+.fx-pop.fx-caltrop { background: radial-gradient(circle at 30% 60%, rgba(160,160,170,.55), rgba(15,15,20,.9) 70%); }
+.fx-pop.fx-thunder { background: radial-gradient(circle at 60% 50%, rgba(255,214,10,.6), rgba(30,20,0,.9) 70%); }
+/* 신기전: 불꼬리 로켓 세 발이 차례로 솟아올라 터져요 */
+.fx-proj .rk { left: 40%; top: 46%; font-size: 34px; opacity: 0; animation: fx-rocket .75s calc(var(--i) * .12s) ease-in both; }
+.fx-proj .rk::before { content: ""; position: absolute; right: 30%; top: 62%; width: 56px; height: 7px; border-radius: 4px; transform-origin: 100% 50%; transform: rotate(-45deg);
+  background: linear-gradient(90deg, rgba(255,80,0,0), #ff9f0a 60%, #fff3b0); }
+.fx-proj .boom { left: 82%; top: 18%; width: 90px; height: 90px; margin: -45px; border-radius: 50%; opacity: 0;
+  background: radial-gradient(circle, #fff6c2 0 20%, #ffb020 40%, rgba(255,59,48,.6) 60%, transparent 72%); animation: fx-boom .45s .72s ease-out both; }
+@keyframes fx-rocket { 0% { opacity: 1; transform: translate(0, 0) scale(.6); } 100% { opacity: 1; transform: translate(min(46vw, 200px), calc((var(--i) - 1) * 26px - 70px)) scale(1.1); } }
+@keyframes fx-boom { 0% { opacity: 0; transform: scale(.2); } 40% { opacity: 1; } 100% { opacity: 0; transform: scale(1.7); } }
+/* 물풍선: 포물선을 그리며 날아가 퐁 하고 터져요 */
+.fx-proj .wb { left: 40%; top: 50%; width: 36px; height: 40px; margin: -20px; border-radius: 50% 50% 48% 48%;
+  background: radial-gradient(circle at 35% 30%, #fff 0 12%, #8fd6ff 30%, #1e88e5 78%); animation: fx-arc .7s linear both; }
+.fx-proj .wb::after { content: ""; position: absolute; left: 50%; bottom: -5px; margin-left: -4px; border: 4px solid transparent; border-top-color: #1565c0; }
+.fx-proj .drop { left: 86%; top: 56%; width: 9px; height: 12px; margin: -6px; border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%; background: #6cc6ff; opacity: 0;
+  animation: fx-splash .45s .66s ease-out both; }
+.fx-proj .splash { left: 86%; top: 56%; width: 70px; height: 24px; margin: -12px -35px; border-radius: 50%; border: 3px solid #bfe6ff; opacity: 0; animation: fx-ring2 .45s .66s ease-out both; }
+@keyframes fx-arc { 0% { left: 40%; top: 50%; } 25% { left: 51%; top: 22%; } 50% { left: 63%; top: 10%; } 75% { left: 74%; top: 22%; } 94% { left: 84%; top: 52%; opacity: 1; transform: scale(1); } 100% { left: 86%; top: 56%; opacity: 0; transform: scale(1.6, .4); } }
+@keyframes fx-splash { 0% { opacity: 1; transform: rotate(var(--a)) translateX(0); } 100% { opacity: 0; transform: rotate(var(--a)) translateX(48px); } }
+@keyframes fx-ring2 { 0% { opacity: 1; transform: scale(.3); } 100% { opacity: 0; transform: scale(1.6); } }
+/* 마름쇠: 내 탈것 뒤로 와르르 흩뿌려요 */
+.fx-proj .sp { left: 50%; top: 52%; font-size: 26px; opacity: 0; animation: fx-scatter .6s var(--d) ease-out both; }
+@keyframes fx-scatter { 0% { opacity: 1; transform: translate(0, 0) rotate(0) scale(.5); } 100% { opacity: 1; transform: translate(var(--x), var(--y)) rotate(var(--r)) scale(1); } }
+/* 비격진천뢰: 쾅! 커다란 충격파가 앞으로 퍼져요 */
+.fx-proj .shock { left: 66%; top: 50%; width: 80px; height: 80px; margin: -40px; border-radius: 50%; border: 6px solid #ffd60a; opacity: 0; animation: fx-shock .7s .15s ease-out both; }
+.fx-proj .shock.s2 { border-color: #ff9f0a; animation-delay: .35s; }
+.fx-proj .bang { left: 72%; top: 50%; font-size: 58px; margin: -36px; opacity: 0; animation: fx-bang .6s .1s cubic-bezier(.2,1.6,.4,1) both; }
+@keyframes fx-shock { 0% { opacity: 1; transform: scale(.2); } 100% { opacity: 0; transform: scale(3.2); } }
+@keyframes fx-bang { 0% { opacity: 0; transform: scale(.2) rotate(-20deg); } 60% { opacity: 1; transform: scale(1.25) rotate(8deg); } 100% { opacity: 1; transform: scale(1) rotate(0); } }
+/* 거북선 방패: 거북 등딱지 같은 금빛 육각 막이 탈것을 감싸요 */
+.fx-car .dome { position: absolute; inset: -40% -14% 4% -14%; border-radius: 50% 50% 14% 14% / 75% 75% 25% 25%; border: 4px solid #ffd60a; overflow: hidden;
+  box-shadow: 0 0 22px rgba(255,214,10,.8), inset 0 0 18px rgba(255,214,10,.5);
+  background: repeating-linear-gradient(60deg, rgba(255,214,10,.32) 0 2px, transparent 2px 16px), repeating-linear-gradient(-60deg, rgba(255,214,10,.32) 0 2px, transparent 2px 16px), repeating-linear-gradient(0deg, rgba(255,214,10,.32) 0 2px, transparent 2px 16px), rgba(255,214,10,.12); }
+.fx-car .dome::after { content: ""; position: absolute; top: -10%; bottom: -10%; width: 30%; left: -40%; background: linear-gradient(90deg, transparent, rgba(255,255,255,.75), transparent); transform: skewX(-20deg); }
+.fx-pop.go .fx-car .dome { animation: fx-dome .5s cubic-bezier(.2,1.5,.4,1) both; }
+.fx-pop.go .fx-car .dome::after { animation: fx-shine .6s .4s ease-in-out both; }
+.fx-pop.block.go .fx-car .dome { animation: fx-dome .35s cubic-bezier(.2,1.5,.4,1) both, fx-dome-hit .3s .5s ease-out both; }
+.fx-pop.block { background: radial-gradient(circle at 50% 45%, rgba(245,194,66,.55), rgba(20,16,0,.9) 70%); }
+.fx-proj .incoming { left: 110%; top: 40%; font-size: 40px; animation: fx-bounce .95s ease-in-out both; }
+@keyframes fx-dome { from { transform: scale(.2); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+@keyframes fx-shine { from { left: -40%; } to { left: 120%; } }
+@keyframes fx-dome-hit { 0% { box-shadow: 0 0 22px rgba(255,214,10,.8); } 40% { box-shadow: 0 0 46px #fff, inset 0 0 30px #fff; transform: scale(1.06); } 100% { box-shadow: 0 0 22px rgba(255,214,10,.8); transform: scale(1); } }
+@keyframes fx-bounce { 0% { left: 110%; top: 40%; transform: rotate(0); } 55% { left: 72%; top: 44%; transform: rotate(-30deg); } 100% { left: 112%; top: -30%; transform: rotate(240deg); } }
+
+/* ===== 친구 아이템에 맞았을 때: 아이템마다 다른 장면 ===== */
+.overlay.hit[data-fx="balloon"] .ov-car { animation: ov-float 1.1s ease-in-out infinite alternate; }
+.overlay.hit[data-fx="balloon"] .ov-car::before { content: ""; position: absolute; left: 30%; bottom: -14%; width: 8px; height: 11px; border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%; background: #8fd6ff;
+  box-shadow: 26px 6px 0 #8fd6ff, 52px -2px 0 #8fd6ff; animation: ov-drip 1s ease-in infinite; }
+.overlay.hit[data-fx="lightning"], .overlay.hit[data-fx="thunder"] { background: radial-gradient(circle at 50% 40%, #ff9f0a, #4a1600 72%); }
+.overlay.hit[data-fx="lightning"] .ov-car::after, .overlay.hit[data-fx="thunder"] .ov-car::after { inset: -45%; border: 0; border-radius: 50%;
+  background: radial-gradient(circle, #fff6c2 0 14%, rgba(255,159,10,.85) 32%, rgba(255,59,48,.45) 52%, transparent 70%); animation: ov-boom .7s ease-out both; z-index: -1; }
+.overlay.hit[data-fx="lightning"] .ov-car .car-svg, .overlay.hit[data-fx="thunder"] .ov-car .car-svg { animation: ov-spin .9s cubic-bezier(.2,.8,.3,1) both, ov-sputter .2s .9s steps(2) infinite; filter: brightness(.8) sepia(.3); }
+.overlay.hit[data-fx="lightning"] .ov-car::before, .overlay.hit[data-fx="thunder"] .ov-car::before { content: "\1F4AB \2B50 \1F4AB"; position: absolute; left: 50%; top: -6%; z-index: 2; font-size: 22px; white-space: nowrap; transform: translateX(-50%); animation: ov-dizzy 1.2s linear infinite; }
+.overlay.hit[data-fx="caltrop"] { background: radial-gradient(circle at 50% 45%, #8e8e96, #1d1d22 72%); }
+.overlay.hit[data-fx="caltrop"] .ov-car::after { content: none; }
+.overlay.hit[data-fx="caltrop"] .ov-car::before { content: "\2733\FE0F \2733\FE0F \2733\FE0F"; position: absolute; left: 50%; bottom: -16%; font-size: 18px; transform: translateX(-50%); white-space: nowrap; }
+.overlay.hit[data-fx="caltrop"] .ov-car .car-svg { animation: ov-bump .32s ease-in-out infinite; transform-origin: 70% 90%; }
+@keyframes ov-float { from { transform: translateY(6px); } to { transform: translateY(-10px); } }
+@keyframes ov-drip { from { transform: translateY(0); opacity: 1; } to { transform: translateY(26px); opacity: 0; } }
+@keyframes ov-boom { from { transform: scale(.2); opacity: 0; } 40% { opacity: 1; } to { transform: scale(1); opacity: .85; } }
+@keyframes ov-spin { from { transform: rotate(0) scale(1); } 70% { transform: rotate(380deg) scale(.85); } to { transform: rotate(360deg) scale(.9); } }
+@keyframes ov-dizzy { from { transform: translateX(-50%) rotate(0); } to { transform: translateX(-50%) rotate(360deg); } }
+@keyframes ov-bump { 0%, 100% { transform: rotate(0); } 30% { transform: rotate(-5deg) translateY(-4px); } 60% { transform: rotate(2deg); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .fx-pop.throw.go .fx-car { animation-duration: .5s !important; }
+  .fx-proj .rk { animation-duration: .75s !important; }
+  .fx-proj .boom, .fx-proj .drop, .fx-proj .splash { animation-duration: .45s !important; }
+  .fx-proj .wb { animation-duration: .7s !important; }
+  .fx-proj .sp { animation-duration: .6s !important; }
+  .fx-proj .shock { animation-duration: .7s !important; }
+  .fx-proj .bang { animation-duration: .6s !important; }
+  .fx-pop.go .fx-car .dome { animation-duration: .5s !important; }
+  .fx-pop.go .fx-car .dome::after { animation-duration: .6s !important; }
+  .fx-pop.block.go .fx-car .dome { animation-duration: .35s, .3s !important; }
+  .fx-proj .incoming { animation-duration: .95s !important; }
+  .overlay.hit .ov-car, .overlay.hit .ov-car::before, .overlay.hit .ov-car::after, .overlay.hit .ov-car .car-svg { animation-duration: 1s !important; animation-iteration-count: infinite !important; }
+  .overlay.hit[data-fx="lightning"] .ov-car .car-svg, .overlay.hit[data-fx="thunder"] .ov-car .car-svg { animation-duration: .9s, .2s !important; animation-iteration-count: 1, infinite !important; }
+}
+.fx-pop { -webkit-backdrop-filter: blur(5px); backdrop-filter: blur(5px); }
