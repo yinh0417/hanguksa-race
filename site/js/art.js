@@ -163,7 +163,7 @@
     jeep: {
       body: ['M6 50 L6 33 C6 30 8 28 11 28 L104 28 C108 28 111 30 112 33 L117 40 L117 51 C117 54 115 56 112 56 L10 56 C8 56 6 54 6 50 Z'],
       win: ['M76 28 L82 11 L85 11 L79 28 Z'], belt: 28,
-      head: [62, 19, 9.5], wheels: [28, 94], light: 'round', lx: 109, ly: 33,
+      head: [62, 19, 9.5], wheels: [28, 94], light: 'round', lx: 109, ly: 33, eyes: [97, 33, 5.5], // 지붕이 없어 눈은 보닛 위에
       extra: P => `<circle cx="9" cy="40" r="8" fill="#2a2a30"/><circle cx="9" cy="40" r="3.6" fill="#8a8f80"/>` + camo(P, [[40, 40, 9, 4], [70, 46, 7, 3.5], [96, 38, 6, 3]])
     },
     mtruck: {
@@ -1041,6 +1041,236 @@
   // 그림마다 색 id를 따로 둡니다(숨겨진 화면의 그림을 참조하면 색이 사라지는 문제 방지)
   let carUid = 0;
   // 광택 있는 귀여운 탈것 (오른쪽을 보고 달림)
+  // ===== 동물 캐릭터: 앞을 보는 동글동글한 털 뭉치(보송 털 질감) =====
+  // 몸은 가운데(60, 37)의 털 뭉치, 눈은 (49, 34)·(71, 34). o의 항목으로 동물마다 귀·얼굴·팔다리·꼬리를 고릅니다.
+  // 둘레를 따라 작은 물결이 이는 털 테두리 (amp가 0이면 매끈한 몸)
+  function fuzz(cx, cy, rx, ry, n, amp) {
+    let d = '';
+    for (let i = 0; i <= n; i++) {
+      const a = (i / n) * Math.PI * 2, a2 = ((i + 0.5) / n) * Math.PI * 2;
+      const x = cx + Math.cos(a) * rx, y = cy + Math.sin(a) * ry;
+      const qx = cx + Math.cos(a2) * (rx + amp), qy = cy + Math.sin(a2) * (ry + amp);
+      d += i ? ` Q${f1(qx)} ${f1(qy)} ${f1(x)} ${f1(y)}` : `M${f1(x)} ${f1(y)}`;
+    }
+    return d + 'Z';
+  }
+  const FUR_INK = '#1e1619';
+
+  function fluffEars(o, F) {
+    const E = o.earColor || F, IN = o.earIn || '#f4a7a0';
+    switch (o.ears) {
+      case 'round': return [39, 81].map(x => `<circle cx="${x}" cy="14" r="${o.earR || 8}" fill="${E}"/><circle cx="${x}" cy="15" r="${(o.earR || 8) * 0.52}" fill="${IN}"/>`).join('');
+      case 'koala': return [33, 87].map(x => `<path d="${fuzz(x, 18, 12, 11, 16, 1.6)}" fill="${E}"/><circle cx="${x}" cy="19" r="6.5" fill="${IN}"/>`).join('');
+      case 'long': return [[47, -9], [73, 9]].map(([x, r]) => `<g transform="rotate(${r} ${x} 10)"><ellipse cx="${x}" cy="0" rx="6.5" ry="14" fill="${E}"/><ellipse cx="${x}" cy="1" rx="3.2" ry="10" fill="${IN}"/></g>`).join('');
+      case 'cat': case 'fox': {
+        const big = o.ears === 'fox' ? 4 : 0;
+        const tip = o.earTip ? `<path d="M${36 - big / 2} ${3 - big} l2.2 7 l4.6 -3.2 Z" fill="${o.earTip}"/><path d="M${84 + big / 2} ${3 - big} l-2.2 7 l-4.6 -3.2 Z" fill="${o.earTip}"/>` : '';
+        return `<path d="M33 24 L${36 - big / 2} ${3 - big} L52 13 Z" fill="${E}" stroke-linejoin="round"/><path d="M37.5 18 L${38.5 - big / 3} ${8 - big / 1.5} L46 13 Z" fill="${IN}"/>` +
+          `<path d="M87 24 L${84 + big / 2} ${3 - big} L68 13 Z" fill="${E}"/><path d="M82.5 18 L${81.5 + big / 3} ${8 - big / 1.5} L74 13 Z" fill="${IN}"/>` + tip;
+      }
+      case 'pig': return `<path d="M36 20 L38 6 L50 13 Z" fill="${E}"/><path d="M84 20 L82 6 L70 13 Z" fill="${E}"/><path d="M38 6 L44 14 L50 13 Z" fill="${shade(E, -0.12)}"/><path d="M82 6 L76 14 L70 13 Z" fill="${shade(E, -0.12)}"/>`;
+      case 'tuft': return `<path d="M34 20 L35 2 L47 13 Z" fill="${E}"/><path d="M86 20 L85 2 L73 13 Z" fill="${E}"/>`;
+      case 'side': return [30, 90].map(x => `<ellipse cx="${x}" cy="30" rx="4.5" ry="5" fill="${E}"/><ellipse cx="${x}" cy="30.5" rx="2.2" ry="2.6" fill="${IN}"/>`).join('');
+    }
+    return '';
+  }
+  // 늘어진 귀는 얼굴 앞에
+  function flopEars(o) {
+    if (o.ears !== 'flop') return '';
+    const E = o.earColor, sh = o.shaggy ? 2.2 : 1.2;
+    return `<path d="${fuzz(0, 0, 7.5, 14, 14, sh)}" fill="${E}" transform="translate(33 30) rotate(24)"/><path d="${fuzz(0, 0, 7.5, 14, 14, sh)}" fill="${E}" transform="translate(87 30) rotate(-24)"/>`;
+  }
+
+  function fluffFace(o, id) {
+    const M = o.muzzle;
+    let f = '';
+    if (o.eyePatch) f += `<ellipse cx="48" cy="35" rx="${o.patchR || 7}" ry="${(o.patchR || 7) * 1.2}" fill="${o.eyePatch}" transform="rotate(30 48 35)"/><ellipse cx="72" cy="35" rx="${o.patchR || 7}" ry="${(o.patchR || 7) * 1.2}" fill="${o.eyePatch}" transform="rotate(-30 72 35)"/>`;
+    if (o.patch) f += `<ellipse cx="72" cy="31" rx="9" ry="8" fill="${o.patch}" opacity=".85"/>`;
+    if (o.eyeDisc) f += `<circle cx="48.5" cy="34" r="9.5" fill="${o.eyeDisc}"/><circle cx="71.5" cy="34" r="9.5" fill="${o.eyeDisc}"/>`;
+    if (o.eyeSpot) f += `<ellipse cx="45" cy="29" rx="7" ry="4.5" fill="${o.eyeSpot}" transform="rotate(-15 45 29)"/><ellipse cx="75" cy="29" rx="7" ry="4.5" fill="${o.eyeSpot}" transform="rotate(15 75 29)"/>`;
+    if (o.stripes) f += `<path d="M60 12 v7 M53 13 l1.5 6 M67 13 l-1.5 6" stroke="${o.stripes}" stroke-width="2.6" stroke-linecap="round"/>` +
+      (o.cheekStripes ? `<path d="M30 36 l7 1.5 M30.5 42 l6.5 0 M90 36 l-7 1.5 M89.5 42 l-6.5 0" stroke="${o.stripes}" stroke-width="2.2" stroke-linecap="round"/>` : '');
+    // 입 둘레 흰 털 / 부리 / 돼지 코
+    if (o.face === 'beak' || o.face === 'fish') {
+      if (M) f += `<ellipse cx="60" cy="44" rx="11" ry="7" fill="${M}" opacity=".9"/>`;
+    } else if (M) f += `<ellipse cx="53" cy="44" rx="8.5" ry="6.5" fill="${M}"/><ellipse cx="67" cy="44" rx="8.5" ry="6.5" fill="${M}"/><ellipse cx="60" cy="48" rx="7" ry="4.5" fill="${M}"/>`;
+    // 눈: 까맣고 반짝이는 구슬 눈
+    const er = o.eye || 4.6;
+    [[49, 34], [71, 34]].forEach(([x, y]) => {
+      f += `<ellipse cx="${x}" cy="${y}" rx="${er}" ry="${f1(er * 1.12)}" fill="url(#${id}e)"/>`;
+      f += `<circle cx="${f1(x - er * 0.35)}" cy="${f1(y - er * 0.42)}" r="${f1(er * 0.38)}" fill="#fff"/><circle cx="${f1(x + er * 0.35)}" cy="${f1(y + er * 0.4)}" r="${f1(er * 0.16)}" fill="#fff" opacity=".9"/>`;
+    });
+    if (o.brows) f += `<path d="M44 26.5 L53 29 M76 26.5 L67 29" stroke="${o.brows}" stroke-width="2" stroke-linecap="round"/>`;
+    if (o.shaggy) f += `<path d="${fuzz(60, 22, 26, 9, 22, 2.4)}" fill="${o.shaggy}"/>`; // 삽살개: 눈을 덮는 앞머리
+    // 볼터치
+    f += [42, 78].map(x => `<ellipse cx="${x}" cy="42" rx="6" ry="3.6" fill="#ff7f99" opacity="${o.blush || 0.3}"/>`).join('');
+    // 코·입
+    if (o.face === 'beak') {
+      const b = o.beak || '#ffa62b', bd = shade(b, -0.25);
+      if (o.beakShape === 'duck') f += `<path d="M50 41 Q60 37 70 41 Q71 47 60 48 Q49 47 50 41 Z" fill="${b}"/><path d="M51 44.5 Q60 46.5 69 44.5" stroke="${bd}" stroke-width="1" fill="none"/><circle cx="57" cy="41.5" r=".7" fill="${bd}"/><circle cx="63" cy="41.5" r=".7" fill="${bd}"/>`;
+      else if (o.beakShape === 'hook') f += `<path d="M54.5 39 Q60 36 65.5 39 Q65 45 60 49 Q59 46 57 44 Q54.5 42 54.5 39 Z" fill="${b}"/><path d="M60 49 Q58.5 46 57 44" stroke="${bd}" stroke-width=".9" fill="none"/>`;
+      else if (o.beakShape === 'flamingo') f += `<path d="M55 39 Q60 37 65 39 L63 45 Q60 50 57 45 Z" fill="${b}"/><path d="M57.6 45.5 Q60 50 62.4 45.5 Q61 44 60 44 Q59 44 57.6 45.5 Z" fill="#2b2633"/>`;
+      else f += `<path d="M55.5 39.5 Q60 37.5 64.5 39.5 L60 46 Z" fill="${b}" stroke="${bd}" stroke-width=".6" stroke-linejoin="round"/>`;
+      if (o.wattle) f += `<ellipse cx="60" cy="49.5" rx="2.6" ry="3.4" fill="${o.wattle}"/>`;
+      return f;
+    }
+    if (o.face === 'snout') {
+      return f + `<ellipse cx="60" cy="43" rx="7.5" ry="5.2" fill="${o.nose}"/><ellipse cx="57.4" cy="43" rx="1.3" ry="1.9" fill="${shade(o.nose, -0.35)}"/><ellipse cx="62.6" cy="43" rx="1.3" ry="1.9" fill="${shade(o.nose, -0.35)}"/>` +
+        `<path d="M57 50 q3 2 6 0" stroke="${FUR_INK}" stroke-width="1.1" fill="none" stroke-linecap="round"/>`;
+    }
+    if (o.face === 'fish') { // 돌고래·고래·상어: 활짝 웃는 입
+      f += `<path d="M52 43.5 Q60 50 68 43.5" stroke="${FUR_INK}" stroke-width="1.3" fill="${o.teeth ? '#7a2a35' : 'none'}" stroke-linecap="round"/>`;
+      if (o.teeth) f += `<path d="M54 44.8 l1.5 2 l1.5 -1.6 l1.5 2 l1.5 -1.8 l1.5 2 l1.5 -1.8 l1.5 2 l1.5 -1.6 l1.5 2" stroke="#fff" stroke-width=".9" fill="none" stroke-linejoin="round"/>`;
+      return f;
+    }
+    if (o.bigNose) f += `<ellipse cx="60" cy="42" rx="5" ry="6" fill="${o.bigNose}"/><ellipse cx="58.6" cy="39.6" rx="1.4" ry="1" fill="#fff" opacity=".45"/>`;
+    else f += `<path d="M57.4 41.2 Q60 39.4 62.6 41.2 Q61.4 43.4 60 43.6 Q58.6 43.4 57.4 41.2 Z" fill="${o.nose || '#e8888a'}"/><path d="M58.6 41.4 q1 -.6 1.8 0" stroke="#fff" stroke-width=".6" opacity=".7" fill="none"/>`;
+    f += `<path d="M55.8 ${o.bigNose ? 49.5 : 44.6} q2.1 2.6 4.2 0 q2.1 2.6 4.2 0" stroke="${FUR_INK}" stroke-width="1.1" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`;
+    if (o.whisk) f += `<path d="M46 45 L34 43 M46 47 L35 48 M74 45 L86 43 M74 47 L85 48" stroke="${o.whisk}" stroke-width=".6" opacity=".85" stroke-linecap="round"/>`;
+    if (o.dots) f += [[50, 45], [48, 47.5], [70, 45], [72, 47.5]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r=".75" fill="${o.dots}"/>`).join('');
+    return f;
+  }
+
+  // 뒤쪽(몸 뒤에 그려요): 꼬리, 갈기, 지느러미, 물줄기
+  function fluffBack(o, F) {
+    let g = '';
+    if (o.mane) g += `<path d="${fuzz(60, 34, 37, 33, 26, 4.5)}" fill="${o.mane}"/>`;
+    switch (o.tail) {
+      case 'bushy': g += `<ellipse cx="96" cy="44" rx="9" ry="16" fill="${F}" transform="rotate(35 96 44)"/><ellipse cx="103" cy="33" rx="5" ry="6" fill="${o.tailTip || '#fff'}" transform="rotate(35 103 33)"/>`; break;
+      case 'long': g += `<path d="M86 52 Q104 52 104 36 Q104 28 98 30" fill="none" stroke="${o.tailColor || o.body}" stroke-width="5" stroke-linecap="round"/>` + (o.stripes ? `<path d="M86 52 Q104 52 104 36 Q104 28 98 30" fill="none" stroke="${o.stripes}" stroke-width="5" stroke-dasharray="2.5 5"/>` : '') + (o.tailTip ? `<circle cx="98" cy="29" r="4" fill="${o.tailTip}"/>` : ''); break;
+      case 'curl': g += `<path d="M88 46 q10 -2 9 -10 q-1 -6 -6 -3 q-3 3 1 5" fill="none" stroke="${o.tailColor || o.body}" stroke-width="4.2" stroke-linecap="round"/>`; break;
+      case 'thin': g += `<path d="M84 56 Q102 58 104 42" fill="none" stroke="${o.tailColor || o.body}" stroke-width="3" stroke-linecap="round"/>`; break;
+      case 'feather': g += `<path d="M84 46 L104 36 L100 46 L106 52 Z" fill="${o.tailColor}" stroke-linejoin="round"/>`; break;
+      case 'rooster': g += `<path d="M84 44 Q100 20 108 30 Q98 30 92 46 Z M86 48 Q106 34 110 46 Q100 42 90 52 Z" fill="${o.tailColor}"/>`; break;
+      case 'fish': g += `<path d="M86 48 Q98 44 102 32 Q108 38 114 34 Q110 44 104 50 Q96 56 86 54 Z" fill="${F}"/>`; break;
+      case 'otter': g += `<path d="M86 56 Q104 60 108 48" fill="none" stroke="${shade(o.body, -0.15)}" stroke-width="6" stroke-linecap="round"/>`; break;
+    }
+    if (o.fin) g += `<path d="M54 14 Q62 ${o.fin === 'tall' ? -10 : -2} 70 ${o.fin === 'tall' ? -8 : -1} Q66 6 68 14 Z" fill="${shade(o.body, -0.15)}"/>`;
+    if (o.spout) g += `<path d="M60 10 Q58 0 52 -4 M60 10 Q60 -2 60 -8 M60 10 Q62 0 68 -4" stroke="#8fd3ff" stroke-width="2.6" fill="none" stroke-linecap="round"/><circle cx="51" cy="-5" r="2.2" fill="#8fd3ff"/><circle cx="60" cy="-9.5" r="2.4" fill="#8fd3ff"/><circle cx="69" cy="-5" r="2.2" fill="#8fd3ff"/>`;
+    if (o.comb) g += `<path d="M50 14 Q50 2 56 6 Q58 -2 63 4 Q67 -1 69 8 Q72 8 70 14 Z" fill="${o.comb}"/>`;
+    if (o.tuft) g += `<path d="M58 12 Q55 2 60 3 Q58 7 62 6 Q61 10 62 12 Z" fill="${o.tuft}"/>`;
+    if (o.crest) g += `<path d="M54 13 Q50 -2 58 2 Q60 -4 64 2 Q70 0 66 13 Z" fill="${o.crest}"/>`;
+    return g;
+  }
+
+  function fluff(P, o) {
+    const id = P.id + 'm', B = o.body, F = `url(#${id}f)`;
+    const amp = o.smooth ? 0.5 : o.shaggy ? 2.8 : 1.9;
+    const defs = `<defs>
+      <radialGradient id="${id}f" cx=".45" cy=".35" r=".75"><stop offset="0" stop-color="${shade(B, 0.45)}"/><stop offset=".55" stop-color="${B}"/><stop offset="1" stop-color="${shade(B, -0.22)}"/></radialGradient>
+      <radialGradient id="${id}e" cx=".4" cy=".35" r=".7"><stop offset="0" stop-color="#3a3340"/><stop offset=".7" stop-color="#0d0b10"/><stop offset="1" stop-color="#000"/></radialGradient>
+    </defs>`;
+    const limb = o.limb || shade(B, 0.12);
+    // 발: 털 발(분홍 발바닥), 새 발, 물결(헤엄치는 동물)
+    let feet = '';
+    if (o.feet === 'bird') feet = [52, 68].map(x => `<path d="M${x} 58 V64 M${x} 64 l-3.5 1.5 M${x} 64 l3.5 1.5" stroke="${o.legs || '#f2a33a'}" stroke-width="2.4" stroke-linecap="round"/>`).join('');
+    else if (o.feet === 'flipper') feet = `<path d="M44 60 Q36 66 46 66 Q52 65 52 61 Z M76 60 Q84 66 74 66 Q68 65 68 61 Z" fill="${shade(B, -0.2)}"/>`;
+    else if (o.feet !== 'none') feet = [49, 71].map(x => `<ellipse cx="${x}" cy="63.5" rx="7" ry="3.4" fill="${o.limb || shade(B, -0.08)}"/><ellipse cx="${x}" cy="63.8" rx="3" ry="1.4" fill="#f4a7a0" opacity="${o.limb ? 0 : 0.8}"/>`).join('');
+    // 몸과 무늬
+    let body = `<path d="${fuzz(60, 37, 31.5, 26.5, 34, amp)}" fill="${F}"/><path d="${fuzz(60, 37, 25, 20, 26, amp * 0.6)}" fill="${shade(B, 0.18)}" opacity=".35"/>`;
+    if (o.cap) body += `<path d="M30 37 C29 18 42 10 60 10 C78 10 91 18 90 37 C85 30 75 25 67 28 L60 34 L53 28 C45 25 35 30 30 37 Z" fill="${o.cap}"/>`;
+    if (o.capDots) body += `<circle cx="49" cy="25" r="2" fill="${o.capDots}"/><circle cx="71" cy="25" r="2" fill="${o.capDots}"/>`;
+    if (o.facePatch) body += `<path d="M60 20 C70 13 86 20 84 36 C83 48 72 54 60 54 C48 54 37 48 36 36 C34 20 50 13 60 20 Z" fill="${o.facePatch}"/>`;
+    if (o.belly) body += `<ellipse cx="60" cy="54" rx="${o.bellyW || 15}" ry="${o.bellyH || 8}" fill="${o.belly}" opacity=".85"/>`;
+    if (o.grooves) body += [52, 56, 60, 64, 68].map(x => `<path d="M${x} 52 V61" stroke="${o.grooves}" stroke-width="1" opacity=".5" stroke-linecap="round"/>`).join('');
+    if (o.spots) body += [[38, 24], [84, 28], [36, 48], [86, 50], [44, 58]].map(([x, y]) => `<ellipse cx="${x}" cy="${y}" rx="2.2" ry="1.6" fill="${o.spots}" opacity=".7"/>`).join('');
+    if (o.bodyStripes) body += `<path d="M31 46 l7 -1 M32 52 l6 0 M89 46 l-7 -1 M88 52 l-6 0" stroke="${o.bodyStripes}" stroke-width="2.2" stroke-linecap="round"/>`;
+    // 앞발(주먹 불끈), 날개, 물갈퀴
+    let arms;
+    if (o.arms === 'wing') arms = [[30, 44, 20], [90, 44, -20]].map(([x, y, r]) => `<g transform="rotate(${r} ${x} ${y})"><ellipse cx="${x}" cy="${y}" rx="6.5" ry="11" fill="${o.wing || shade(B, -0.12)}"/><path d="M${x - 2.5} ${y + 3} q2.5 3 5 0 M${x - 2.5} ${y + 7} q2.5 3 5 0" stroke="${shade(o.wing || B, -0.25)}" stroke-width=".8" fill="none"/></g>`).join('');
+    else if (o.arms === 'flipper' || o.arms === 'fin') arms = [[31, 50, 35], [89, 50, -35]].map(([x, y, r]) => `<ellipse cx="${x}" cy="${y}" rx="${o.arms === 'fin' ? 4.5 : 5}" ry="${o.arms === 'fin' ? 9 : 10}" fill="${o.limb || shade(B, -0.18)}" transform="rotate(${r} ${x} ${y})"/>`).join('');
+    else arms = [38, 82].map(x => `<ellipse cx="${x}" cy="50" rx="5.4" ry="4.8" fill="${limb}"/><path d="M${x - 2} 48.5 v2.5 M${x + 1} 48.2 v2.5" stroke="${shade(o.limb || B, -0.3)}" stroke-width=".7" stroke-linecap="round" opacity=".6"/>`).join('');
+    // 해달: 배 위에 조개를 들고 있어요
+    const shell = o.shell ? `<path d="M53 50 Q60 42 67 50 Z" fill="#f6d7b8"/><path d="M56 50 L60 45 M60 50 V44.5 M64 50 L60 45" stroke="#d9a878" stroke-width=".7"/>` : '';
+    const water = o.feet === 'water' ? `<path d="M22 58 Q30 53 38 58 T54 58 T70 58 T86 58 T102 58 V66 H22 Z" fill="#5fb8f0" opacity=".9"/><path d="M22 58 Q30 53 38 58 T54 58 T70 58 T86 58 T102 58" stroke="#fff" stroke-width="1.6" fill="none" opacity=".85"/>` : '';
+    return defs + fluffBack(o, F) + fluffEars(o, F) + (o.feet === 'water' ? '' : feet) + body + flopEars(o) + fluffFace(o, id) + shell + arms + water;
+  }
+
+  // 동물마다 털 색과 생김새
+  Object.assign(SPECIAL, {
+    // 포유류
+    a_puppy:   P => fluff(P, { body: '#fffaf2', muzzle: '#ffffff', ears: 'flop', earColor: '#c98b55', patch: '#e4b07c', nose: '#3b2a24', tail: 'curl', tailColor: '#f3e3cf' }),
+    a_cat:     P => fluff(P, { body: '#f8c27e', muzzle: '#fff6e8', ears: 'cat', earIn: '#ffb3a7', stripes: '#dd8a3a', tail: 'long', whisk: '#fff' }),
+    a_rabbit:  P => fluff(P, { body: '#fff9f0', muzzle: '#ffffff', ears: 'long', earIn: '#ffc2cf', nose: '#f29aac', whisk: '#e6dccf' }),
+    a_bear:    P => fluff(P, { body: '#c8946a', muzzle: '#f1dcc4', ears: 'round', earIn: '#e9c3a0', nose: '#4a3328' }),
+    a_panda:   P => fluff(P, { body: '#ffffff', muzzle: '#ffffff', ears: 'round', earColor: '#2b2633', earIn: '#2b2633', nose: '#2b2633', eyePatch: '#2b2633', limb: '#2b2633' }),
+    a_hamster: P => fluff(P, { body: '#f2b77a', muzzle: '#fff3e2', ears: 'round', earColor: '#c98a5a', earIn: '#f4a7a0', belly: '#fff3e2', whisk: '#fff' }),
+    a_fox:     P => fluff(P, { body: '#f39a4c', muzzle: '#fff8ef', ears: 'fox', earIn: '#fff1e2', earTip: '#4a3328', nose: '#3b2a24', belly: '#fff8ef', tail: 'bushy', limb: '#5a3a28' }),
+    a_tiger:   P => fluff(P, { body: '#f6a13a', muzzle: '#fff8ef', ears: 'round', earColor: '#f6a13a', earIn: '#fff1e2', stripes: '#3a2a1e', cheekStripes: true, bodyStripes: '#3a2a1e', belly: '#fff8ef', tail: 'long', nose: '#e8888a' }),
+    a_pig:     P => fluff(P, { body: '#f9bccb', ears: 'pig', earColor: '#f6a8bb', face: 'snout', nose: '#f48aa6', tail: 'curl', tailColor: '#f48aa6', blush: 0.4 }),
+    a_koala:   P => fluff(P, { body: '#b4bac4', muzzle: '#e8eaee', ears: 'koala', earColor: '#b4bac4', earIn: '#eef0f3', bigNose: '#2f2a33', belly: '#e8eaee' }),
+    a_husky:   P => fluff(P, { body: '#fdfdfd', muzzle: '#ffffff', ears: 'cat', earColor: '#6f7987', earIn: '#f1d9d6', cap: '#7c8695', capDots: '#ffffff', nose: '#2f2a33', tail: 'curl', tailColor: '#8c96a5' }),
+    a_jindo:   P => fluff(P, { body: '#e2b675', muzzle: '#fbf1de', ears: 'cat', earIn: '#f6d7b8', nose: '#3b2a24', belly: '#fbf1de', tail: 'curl' }),
+    a_pungsan: P => fluff(P, { body: '#fbfaf6', muzzle: '#ffffff', ears: 'cat', earColor: '#efeae1', earIn: '#f6d7d0', nose: '#3b2a24', tail: 'curl', tailColor: '#efeae1' }),
+    a_sapsal:  P => fluff(P, { body: '#a3988c', muzzle: '#c2b8ad', ears: 'flop', earColor: '#8e8378', shaggy: '#8e8378', nose: '#2f2a33', tail: 'bushy', tailTip: '#8e8378' }),
+    a_lion:    P => fluff(P, { body: '#f2b552', muzzle: '#fff3dc', mane: '#c9752a', ears: 'round', earColor: '#f2b552', earIn: '#fbe1b4', nose: '#8a4a2a', belly: '#fff3dc', tail: 'long', tailTip: '#c9752a' }),
+    a_meerkat: P => fluff(P, { body: '#dcb57e', muzzle: '#f1dcbc', ears: 'side', earColor: '#6b4a30', earIn: '#b48a5a', eyePatch: '#6b4a30', patchR: 5.5, nose: '#3b2a24', belly: '#f1dcbc', tail: 'thin' }),
+    // 조류
+    b_chick:   P => fluff(P, { body: '#ffd84a', face: 'beak', beak: '#ff9f1c', arms: 'wing', wing: '#f5c21f', feet: 'bird', tuft: '#f5c21f', blush: 0.4 }),
+    b_duck:    P => fluff(P, { body: '#fffaf0', face: 'beak', beak: '#ff9f1c', beakShape: 'duck', arms: 'wing', wing: '#ece6da', feet: 'bird', legs: '#ff9f1c', tuft: '#ece6da' }),
+    b_penguin: P => fluff(P, { body: '#2c3550', smooth: true, facePatch: '#ffffff', face: 'beak', beak: '#ffa62b', arms: 'wing', wing: '#232a40', feet: 'bird', legs: '#ffa62b', blush: 0.45 }),
+    b_owl:     P => fluff(P, { body: '#a8774f', ears: 'tuft', earColor: '#8a5d3a', eyeDisc: '#f3e2c8', eye: 4.4, face: 'beak', beak: '#e0a43a', beakShape: 'hook', belly: '#f3e2c8', bellyW: 16, bellyH: 9, arms: 'wing', wing: '#8a5d3a', feet: 'bird', legs: '#e0a43a' }),
+    b_sparrow: P => fluff(P, { body: '#b07d52', cap: '#8a5a35', muzzle: '#f4e6d4', face: 'beak', beak: '#3a2a22', belly: '#f4e6d4', arms: 'wing', wing: '#7a5232', feet: 'bird', legs: '#c98b55', tail: 'feather', tailColor: '#7a5232' }),
+    b_parrot:  P => fluff(P, { body: '#3cc46b', muzzle: '#bff0cf', face: 'beak', beak: '#f2f2f2', beakShape: 'hook', crest: '#2aa457', arms: 'wing', wing: '#1f8fd6', feet: 'bird', legs: '#8a8f99', tail: 'feather', tailColor: '#e2412e' }),
+    b_magpie:  P => fluff(P, { body: '#26262e', smooth: true, face: 'beak', beak: '#2b2b33', belly: '#ffffff', bellyW: 17, bellyH: 9, arms: 'wing', wing: '#2f5fb8', feet: 'bird', legs: '#3a3a40', tail: 'feather', tailColor: '#1b2f6b', blush: 0.45 }),
+    b_eagle:   P => fluff(P, { body: '#7a5232', cap: '#f4efe6', face: 'beak', beak: '#ffc21a', beakShape: 'hook', brows: '#4a3020', arms: 'wing', wing: '#5a3a22', feet: 'bird', legs: '#ffc21a', tail: 'feather', tailColor: '#f4efe6' }),
+    b_flamingo: P => fluff(P, { body: '#ff9cbc', face: 'beak', beak: '#fff1e6', beakShape: 'flamingo', arms: 'wing', wing: '#ff7fa6', feet: 'bird', legs: '#ff7fa6', blush: 0.45 }),
+    b_swan:    P => fluff(P, { body: '#ffffff', face: 'beak', beak: '#ff8c1a', arms: 'wing', wing: '#eef1f5', feet: 'water', tuft: '#eef1f5' }),
+    b_rooster: P => fluff(P, { body: '#fffaf0', face: 'beak', beak: '#f2a33a', comb: '#e2412e', wattle: '#e2412e', arms: 'wing', wing: '#efe4d2', feet: 'bird', legs: '#f2a33a', tail: 'rooster', tailColor: '#2f6b3a' }),
+    // 해양 동물
+    m_sealion: P => fluff(P, { body: '#9a7350', smooth: true, muzzle: '#c8a67f', nose: '#3b2a24', dots: '#3b2a24', whisk: '#f4e6d4', arms: 'flipper', feet: 'flipper' }),
+    m_kangchi: P => fluff(P, { body: '#66615d', smooth: true, muzzle: '#8f8984', nose: '#26222a', dots: '#26222a', whisk: '#d8d3ce', arms: 'flipper', feet: 'flipper', belly: '#8f8984' }),
+    m_seal:    P => fluff(P, { body: '#aab5c3', smooth: true, muzzle: '#dfe5ec', nose: '#3a3540', dots: '#3a3540', whisk: '#ffffff', spots: '#6f7c8c', arms: 'flipper', feet: 'flipper', belly: '#dfe5ec' }),
+    m_otter:   P => fluff(P, { body: '#8b6545', muzzle: '#e8d6bd', ears: 'side', earColor: '#7a5638', earIn: '#b48a5a', nose: '#2f2a33', whisk: '#f4e6d4', belly: '#d9c1a2', tail: 'otter', shell: true }),
+    m_dolphin: P => fluff(P, { body: '#7fb6e6', smooth: true, face: 'fish', muzzle: '#cfe6f8', belly: '#f4f8fb', fin: 'short', tail: 'fish', arms: 'fin', feet: 'water' }),
+    m_shark:   P => fluff(P, { body: '#8494a8', smooth: true, face: 'fish', teeth: true, belly: '#f4f8fb', fin: 'tall', tail: 'fish', arms: 'fin', feet: 'water' }),
+    m_whale:   P => fluff(P, { body: '#4a6fa5', smooth: true, face: 'fish', belly: '#cfdcef', bellyW: 18, bellyH: 9, grooves: '#7f9cc6', spout: true, tail: 'fish', arms: 'fin', feet: 'water' }),
+    m_orca:    P => fluff(P, { body: '#2a2a33', smooth: true, face: 'fish', eyeSpot: '#ffffff', belly: '#ffffff', bellyW: 17, fin: 'tall', tail: 'fish', arms: 'fin', feet: 'water', blush: 0.45 })
+  });
+
+  // ===== 애니메이션 자동차 얼굴: 앞 유리에 큰 눈, 앞 범퍼에 웃는 입 =====
+  // 눈은 앞(오른쪽)을 바라보고, 위 눈꺼풀 선이 있어요. (x, y): 앞 유리 가운데, r: 크기
+  function toonEyes(x, y, r, id) {
+    const rx = r * 0.56, ry = r * 0.74;
+    return [-0.6, 0.6].map(k => {
+      const ex = x + k * r, ey = y + 1;
+      return `<ellipse cx="${f1(ex)}" cy="${f1(ey)}" rx="${f1(rx)}" ry="${f1(ry)}" fill="#fff" stroke="#2a2430" stroke-width=".9"/>` +
+        `<ellipse cx="${f1(ex + rx * 0.28)}" cy="${f1(ey + ry * 0.08)}" rx="${f1(rx * 0.58)}" ry="${f1(ry * 0.62)}" fill="url(#${id}m)"/>` +
+        `<circle cx="${f1(ex + rx * 0.12)}" cy="${f1(ey - ry * 0.22)}" r="${f1(rx * 0.24)}" fill="#fff"/>` +
+        `<path d="M${f1(ex - rx * 1.05)} ${f1(ey - ry * 0.55)} Q${f1(ex)} ${f1(ey - ry * 1.35)} ${f1(ex + rx * 1.05)} ${f1(ey - ry * 0.55)}" fill="none" stroke="#2a2430" stroke-width="1.2" stroke-linecap="round"/>`;
+    }).join('') + `<defs><radialGradient id="${id}m" cx=".4" cy=".35" r=".7"><stop offset="0" stop-color="#4a4256"/><stop offset=".7" stop-color="#16121c"/><stop offset="1" stop-color="#000"/></radialGradient></defs>`;
+  }
+  // 앞 범퍼의 웃는 입과 볼(전조등 아래)
+  function toonMouth(lx, ly, dark) {
+    const x = lx + 1, y = ly + 7.5;
+    return `<ellipse cx="${f1(lx - 4)}" cy="${f1(ly + 6.5)}" rx="4" ry="2.2" fill="#ff7f99" opacity=".45"/>` +
+      `<path d="M${x - 7} ${y} Q${x} ${y + 7.5} ${x + 7} ${y} Q${x} ${y + 2.4} ${x - 7} ${y} Z" fill="#5a1d2c" stroke="#2a2430" stroke-width="1" stroke-linejoin="round"/>` +
+      `<path d="M${x - 3} ${y + 3.4} Q${x} ${y + 5.6} ${x + 3} ${y + 3.4}" fill="#ff8fa0"/><path d="M${x - 5.5} ${y + 0.6} H${x + 5.5}" stroke="#fff" stroke-width="1.3" stroke-linecap="round"/>`;
+  }
+
+  // 따로 그린 탈것의 얼굴 자리: [눈 가운데 x, y, 크기]. 몸통 앞쪽(오른쪽)에 눈과 웃는 입을 그려요.
+  // (말마차·루돌프 썰매처럼 동물이 끄는 것, 얼굴이 이미 있는 거북이 등, 창이 꽉 찬 가마, 마법 빗자루는 얼굴을 넣지 않아요)
+  const FACES = {
+    stonecart: [73, 34, 4.6], hwacha: [79, 28, 6.7], rickshaw: [36, 41, 4], tram: [92, 40, 5.5], steam: [88, 33, 6],
+    tiller: [100, 32, 3.8], tank: [82, 26, 4.5], spg: [75, 21, 8], x_carpet: [85, 48, 4.1], x_rocket: [91, 37, 5.4], x_ufo: [85, 40, 6.8],
+    x_cloud: [80, 42, 5.5], p_balloon: [60, 16, 8], s_banana: [98, 47, 4.5], x_paperplane: [75, 38, 4.5],
+    x_sled: [75, 45, 3.5], p_airliner: [76, 33, 5.4], p_fighter: [89, 35, 4.1], p_light: [95, 37, 5],
+    p_biplane: [92, 36, 4.8], p_heli: [88, 43, 4.5], p_blimp: [87, 19, 8], p_seaplane: [93, 38, 5], p_glider: [85, 36, 3.5],
+    p_aerobatic: [100, 36, 4], s_turtle: [81, 37, 5.4], s_panokseon: [85, 47, 5], s_sailboat: [84, 47, 4.5], s_yacht: [86, 48, 4],
+    s_carrier: [87, 48, 4.5], s_submarine: [85, 48, 7.5], s_cruise: [87, 51, 5.4], s_fishing: [85, 48, 6.8], s_motorboat: [89, 48, 6.8],
+    s_container: [88, 50, 4.5], t_subway: [87, 31, 8], t_train: [88, 32, 8], t_excavator: [30, 36, 5], t_dump: [106, 37, 5.2],
+    t_mixer: [107, 37, 4.7], t_forklift: [75, 42, 6.8], t_crane: [88, 38, 6], f_tractor: [98, 40, 6.1], f_combine: [64, 30, 8],
+    f_transplanter: [89, 40, 4.8], f_drone: [68, 40, 3.8]
+  };
+  function objFace(kind, id) {
+    const f = FACES[kind];
+    if (!f) return '';
+    const [x, y, r] = f, mx = x + r * 0.15, my = y + r * 1.05, w = r * 0.75;
+    return toonEyes(x, y, r, id + 'o') +
+      `<ellipse cx="${f1(x - r * 1.35)}" cy="${f1(my - r * 0.1)}" rx="${f1(r * 0.42)}" ry="${f1(r * 0.24)}" fill="#ff7f99" opacity=".5"/><ellipse cx="${f1(x + r * 1.35)}" cy="${f1(my - r * 0.1)}" rx="${f1(r * 0.42)}" ry="${f1(r * 0.24)}" fill="#ff7f99" opacity=".5"/>` +
+      `<path d="M${f1(mx - w)} ${f1(my)} Q${f1(mx)} ${f1(my + w * 1.1)} ${f1(mx + w)} ${f1(my)} Q${f1(mx)} ${f1(my + w * 0.35)} ${f1(mx - w)} ${f1(my)} Z" fill="#5a1d2c" stroke="#2a2430" stroke-width=".7" stroke-linejoin="round"/>`;
+  }
+
   function carSVG(i) {
     const n = CARS.length, k = ((i % n) + n) % n, c = CARS[k], id = 'car' + k + '_' + (++carUid);
     const dark = shade(c.body, -0.38), lite = shade(c.body, 0.42), deep = shade(c.body, -0.6);
@@ -1055,8 +1285,8 @@
         <radialGradient id="${id}r" cx=".35" cy=".3" r=".8"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#c9ccd6"/></radialGradient>
         <radialGradient id="${id}l"><stop offset="0" stop-color="#fffbe0"/><stop offset="1" stop-color="#ffe9a0" stop-opacity="0"/></radialGradient>
       </defs>
-      <ellipse cx="60" cy="65" rx="57" ry="6.5" fill="url(#${id}s)"/>`;
-    if (SPECIAL[c.kind]) return top + SPECIAL[c.kind](P) + '</svg>';
+      <ellipse cx="60" cy="65" rx="${/캐릭터/.test(c.group) ? 36 : 57}" ry="6.5" fill="url(#${id}s)"/>`;
+    if (SPECIAL[c.kind]) return top + SPECIAL[c.kind](P) + objFace(c.kind, id) + '</svg>';
 
     const s = SHAPES[c.kind];
     const [hx, hy, hr] = s.head;
@@ -1069,12 +1299,14 @@
       bigRound: `<circle cx="${s.lx + 2}" cy="${s.ly}" r="4.2" fill="#fffbe6" stroke="#a9adba" stroke-width="1"/>`
     };
     const light = `<circle cx="${s.lx + 5}" cy="${s.ly + 2}" r="7" fill="url(#${id}l)"/>` + lights[s.light];
-    return top + `
-      <defs><clipPath id="${id}c"><rect x="0" y="-30" width="120" height="${s.belt + 30}"/></clipPath></defs>
+    // 애니메이션 자동차처럼: 몸은 짧고 통통하게(가로 0.84배, 세로 1.1배), 바퀴는 크게
+    const tx = x => 60 + (x - 60) * 0.84;
+    return top + `<g transform="translate(60 57) scale(.84 1.1) translate(-60 -57)">
+      <defs><clipPath id="${id}c"><rect x="0" y="-30" width="120" height="${s.belt + 30}"/></clipPath><clipPath id="${id}v">${s.win.map(d => `<path d="${d}"/>`).join("")}</clipPath></defs>
       ${s.body.map(d => `<path d="${d}" fill="url(#${id}b)" stroke="${dark}" stroke-width="1.1" stroke-linejoin="round"/>`).join('')}
       ${s.rails ? `<path d="${s.rails}" stroke="${deep}" stroke-width="2.2" stroke-linecap="round"/>` : ''}
       ${s.win.map(d => `<path d="${d}" fill="url(#${id}w)"/>`).join('')}
-      <g clip-path="url(#${id}c)">${driver(c.driver, hx, hy, hr)}</g>
+      ${s.eyes ? `<g clip-path="url(#${id}c)">${driver(c.driver, hx, hy, hr)}</g>${toonEyes(s.eyes[0], s.eyes[1], s.eyes[2], id)}` : `<g clip-path="url(#${id}v)">${toonEyes(hx, hy, hr, id)}</g>`}
       ${s.win.map(d => `<path d="${d}" fill="url(#${id}g)"/>`).join('')}
       <path d="M${w0 - 16} ${s.belt + 5} H${wN + 14}" stroke="#fff" stroke-opacity=".55" stroke-width="2.2" stroke-linecap="round"/>
       <rect x="${w0 - 14}" y="${s.belt + 10}" width="${wN - w0 + 26}" height="3" rx="1.5" fill="${c.stripe}" opacity=".9"/>
@@ -1085,7 +1317,8 @@
       <rect x="6.6" y="${s.belt + 6}" width="3" height="5" rx="1.2" fill="#ff5b4f"/>
       <rect x="${wN + 9}" y="50.5" width="${Math.max(6, 118 - wN - 9)}" height="4" rx="2" fill="#e3e5ec" stroke="#a9adba" stroke-width=".6"/>
       <rect x="4" y="50.5" width="${w0 - 15}" height="4" rx="2" fill="#e3e5ec" stroke="#a9adba" stroke-width=".6"/>
-      ${s.wheels.map(w => wheel(w, id, deep)).join('')}
+      ${toonMouth(s.lx, s.ly, dark)}</g>
+      ${s.wheels.map(w => `<g transform="translate(${f1(tx(w))} 56) scale(1.15) translate(${-w} -56)">${wheel(w, id, deep)}</g>`).join('')}
     </svg>`;
   }
 

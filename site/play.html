@@ -37,6 +37,22 @@
     <p id="joinErr" class="err" role="alert"></p>
     <button class="btn primary wide" type="submit">입장하기</button>
   </form>
+  <!-- 탈것을 누르면 크게 보기 -->
+  <div id="carView" class="car-view hidden" role="dialog" aria-modal="true" aria-labelledby="cvName">
+    <div class="cv-card">
+      <p class="cv-group" id="cvGroup"></p>
+      <div class="cv-stage">
+        <button type="button" class="cv-nav" id="cvPrev" aria-label="이전 탈것">‹</button>
+        <div class="cv-car" id="cvCar"></div>
+        <button type="button" class="cv-nav" id="cvNext" aria-label="다음 탈것">›</button>
+      </div>
+      <h2 id="cvName"></h2>
+      <div class="cv-btns">
+        <button type="button" class="btn" id="cvBack">다시 고를래요</button>
+        <button type="button" class="btn primary" id="cvPick">이걸로 할래요</button>
+      </div>
+    </div>
+  </div>
 </main>
 
 <!-- 기다리기 -->

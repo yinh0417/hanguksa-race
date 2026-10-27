@@ -170,10 +170,8 @@
         $$('#carPick .car-opt').forEach(o => { o.hidden = o.dataset.g !== t.dataset.g; });
         t.scrollIntoView({ inline: 'nearest', block: 'nearest' });
       }));
-      $$('#carPick .car-opt').forEach(b => b.addEventListener('click', () => {
-        carChoice = +b.dataset.car;
-        $$('#carPick .car-opt').forEach(x => x.setAttribute('aria-checked', String(x === b)));
-      }));
+      // 누르면 크게 보여 주고, '이걸로 할래요'를 눌러야 골라져요
+      $$('#carPick .car-opt').forEach(b => b.addEventListener('click', () => openCarView(+b.dataset.car)));
       const max = C.studentsPerClass || 30;
       $('#noPick').innerHTML = Array.from({ length: max }, (_, i) => `<button type="button" class="no-opt" role="radio" aria-checked="false" data-no="${i + 1}">${i + 1}</button>`).join('');
       $$('#noPick .no-opt').forEach(b => b.addEventListener('click', () => {
@@ -191,6 +189,43 @@
       show('#sJoin');
     }
   }
+
+  // ---------- 탈것 크게 보기 ----------
+  let viewCar = null;
+  function openCarView(i) {
+    viewCar = i;
+    const c = A.CARS[i];
+    $('#cvGroup').textContent = c.group;
+    $('#cvName').textContent = c.name;
+    $('#cvCar').innerHTML = A.carSVG(i);
+    $('#cvPick').textContent = carChoice === i ? '골랐어요 ✓' : '이걸로 할래요';
+    $('#carView').classList.remove('hidden');
+    $('#cvPick').focus({ preventScroll: true });
+  }
+  function closeCarView() { $('#carView').classList.add('hidden'); viewCar = null; }
+  // 같은 종류 안에서 앞뒤로 넘겨 봐요
+  function stepCarView(d) {
+    const same = A.CARS.map((c, i) => i).filter(i => A.CARS[i].group === A.CARS[viewCar].group);
+    openCarView(same[(same.indexOf(viewCar) + d + same.length) % same.length]);
+  }
+  $('#cvPrev').addEventListener('click', () => stepCarView(-1));
+  $('#cvNext').addEventListener('click', () => stepCarView(1));
+  $('#cvBack').addEventListener('click', closeCarView);
+  $('#cvPick').addEventListener('click', () => {
+    carChoice = viewCar;
+    $$('#carPick .car-opt').forEach(x => x.setAttribute('aria-checked', String(+x.dataset.car === carChoice)));
+    // 다른 종류에서 넘겨 고른 경우에도 그 종류 탭을 보여 줘요
+    const pick = $(`#carPick .car-opt[data-car="${carChoice}"]`);
+    if (pick && pick.hidden) $(`#carPick .car-tab[data-g="${pick.dataset.g}"]`).click();
+    closeCarView();
+  });
+  $('#carView').addEventListener('click', e => { if (e.target === $('#carView')) closeCarView(); });
+  document.addEventListener('keydown', e => {
+    if (viewCar == null) return;
+    if (e.key === 'Escape') closeCarView();
+    if (e.key === 'ArrowLeft') stepCarView(-1);
+    if (e.key === 'ArrowRight') stepCarView(1);
+  });
 
   // 닉네임 금칙어: 입력하는 동안 바로 알려 주고 입장 버튼을 막습니다
   const BANNED_MSG = '사용할 수 없는 말이 들어 있어요. 친구가 기분 나쁘지 않은 닉네임으로 바꿔 주세요.';
