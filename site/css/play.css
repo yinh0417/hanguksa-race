@@ -196,9 +196,6 @@ body.phone { background: var(--cheong-deep); }
 .sa-input.wrong { background: #ffe9e7; box-shadow: inset 0 0 0 3px var(--red); animation: shake .35s; }
 .ans.sa-submit { min-height: 60px; font: 600 20px var(--font-body); background: var(--primary); color: #fff; }
 
-/* 탈것 고르기: 종류별 제목 */
-.car-group { grid-column: 1 / -1; margin: 8px 0 0; font-size: 14px; font-weight: 600; color: var(--ink-48); }
-.car-group:first-child { margin-top: 0; }
 .car-opt span { line-height: 1.2; word-break: keep-all; text-align: center; }
 
 /* 레이스 중 배경: 지금 지나는 곳의 단원 장면 (어둡게 깔아서 문제 글씨가 잘 보이게) */
@@ -230,3 +227,14 @@ body.phone { background: var(--cheong-deep); }
 .ans.tried .ch-pic { filter: grayscale(1); }
 .sa-hint.reveal b { letter-spacing: 0; background: #ffd60a; color: #1d1d1f; }
 .race-screen .sa-hint { justify-self: center; background: rgba(0,0,0,.6); border-radius: 12px; padding: 6px 12px; }
+
+/* 탈것 고르기: 종류 탭 */
+.car-tabs { grid-column: 1 / -1; display: flex; gap: 6px; overflow-x: auto; padding: 2px 0 6px; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+.car-tabs::-webkit-scrollbar { display: none; }
+.car-tab { flex: none; border: 0; border-radius: 9999px; padding: 7px 12px; font: 600 13px var(--font-body); background: var(--parchment); color: var(--ink); white-space: nowrap; }
+.car-tab[aria-selected="true"] { background: var(--primary); color: #fff; }
+.car-opt[hidden] { display: none; }
+
+/* 골인 화면: '골인!'을 크게, 기다림 문구는 작게(순위는 큰 화면 시상대에서) */
+.done h2 { font-size: 44px; letter-spacing: -0.03em; }
+.done-rank { font-size: 20px; line-height: 1.4; word-break: keep-all; max-width: 18em; }

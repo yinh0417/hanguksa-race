@@ -1,5 +1,5 @@
 /*
- * 그림: 탈것 25종과 시대별 배경 장면
+ * 그림: 탈것 75종과 시대별 배경 장면
  * 모든 그림은 코드로 그린 평면 그림입니다. 장면 하나를 바꾸려면
  * SCENE_ART의 해당 함수만 고치면 됩니다.
  */
@@ -8,7 +8,7 @@
   const SKIN = '#F2C7A0';
   const W = 300, H = 200, GROUND = 150; // 장면 한 칸의 크기
 
-  // 탈것 25종: 실제 종류의 느낌만 살린 창작 디자인(상표·로고·국가 표식 없음), 운전자는 귀여운 동물
+  // 탈것 75종(8가지 종류): 실제 종류의 느낌만 살린 창작 디자인(상표·로고·국가 표식 없음), 운전자는 귀여운 동물
   // 순서를 바꾸면 이미 고른 학생의 차가 달라지니, 새 탈것은 맨 뒤에 붙여 주세요.
   const CARS = [
     { name: '전기차',   group: '자동차', kind: 'ev',     driver: 'rabbit',  body: '#E2412E', stripe: '#FFD9CF' },
@@ -35,7 +35,57 @@
     { name: '경찰차',     group: '일하는 차·군용 차', kind: 'police',    driver: 'penguin', body: '#1F3B8C', stripe: '#FFFFFF' },
     { name: '소방차',     group: '일하는 차·군용 차', kind: 'fire',      driver: 'hamster', body: '#D7261E', stripe: '#FFD84A' },
     { name: '시내버스',   group: '일하는 차·군용 차', kind: 'bus',       driver: 'chick',   body: '#2F9E44', stripe: '#D7F5DF' },
-    { name: '택시',       group: '일하는 차·군용 차', kind: 'taxi',      driver: 'puppy',   body: '#F7A11A', stripe: '#FFF0C8' }
+    { name: '택시',       group: '일하는 차·군용 차', kind: 'taxi',      driver: 'puppy',   body: '#F7A11A', stripe: '#FFF0C8' },
+    { name: '루돌프 썰매', group: '특별한 탈것', kind: 'x_rudolph',    driver: 'bear',    body: '#D7261E', stripe: '#F5C242' },
+    { name: '호박 마차',   group: '특별한 탈것', kind: 'x_pumpkin',    driver: 'cat',     body: '#F28C28', stripe: '#D4A72C' },
+    { name: '마법 양탄자', group: '특별한 탈것', kind: 'x_carpet',     driver: 'fox',     body: '#B3262E', stripe: '#F5C242' },
+    { name: '마법 빗자루', group: '특별한 탈것', kind: 'x_broom',      driver: 'rabbit',  body: '#8A5A2B', stripe: '#6B3FA0' },
+    { name: '둥실 구름',   group: '특별한 탈것', kind: 'x_cloud',      driver: 'hamster', body: '#FFFFFF', stripe: '#8FD3FF' },
+    { name: '우주 로켓',   group: '특별한 탈것', kind: 'x_rocket',     driver: 'penguin', body: '#F4F5F7', stripe: '#E2412E' },
+    { name: '비행접시',    group: '특별한 탈것', kind: 'x_ufo',        driver: 'koala',   body: '#A9B1BD', stripe: '#34C759' },
+    { name: '종이비행기',  group: '특별한 탈것', kind: 'x_paperplane', driver: 'puppy',   body: '#FFFFFF', stripe: '#3FB6E8' },
+    { name: '눈썰매',      group: '특별한 탈것', kind: 'x_sled',       driver: 'panda',   body: '#C98B55', stripe: '#D7261E' },
+    { name: '거북이 등',   group: '특별한 탈것', kind: 'x_turtle',     driver: 'chick',   body: '#3E9A4D', stripe: '#FF8FA3' },
+    { name: '여객기',      group: '하늘을 나는 탈것', kind: 'p_airliner',  driver: 'owl',     body: '#F4F5F7', stripe: '#0A6AD8' },
+    { name: '전투기',      group: '하늘을 나는 탈것', kind: 'p_fighter',   driver: 'eagle',   body: '#8A95A8', stripe: '#5B6578' },
+    { name: '경비행기',    group: '하늘을 나는 탈것', kind: 'p_light',     driver: 'sparrow', body: '#E2412E', stripe: '#FFFFFF' },
+    { name: '복엽기',      group: '하늘을 나는 탈것', kind: 'p_biplane',   driver: 'tiger',   body: '#F5C242', stripe: '#D7261E' },
+    { name: '헬리콥터',    group: '하늘을 나는 탈것', kind: 'p_heli',      driver: 'bear',    body: '#2F7FD1', stripe: '#FFFFFF' },
+    { name: '열기구',      group: '하늘을 나는 탈것', kind: 'p_balloon',   driver: 'pig',     body: '#FF6B6B', stripe: '#FFD93B' },
+    { name: '비행선',      group: '하늘을 나는 탈것', kind: 'p_blimp',     driver: 'duck',    body: '#C9CED8', stripe: '#0A84FF' },
+    { name: '수상 비행기', group: '하늘을 나는 탈것', kind: 'p_seaplane',  driver: 'parrot',  body: '#2F9E44', stripe: '#FFFFFF' },
+    { name: '글라이더',    group: '하늘을 나는 탈것', kind: 'p_glider',    driver: 'magpie',  body: '#FFFFFF', stripe: '#E2412E' },
+    { name: '곡예 비행기', group: '하늘을 나는 탈것', kind: 'p_aerobatic', driver: 'cat',     body: '#0A3D91', stripe: '#FFFFFF' },
+    { name: '거북선',      group: '바다의 탈것', kind: 's_turtle',    driver: 'tiger',   body: '#6B4A2B', stripe: '#D9A441' },
+    { name: '판옥선',      group: '바다의 탈것', kind: 's_panokseon', driver: 'bear',    body: '#A0703F', stripe: '#E2412E' },
+    { name: '황포 돛배',   group: '바다의 탈것', kind: 's_sailboat',  driver: 'rabbit',  body: '#8B5A2B', stripe: '#E8B04A' },
+    { name: '요트',        group: '바다의 탈것', kind: 's_yacht',     driver: 'penguin', body: '#FFFFFF', stripe: '#0A84FF' },
+    { name: '항공모함',    group: '바다의 탈것', kind: 's_carrier',   driver: 'eagle',   body: '#7C8594', stripe: '#5B6578' },
+    { name: '잠수함',      group: '바다의 탈것', kind: 's_submarine', driver: 'koala',   body: '#F5C242', stripe: '#2B2B33' },
+    { name: '크루즈선',    group: '바다의 탈것', kind: 's_cruise',    driver: 'hamster', body: '#1F3B8C', stripe: '#E2412E' },
+    { name: '어선',        group: '바다의 탈것', kind: 's_fishing',   driver: 'puppy',   body: '#2F7FD1', stripe: '#FFD84A' },
+    { name: '모터보트',    group: '바다의 탈것', kind: 's_motorboat', driver: 'fox',     body: '#E2412E', stripe: '#FFFFFF' },
+    { name: '컨테이너선',  group: '바다의 탈것', kind: 's_container', driver: 'panda',   body: '#9C3B2B', stripe: '#FFFFFF' },
+    { name: '병아리',      group: '귀여운 새', kind: 'b_chick',    driver: 'chick',    body: '#FFD84A', stripe: '#F5C21F' },
+    { name: '오리',        group: '귀여운 새', kind: 'b_duck',     driver: 'duck',     body: '#FFFAF0', stripe: '#FF9F1C' },
+    { name: '펭귄',        group: '귀여운 새', kind: 'b_penguin',  driver: 'penguin',  body: '#2C3550', stripe: '#E2412E' },
+    { name: '부엉이',      group: '귀여운 새', kind: 'b_owl',      driver: 'owl',      body: '#A8774F', stripe: '#F3E2C8' },
+    { name: '참새',        group: '귀여운 새', kind: 'b_sparrow',  driver: 'sparrow',  body: '#B07D52', stripe: '#F4E6D4' },
+    { name: '앵무새',      group: '귀여운 새', kind: 'b_parrot',   driver: 'parrot',   body: '#3CC46B', stripe: '#1F8FD6' },
+    { name: '까치',        group: '귀여운 새', kind: 'b_magpie',   driver: 'magpie',   body: '#26262E', stripe: '#2F5FB8' },
+    { name: '독수리',      group: '귀여운 새', kind: 'b_eagle',    driver: 'eagle',    body: '#7A5232', stripe: '#FFC21A' },
+    { name: '홍학',        group: '귀여운 새', kind: 'b_flamingo', driver: 'flamingo', body: '#FF9CBC', stripe: '#FF7FA6' },
+    { name: '백조',        group: '귀여운 새', kind: 'b_swan',     driver: 'swan',     body: '#FFFFFF', stripe: '#FF8C1A' },
+    { name: '강아지',      group: '귀여운 동물', kind: 'a_puppy',   driver: 'puppy',   body: '#FFFAF2', stripe: '#C98B55' },
+    { name: '고양이',      group: '귀여운 동물', kind: 'a_cat',     driver: 'cat',     body: '#F8C27E', stripe: '#E08F3C' },
+    { name: '토끼',        group: '귀여운 동물', kind: 'a_rabbit',  driver: 'rabbit',  body: '#FFFFFF', stripe: '#FFC2CF' },
+    { name: '곰',          group: '귀여운 동물', kind: 'a_bear',    driver: 'bear',    body: '#C8946A', stripe: '#F1DCC4' },
+    { name: '판다',        group: '귀여운 동물', kind: 'a_panda',   driver: 'panda',   body: '#FFFFFF', stripe: '#2B2633' },
+    { name: '햄스터',      group: '귀여운 동물', kind: 'a_hamster', driver: 'hamster', body: '#F4CF9C', stripe: '#FFF7EA' },
+    { name: '여우',        group: '귀여운 동물', kind: 'a_fox',     driver: 'fox',     body: '#F39A4C', stripe: '#FFF8EF' },
+    { name: '호랑이',      group: '귀여운 동물', kind: 'a_tiger',   driver: 'tiger',   body: '#F6A13A', stripe: '#3A2A1E' },
+    { name: '아기 돼지',   group: '귀여운 동물', kind: 'a_pig',     driver: 'pig',     body: '#F9BCCB', stripe: '#F28EA6' },
+    { name: '코알라',      group: '귀여운 동물', kind: 'a_koala',   driver: 'koala',   body: '#B4BAC4', stripe: '#E8EAEE' }
   ];
 
   // 차 모양: 몸체, 창문, 창문 아랫선(운전자가 보이는 높이), 운전자 위치, 바퀴 위치, 앞등 위치
@@ -179,6 +229,44 @@
       case 'chick':
         return `<path d="M${x} ${f(y - r * 0.95)} q${f(-r * 0.25)} ${f(-r * 0.5)} ${f(r * 0.05)} ${f(-r * 0.6)} M${x} ${f(y - r * 0.95)} q${f(r * 0.3)} ${f(-r * 0.4)} ${f(r * 0.4)} ${f(-r * 0.25)}" fill="none" stroke="#f2b600" stroke-width="${f(r * 0.14)}" stroke-linecap="round"/>` + head('#ffd84a') + face(null, '#c47a00') +
           `<path d="M${f(x - r * 0.16)} ${f(y + r * 0.22)} L${f(x + r * 0.16)} ${f(y + r * 0.22)} L${x} ${f(y + r * 0.4)} Z" fill="#ff9a1f"/>`;
+      // ---- 새로 더한 동물 얼굴(동물 탈것과 운전자에 함께 써요) ----
+      case 'fox':
+        return `<path d="M${f(x - r * 0.95)} ${f(y - r * 0.1)} L${f(x - r * 0.75)} ${f(y - r * 1.3)} L${f(x - r * 0.05)} ${f(y - r * 0.85)} Z M${f(x + r * 0.95)} ${f(y - r * 0.1)} L${f(x + r * 0.75)} ${f(y - r * 1.3)} L${f(x + r * 0.05)} ${f(y - r * 0.85)} Z" fill="#f08a3c" stroke="rgba(0,0,0,.18)" stroke-width=".7"/>` +
+          `<path d="M${f(x - r * 0.72)} ${f(y - r * 0.55)} L${f(x - r * 0.68)} ${f(y - r * 1.05)} L${f(x - r * 0.35)} ${f(y - r * 0.8)} Z M${f(x + r * 0.72)} ${f(y - r * 0.55)} L${f(x + r * 0.68)} ${f(y - r * 1.05)} L${f(x + r * 0.35)} ${f(y - r * 0.8)} Z" fill="#fff3e6"/>` +
+          head('#f39a4c') + `<ellipse cx="${x}" cy="${f(y + r * 0.42)}" rx="${f(r * 0.78)}" ry="${f(r * 0.5)}" fill="#fff8ef"/>` + face() + `<ellipse cx="${x}" cy="${f(y + r * 0.18)}" rx="${f(r * 0.13)}" ry="${f(r * 0.09)}" fill="#2b2633"/>`;
+      case 'tiger':
+        return [-1, 1].map(s => `<circle cx="${f(x + s * r * 0.72)}" cy="${f(y - r * 0.72)}" r="${f(r * 0.3)}" fill="#f6a13a" stroke="rgba(0,0,0,.18)" stroke-width=".7"/><circle cx="${f(x + s * r * 0.72)}" cy="${f(y - r * 0.72)}" r="${f(r * 0.14)}" fill="#fff4e0"/>`).join('') + head('#f6a13a') +
+          `<path d="M${x} ${f(y - r * 0.95)} v${f(r * 0.35)} M${f(x - r * 0.28)} ${f(y - r * 0.9)} l${f(r * 0.06)} ${f(r * 0.28)} M${f(x + r * 0.28)} ${f(y - r * 0.9)} l${f(-r * 0.06)} ${f(r * 0.28)} M${f(x - r)} ${f(y)} h${f(r * 0.28)} M${f(x + r)} ${f(y)} h${f(-r * 0.28)} M${f(x - r * 0.97)} ${f(y + r * 0.24)} h${f(r * 0.22)} M${f(x + r * 0.97)} ${f(y + r * 0.24)} h${f(-r * 0.22)}" stroke="#3a2a1e" stroke-width="${f(r * 0.1)}" stroke-linecap="round"/>` +
+          `<ellipse cx="${x}" cy="${f(y + r * 0.4)}" rx="${f(r * 0.5)}" ry="${f(r * 0.32)}" fill="#fff8ef"/>` + face() + `<path d="M${f(x - r * 0.12)} ${f(y + r * 0.14)} h${f(r * 0.24)} l${f(-r * 0.12)} ${f(r * 0.12)} Z" fill="#ff8fa3"/>`;
+      case 'pig':
+        return `<path d="M${f(x - r * 0.85)} ${f(y - r * 0.4)} L${f(x - r * 0.75)} ${f(y - r * 1.15)} L${f(x - r * 0.25)} ${f(y - r * 0.85)} Z M${f(x + r * 0.85)} ${f(y - r * 0.4)} L${f(x + r * 0.75)} ${f(y - r * 1.15)} L${f(x + r * 0.25)} ${f(y - r * 0.85)} Z" fill="#f49cb0" stroke="rgba(0,0,0,.15)" stroke-width=".7"/>` + head('#f9bccb') + face(-r * 0.12) +
+          `<ellipse cx="${x}" cy="${f(y + r * 0.32)}" rx="${f(r * 0.34)}" ry="${f(r * 0.24)}" fill="#f28ea6" stroke="#d96b86" stroke-width=".6"/><ellipse cx="${f(x - r * 0.12)}" cy="${f(y + r * 0.32)}" rx="${f(r * 0.06)}" ry="${f(r * 0.1)}" fill="#a8445f"/><ellipse cx="${f(x + r * 0.12)}" cy="${f(y + r * 0.32)}" rx="${f(r * 0.06)}" ry="${f(r * 0.1)}" fill="#a8445f"/>`;
+      case 'koala':
+        return [-1, 1].map(s => `<circle cx="${f(x + s * r * 0.88)}" cy="${f(y - r * 0.45)}" r="${f(r * 0.45)}" fill="#a3a9b4" stroke="rgba(0,0,0,.15)" stroke-width=".7"/><circle cx="${f(x + s * r * 0.88)}" cy="${f(y - r * 0.45)}" r="${f(r * 0.25)}" fill="#f1f1f4"/>`).join('') +
+          head('#b4bac4') + face(-r * 0.05) + `<ellipse cx="${x}" cy="${f(y + r * 0.18)}" rx="${f(r * 0.2)}" ry="${f(r * 0.26)}" fill="#3a3640"/>`;
+      case 'duck':
+        return head('#fffaf0') + face(-r * 0.05) + `<ellipse cx="${x}" cy="${f(y + r * 0.32)}" rx="${f(r * 0.42)}" ry="${f(r * 0.17)}" fill="#ff9f1c" stroke="#e07f00" stroke-width=".6"/>`;
+      case 'owl':
+        return `<path d="M${f(x - r * 0.9)} ${f(y - r * 0.5)} L${f(x - r * 0.7)} ${f(y - r * 1.25)} L${f(x - r * 0.3)} ${f(y - r * 0.85)} Z M${f(x + r * 0.9)} ${f(y - r * 0.5)} L${f(x + r * 0.7)} ${f(y - r * 1.25)} L${f(x + r * 0.3)} ${f(y - r * 0.85)} Z" fill="#8a5d3b"/>` + head('#a8774f') +
+          [-1, 1].map(s => `<circle cx="${f(x + s * r * 0.4)}" cy="${f(y - r * 0.02)}" r="${f(r * 0.34)}" fill="#fff8ec"/><circle cx="${f(x + s * r * 0.4)}" cy="${f(y)}" r="${f(r * 0.16)}" fill="#2b2633"/><circle cx="${f(x + s * r * 0.4 + r * 0.05)}" cy="${f(y - r * 0.06)}" r="${f(r * 0.06)}" fill="#fff"/>`).join('') +
+          `<path d="M${f(x - r * 0.12)} ${f(y + r * 0.3)} L${f(x + r * 0.12)} ${f(y + r * 0.3)} L${x} ${f(y + r * 0.52)} Z" fill="#f2b13a"/>`;
+      case 'sparrow':
+        return head('#a0704a') + [-1, 1].map(s => `<ellipse cx="${f(x + s * r * 0.55)}" cy="${f(y + r * 0.25)}" rx="${f(r * 0.32)}" ry="${f(r * 0.26)}" fill="#fff6ea"/>`).join('') + face() +
+          `<path d="M${f(x - r * 0.13)} ${f(y + r * 0.18)} L${f(x + r * 0.13)} ${f(y + r * 0.18)} L${x} ${f(y + r * 0.38)} Z" fill="#4a3a2a"/>`;
+      case 'parrot':
+        return `<path d="M${x} ${f(y - r * 0.95)} q${f(r * 0.1)} ${f(-r * 0.5)} ${f(r * 0.45)} ${f(-r * 0.55)} M${x} ${f(y - r * 0.95)} q${f(-r * 0.15)} ${f(-r * 0.45)} ${f(r * 0.1)} ${f(-r * 0.7)}" stroke="#e2412e" stroke-width="${f(r * 0.14)}" fill="none" stroke-linecap="round"/>` + head('#3cc46b') + face(-r * 0.08) +
+          `<path d="M${f(x - r * 0.16)} ${f(y + r * 0.12)} q${f(r * 0.16)} ${f(-r * 0.1)} ${f(r * 0.32)} 0 q0 ${f(r * 0.28)} ${f(-r * 0.12)} ${f(r * 0.36)} q${f(-r * 0.2)} ${f(-r * 0.12)} ${f(-r * 0.2)} ${f(-r * 0.36)} Z" fill="#ffc93c" stroke="#d99a00" stroke-width=".6"/>`;
+      case 'magpie':
+        return head('#26262e', 'rgba(0,0,0,.3)') + [-1, 1].map(s => `<circle cx="${f(x + s * r * 0.38)}" cy="${f(y + r * 0.04)}" r="${f(r * 0.24)}" fill="#fff"/>`).join('') + face() +
+          `<path d="M${f(x - r * 0.13)} ${f(y + r * 0.22)} L${f(x + r * 0.13)} ${f(y + r * 0.22)} L${x} ${f(y + r * 0.44)} Z" fill="#55565e"/>`;
+      case 'eagle':
+        return head('#7a5232') + `<ellipse cx="${x}" cy="${f(y + r * 0.2)}" rx="${f(r * 0.72)}" ry="${f(r * 0.6)}" fill="#f1dcc0"/>` + face(r * 0.02) +
+          `<path d="M${f(x - r * 0.62)} ${f(y - r * 0.32)} l${f(r * 0.4)} ${f(r * 0.12)} M${f(x + r * 0.62)} ${f(y - r * 0.32)} l${f(-r * 0.4)} ${f(r * 0.12)}" stroke="#4a301c" stroke-width="${f(r * 0.1)}" stroke-linecap="round"/>` +
+          `<path d="M${f(x - r * 0.18)} ${f(y + r * 0.16)} q${f(r * 0.18)} ${f(-r * 0.1)} ${f(r * 0.36)} 0 q0 ${f(r * 0.24)} ${f(-r * 0.18)} ${f(r * 0.34)} q${f(-r * 0.18)} ${f(-r * 0.1)} ${f(-r * 0.18)} ${f(-r * 0.34)} Z" fill="#ffc21a" stroke="#d99a00" stroke-width=".6"/>`;
+      case 'flamingo':
+        return head('#ff9cbc') + face(-r * 0.05) + `<path d="M${f(x - r * 0.1)} ${f(y + r * 0.2)} q${f(r * 0.45)} ${f(-r * 0.05)} ${f(r * 0.5)} ${f(r * 0.32)} l${f(-r * 0.2)} ${f(r * 0.12)} q${f(-r * 0.05)} ${f(-r * 0.2)} ${f(-r * 0.3)} ${f(-r * 0.2)} Z" fill="#fff0f4" stroke="#2b2633" stroke-width=".6"/>`;
+      case 'swan':
+        return head('#ffffff') + face(-r * 0.05) + `<path d="M${f(x - r * 0.15)} ${f(y + r * 0.18)} L${f(x + r * 0.15)} ${f(y + r * 0.18)} L${x} ${f(y + r * 0.46)} Z" fill="#ff8c1a"/><circle cx="${x}" cy="${f(y + r * 0.16)}" r="${f(r * 0.1)}" fill="#2b2633"/>`;
     }
     return head('#fff') + face();
   }
@@ -369,6 +457,348 @@
       <path d="M28 22 H88" stroke="${P.deep}" stroke-width="1" opacity=".4"/>
       ${camo(P, [[46, 18, 9, 3.5], [74, 28, 8, 3], [20, 41, 8, 2.6], [100, 41, 7, 2.6]])}`
   };
+
+  // ---------- 특별한 탈것·하늘·바다·새·동물 (각 10종) ----------
+  const dk = (c, a) => shade(c, -(a || 0.3));
+  const lt = (c, a) => shade(c, a || 0.4);
+  // 바다 탈것 아래 물결
+  function water(y) {
+    let d = `M0 ${y}`;
+    for (let x = 0; x < 120; x += 15) d += ` q7.5 -4 15 0`;
+    return `<path d="${d} V72 H0 Z" fill="#5ab8e8" opacity=".9"/><path d="${d}" fill="none" stroke="#fff" stroke-width="1.6" opacity=".85"/>`;
+  }
+  // 둥근 창(유리) 안에 운전자: d는 창 모양 path
+  function bubble(P, d, inner) {
+    return `<defs><clipPath id="${P.id}q"><path d="${d}"/></clipPath></defs><path d="${d}" fill="url(#${P.id}w)"/><g clip-path="url(#${P.id}q)">${inner}</g><path d="${d}" fill="url(#${P.id}g)"/>`;
+  }
+  // 프로펠러(빠르게 도는 모습)
+  const prop = x => `<ellipse cx="${x}" cy="37" rx="2" ry="13" fill="#55565e" opacity=".45"/><circle cx="${x - 1}" cy="37" r="3" fill="#2b2b33"/>`;
+  const sparkle = (x, y, s, c) => `<path d="M${x} ${y - s} L${x + s * 0.3} ${y - s * 0.3} L${x + s} ${y} L${x + s * 0.3} ${y + s * 0.3} L${x} ${y + s} L${x - s * 0.3} ${y + s * 0.3} L${x - s} ${y} L${x - s * 0.3} ${y - s * 0.3} Z" fill="${c || '#ffd60a'}"/>`;
+
+  // 귀여운 네발 동물: 몸통, 달리는 다리, 꼬리 + 큰 얼굴
+  function beast(P, kind, o) {
+    const B = o.body, D = o.dark || dk(B, 0.25), L = o.legs || D;
+    let tail;
+    if (o.tail === 'bushy') tail = `<ellipse cx="18" cy="38" rx="13" ry="7" fill="${B}" stroke="${D}" stroke-width="1" transform="rotate(-25 18 38)"/><ellipse cx="8" cy="33" rx="5" ry="4" fill="${o.tip || '#fff8ef'}" transform="rotate(-25 8 33)"/>`;
+    else if (o.tail === 'curl') tail = `<path d="M24 42 q-8 -2 -7 -8 q1 -5 5 -3 q3 2 -1 4" fill="none" stroke="${D}" stroke-width="2.6" stroke-linecap="round"/>`;
+    else if (o.tail === 'long') tail = `<path d="M24 42 q-12 -2 -14 -14" fill="none" stroke="${B}" stroke-width="5" stroke-linecap="round"/>` + (o.stripes ? `<path d="M24 42 q-12 -2 -14 -14" fill="none" stroke="#3a2a1e" stroke-width="5" stroke-dasharray="2.5 4"/>` : '');
+    else tail = `<circle cx="22" cy="40" r="6" fill="${o.tip || B}" stroke="${D}" stroke-width="1"/>`;
+    const leg = (x, dy) => `<rect x="${x}" y="${50 + dy}" width="9" height="${14 - dy}" rx="4.5" fill="${L}"/><ellipse cx="${x + 5}" cy="64" rx="6" ry="2.6" fill="${L}"/>`;
+    const stripes = o.stripes ? [38, 50, 62].map(x => `<path d="M${x} 30 q3 6 0 12" stroke="#3a2a1e" stroke-width="2.4" fill="none" stroke-linecap="round"/>`).join('') : '';
+    return tail + leg(30, 2) + leg(64, 2) +
+      `<ellipse cx="52" cy="44" rx="31" ry="15" fill="${B}" stroke="${D}" stroke-width="1.1"/><ellipse cx="55" cy="50" rx="20" ry="6.5" fill="${o.belly || lt(B, 0.5)}"/>` + stripes +
+      leg(39, 0) + leg(73, 0) + driver(kind, 88, 27, 17);
+  }
+  // 귀여운 새: 둥근 몸, 날개, 꼬리깃, 가는 다리 + 큰 얼굴
+  function bird(P, kind, o) {
+    const B = o.body, D = dk(B, 0.25), lg = o.legs || '#f2a33a';
+    return `<path d="M50 54 L48 64 M62 54 L64 64" stroke="${lg}" stroke-width="2.6" stroke-linecap="round"/><path d="M44 65 h8 M60 65 h8" stroke="${lg}" stroke-width="2.4" stroke-linecap="round"/>` +
+      `<path d="M32 40 L13 31 L18 42 L11 49 Z" fill="${o.tail || D}" stroke="${D}" stroke-width="1" stroke-linejoin="round"/>` +
+      `<ellipse cx="54" cy="42" rx="26" ry="17" fill="${B}" stroke="${D}" stroke-width="1.1"/><ellipse cx="60" cy="48" rx="15" ry="8" fill="${o.belly || lt(B, 0.5)}"/>` +
+      `<ellipse cx="47" cy="40" rx="15" ry="8.5" fill="${o.wing || D}" transform="rotate(-18 47 40)"/>` + driver(kind, 80, 24, 15);
+  }
+
+  Object.assign(SPECIAL, {
+    // ===== 특별한 탈것 =====
+    // 크리스마스: 빨간 썰매를 끄는 루돌프
+    x_rudolph: P => `
+      <path d="M66 40 L84 38" stroke="#7a4a22" stroke-width="1.6"/>
+      <path d="M88 46 L86 63 M93 47 L93 63 M102 47 L104 63 M107 45 L109 63" stroke="#8a5a32" stroke-width="3" stroke-linecap="round"/>
+      <ellipse cx="96" cy="40" rx="14" ry="8" fill="#a7743f" stroke="#7a4a22" stroke-width="1"/>
+      <path d="M104 37 L108 26 L114 27 L111 38 Z" fill="#a7743f" stroke="#7a4a22" stroke-width="1" stroke-linejoin="round"/>
+      <path d="M108 20 l-4 -8 M108 20 l-1 -9 M106 15 l-4 -2 M112 20 l3 -8 M113 16 l4 -2" stroke="#6b4423" stroke-width="1.6" stroke-linecap="round"/>
+      <circle cx="111" cy="24" r="6.5" fill="#b9854f" stroke="#7a4a22" stroke-width="1"/><circle cx="113" cy="22.5" r="1.1" fill="#2b2633"/>
+      <circle cx="118" cy="25" r="2.8" fill="#ff3b30"/><circle cx="118" cy="25" r="5" fill="#ff3b30" opacity=".25"/>
+      <path d="M93 34.5 L104 33" stroke="${P.c.stripe}" stroke-width="2"/>
+      <ellipse cx="18" cy="26" rx="9" ry="8" fill="#8b5a2b"/><path d="M14 19 q4 -4 8 0" stroke="#5a3a1e" stroke-width="1.6" fill="none"/>
+      ${seated(P.c, 38, 22, 8.5, '#d7261e')}
+      <path d="M30 18 Q38 2 48 16 Z" fill="#d7261e"/><path d="M29 18 H47" stroke="#fff" stroke-width="3" stroke-linecap="round"/><circle cx="40" cy="5" r="2.4" fill="#fff"/>
+      <path d="M10 46 Q8 30 22 28 H60 Q66 28 66 36 V46 Z" ${BODY(P)}/>
+      <path d="M12 34 H64" stroke="${P.c.stripe}" stroke-width="2"/>
+      <path d="M18 46 V58 M56 46 V58" stroke="${P.c.stripe}" stroke-width="2"/>
+      <path d="M4 58 H66 Q74 58 72 51" stroke="${P.c.stripe}" stroke-width="3" fill="none" stroke-linecap="round"/>`,
+    // 할로윈: 호박 마차
+    x_pumpkin: P => `
+      <path d="M24 52 H90" stroke="#9c7a1c" stroke-width="3"/>
+      <ellipse cx="38" cy="32" rx="16" ry="21" fill="#e9781c"/><ellipse cx="76" cy="32" rx="16" ry="21" fill="#e9781c"/>
+      <ellipse cx="57" cy="32" rx="26" ry="24" ${BODY(P)}/>
+      <path d="M57 9 Q48 32 57 56 M57 9 Q66 32 57 56" stroke="${P.dark}" stroke-width="1" fill="none" opacity=".6"/>
+      ${inWindow(P, 'k', [[46, 21, 22, 17]], driver(P.c.driver, 57, 32, 8.5))}
+      <rect x="46" y="21" width="22" height="17" rx="2" fill="none" stroke="${P.c.stripe}" stroke-width="2"/>
+      <path d="M57 9 q-1 -7 4 -10" stroke="#3e7a3a" stroke-width="3" fill="none" stroke-linecap="round"/><path d="M61 0 q8 -4 10 2 q-2 4 -6 2" stroke="#4f9a4a" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+      ${spokeWheel(28, 54, 11, P.c.stripe)}${spokeWheel(88, 54, 11, P.c.stripe)}`,
+    // 알라딘처럼 하늘을 나는 마법 양탄자(창작)
+    x_carpet: P => `
+      ${sparkle(14, 20, 4)}${sparkle(104, 14, 3.5, '#fff')}${sparkle(96, 58, 3)}
+      ${seated(P.c, 60, 26, 9, '#3a7bd5')}
+      <path d="M8 46 Q24 40 40 46 T72 46 T104 46 L112 52 Q96 58 80 52 T48 52 T16 52 Z" ${BODY(P)}/>
+      <path d="M14 49 Q26 45 40 49 T72 49 T104 49" stroke="${P.c.stripe}" stroke-width="1.6" fill="none" stroke-dasharray="4 3"/>
+      <path d="M8 46 l-4 2 M9 49 l-4 3 M10 52 l-4 3 M112 52 l4 2 M110 55 l4 3" stroke="${P.c.stripe}" stroke-width="1.4" stroke-linecap="round"/>`,
+    // 마법 빗자루
+    x_broom: P => `
+      ${sparkle(8, 24, 3)}${sparkle(16, 60, 2.5, '#fff')}${sparkle(30, 14, 2)}
+      <path d="M20 44 L114 36" stroke="#8a5a2b" stroke-width="3.6" stroke-linecap="round"/>
+      <path d="M26 41 L2 30 L4 56 L26 47 Z" fill="#e8c26a" stroke="#b8902e" stroke-width="1"/><path d="M24 43 L6 36 M24 44 L5 44 M24 45 L6 52" stroke="#b8902e" stroke-width=".9"/>
+      ${seated(P.c, 66, 22, 9, P.c.stripe)}
+      <path d="M54 15 H78" stroke="#4a2a6b" stroke-width="3" stroke-linecap="round"/><path d="M58 15 L67 -5 L75 15 Z" fill="${P.c.stripe}"/>`,
+    // 둥실 구름
+    x_cloud: P => `
+      <circle cx="44" cy="34" r="15" fill="#e2f0fc" stroke="#bcd7ef" stroke-width="1.2"/><circle cx="74" cy="32" r="16" fill="#e2f0fc" stroke="#bcd7ef" stroke-width="1.2"/>
+      ${seated(P.c, 60, 14, 9, P.c.stripe)}
+      ${[[26, 46, 12], [46, 42, 15], [70, 42, 16], [92, 46, 12]].map(([x, y, r]) => `<circle cx="${x}" cy="${y}" r="${r}" fill="#fff" stroke="#bcd7ef" stroke-width="1.2"/>`).join("")}
+      <rect x="22" y="44" width="76" height="14" rx="7" fill="#fff"/><path d="M26 56 H94" stroke="${P.c.stripe}" stroke-width="2" opacity=".6" stroke-linecap="round"/>`,
+    // 우주 로켓
+    x_rocket: P => `
+      ${sparkle(30, 6, 2.5, '#fff')}${sparkle(100, 60, 2, '#fff')}
+      <path d="M16 32 L-2 38 L16 44 Z" fill="#ff9f0a"/><path d="M16 35 L6 38 L16 41 Z" fill="#ffe066"/>
+      <path d="M22 30 L8 16 L36 30 Z" fill="${P.c.stripe}"/><path d="M22 46 L8 60 L36 46 Z" fill="${P.c.stripe}"/>
+      <path d="M14 30 H86 Q112 30 118 38 Q112 46 86 46 H14 Z" ${BODY(P)}/>
+      <path d="M92 30.5 Q110 31 118 38 Q110 45 92 45.5 Z" fill="${P.c.stripe}"/>
+      ${bubble(P, 'M66 38 m-7 0 a7 7 0 1 0 14 0 a7 7 0 1 0 -14 0', driver(P.c.driver, 66, 39, 6.5))}
+      <circle cx="66" cy="38" r="7" fill="none" stroke="#9aa0ae" stroke-width="1.6"/>`,
+    // 비행접시
+    x_ufo: P => `
+      <path d="M48 50 L36 64 H84 L72 50 Z" fill="#c8f7d4" opacity=".45"/>
+      ${bubble(P, 'M38 38 Q60 8 82 38 Z', driver(P.c.driver, 60, 30, 9))}
+      <ellipse cx="60" cy="42" rx="52" ry="10" ${BODY(P)}/><ellipse cx="60" cy="39" rx="40" ry="4" fill="#fff" opacity=".35"/>
+      ${[18, 34, 50, 66, 82, 98].map((x, i) => `<circle cx="${x + 2}" cy="${i % 5 ? 45 : 43}" r="2.4" fill="${['#ff3b30', '#ffd60a', '#34c759', '#0a84ff'][i % 4]}"/>`).join('')}`,
+    // 종이비행기
+    x_paperplane: P => `
+      <path d="M4 30 L118 36 L40 48 Z" fill="#fff" stroke="#c9ccd6" stroke-width="1"/>
+      <path d="M40 48 L118 36 L52 41 Z" fill="#e6e9f0" stroke="#c9ccd6" stroke-width="1"/>
+      <path d="M40 48 L52 41 L46 58 Z" fill="#d3d7e0" stroke="#c9ccd6" stroke-width="1"/>
+      <path d="M16 33 L100 36" stroke="${P.c.stripe}" stroke-width="1.4" stroke-dasharray="3 3"/>
+      ${seated(P.c, 64, 16, 8.5, P.c.stripe)}`,
+    // 눈썰매
+    x_sled: P => `
+      <path d="M0 64 Q60 56 120 64 V72 H0 Z" fill="#f4f8ff"/>
+      ${sparkle(14, 12, 2.5, '#cfe6ff')}${sparkle(100, 8, 3, '#cfe6ff')}${sparkle(108, 30, 2, '#cfe6ff')}
+      ${seated(P.c, 56, 26, 9, '#3a7bd5')}
+      <path d="M47 22 Q56 9 65 22 Z" fill="${P.c.stripe}"/><circle cx="56" cy="11" r="2.6" fill="#fff"/><path d="M47 33 H66 M64 33 l-4 8" stroke="${P.c.stripe}" stroke-width="3" stroke-linecap="round"/>
+      <rect x="16" y="42" width="80" height="6" rx="2" ${BODY(P)}/>
+      <path d="M24 48 V56 M84 48 V56" stroke="#7a5530" stroke-width="2.4"/>
+      <path d="M10 58 H98 Q112 58 112 46" stroke="#b02a2a" stroke-width="3" fill="none" stroke-linecap="round"/>`,
+    // 거북이 등에 타고
+    x_turtle: P => `
+      ${[30, 46, 74, 90].map(x => `<ellipse cx="${x}" cy="58" rx="7" ry="6" fill="#5fae5f" stroke="#3e7a3a" stroke-width="1"/>`).join('')}
+      <path d="M18 48 l-8 4" stroke="#5fae5f" stroke-width="4" stroke-linecap="round"/>
+      <circle cx="106" cy="40" r="10" fill="#6fbe6a" stroke="#3e7a3a" stroke-width="1"/><circle cx="109" cy="37" r="1.8" fill="#2b2633"/><path d="M106 44 q3 2 6 0" stroke="#2b2633" stroke-width="1.2" fill="none" stroke-linecap="round"/><ellipse cx="103" cy="43" rx="2" ry="1.2" fill="#ff8fa3" opacity=".7"/>
+      <path d="M20 50 Q60 0 100 50 Z" ${BODY(P)}/>
+      <path d="M44 30 l8 -6 h16 l8 6 l-8 8 h-16 Z M30 46 l8 -8 M90 46 l-8 -8 M44 38 l-8 10 M76 38 l8 10" stroke="${lt(P.c.body, 0.35)}" stroke-width="1.6" fill="none"/>
+      <path d="M18 50 H102" stroke="${dk(P.c.body, 0.3)}" stroke-width="3" stroke-linecap="round"/>
+      ${seated(P.c, 60, 6, 8, P.c.stripe)}`,
+
+    // ===== 하늘을 나는 탈것 =====
+    p_airliner: P => `
+      <path d="M50 38 L36 56 L48 56 L72 38 Z" fill="${dk(P.c.body, 0.15)}" stroke="#9aa0ae" stroke-width=".8"/>
+      <ellipse cx="46" cy="47" rx="8" ry="3.6" fill="#c9ccd6" stroke="#9aa0ae" stroke-width=".8"/>
+      <path d="M14 27 L8 8 L18 8 L30 27 Z" fill="${P.c.stripe}"/>
+      <path d="M8 34 Q10 26 22 26 H96 Q114 26 118 34 Q114 42 96 42 H18 Q10 42 8 34 Z" ${BODY(P)}/>
+      <rect x="18" y="36" width="96" height="2.4" fill="${P.c.stripe}"/>
+      ${Array.from({ length: 9 }, (_, i) => `<circle cx="${30 + i * 7}" cy="31.5" r="1.7" fill="#7fa4c0"/>`).join('')}
+      ${inWindow(P, 'k', [[98, 27, 13, 8]], driver(P.c.driver, 104, 33, 6))}`,
+    p_fighter: P => `
+      <ellipse cx="3" cy="36" rx="6" ry="3" fill="#ff9f0a" opacity=".9"/>
+      <path d="M10 31 L4 13 L14 13 L26 31 Z" fill="${dk(P.c.body, 0.15)}"/>
+      <path d="M38 38 L80 38 L54 58 L32 58 Z" fill="${dk(P.c.body, 0.2)}"/>
+      <path d="M6 36 L20 30 H84 L118 36 L84 42 H20 Z" ${BODY(P)}/>
+      ${bubble(P, 'M66 31 Q78 16 96 31 Z', driver(P.c.driver, 80, 28, 7.5))}
+      <path d="M100 36 H116" stroke="${P.c.stripe}" stroke-width="1.4"/>`,
+    p_light: P => `
+      <path d="M58 25 L52 40 M76 25 L80 40" stroke="#9aa0ae" stroke-width="1.6"/>
+      <path d="M14 32 L8 18 L16 18 L26 32 Z" fill="${dk(P.c.body, 0.15)}"/>
+      <path d="M52 46 L48 54 M86 46 L88 54" stroke="#55565e" stroke-width="1.8"/><circle cx="48" cy="56" r="4" fill="#2b2b33"/><circle cx="88" cy="56" r="4" fill="#2b2b33"/>
+      <path d="M14 38 Q16 30 30 30 H82 Q100 30 104 38 Q100 46 82 46 H30 Q16 46 14 38 Z" ${BODY(P)}/>
+      <path d="M20 40 H102" stroke="${P.c.stripe}" stroke-width="2.4"/>
+      ${inWindow(P, 'k', [[64, 30.5, 18, 8]], driver(P.c.driver, 73, 37, 7))}
+      <rect x="40" y="20" width="50" height="5" rx="2.5" fill="${dk(P.c.body, 0.1)}" stroke="${P.dark}" stroke-width=".8"/>
+      ${prop(108)}`,
+    p_biplane: P => `
+      <path d="M52 21 V44 M80 21 V44" stroke="#8a5a32" stroke-width="1.8"/>
+      <rect x="40" y="16" width="52" height="5" rx="2.5" fill="${dk(P.c.body, 0.1)}" stroke="${P.dark}" stroke-width=".8"/>
+      <path d="M58 22 q-14 -2 -24 6" stroke="${P.c.stripe}" stroke-width="3" fill="none" stroke-linecap="round"/>
+      ${driver(P.c.driver, 66, 23, 7.5)}
+      <path d="M12 30 L8 18 L16 18 L24 30 Z" fill="${P.c.stripe}"/>
+      <path d="M54 46 L50 54 M84 46 L86 54" stroke="#55565e" stroke-width="1.8"/><circle cx="50" cy="56" r="4" fill="#2b2b33"/><circle cx="86" cy="56" r="4" fill="#2b2b33"/>
+      <path d="M12 34 Q14 28 26 28 H90 Q104 30 106 36 Q104 42 90 42 H26 Q14 42 12 34 Z" ${BODY(P)}/>
+      <rect x="40" y="43" width="52" height="5" rx="2.5" fill="${dk(P.c.body, 0.1)}" stroke="${P.dark}" stroke-width=".8"/>
+      ${prop(109)}`,
+    p_heli: P => `
+      <path d="M70 18 V24" stroke="#55565e" stroke-width="2.4"/><rect x="18" y="14" width="96" height="3" rx="1.5" fill="#55565e" opacity=".75"/><circle cx="70" cy="16" r="2.6" fill="#2b2b33"/>
+      <path d="M46 34 L8 30 L8 36 L46 42 Z" fill="${dk(P.c.body, 0.1)}"/><circle cx="9" cy="31" r="7" fill="none" stroke="#55565e" stroke-width="1.6" opacity=".7"/>
+      <path d="M52 50 V58 M88 50 V58 M44 58 H96" stroke="#55565e" stroke-width="2.4" stroke-linecap="round"/>
+      <path d="M44 48 Q40 24 70 22 Q92 22 96 40 Q96 50 84 50 H52 Q44 50 44 48 Z" ${BODY(P)}/>
+      <path d="M48 44 H92" stroke="${P.c.stripe}" stroke-width="2.4"/>
+      ${bubble(P, 'M70 26 Q90 25 92 40 H70 Z', driver(P.c.driver, 79, 35, 7.5))}`,
+    p_balloon: P => `
+      <defs><clipPath id="${P.id}e"><path d="M60 -12 C84 -12 96 6 90 24 C86 34 72 40 66 44 H54 C48 40 34 34 30 24 C24 6 36 -12 60 -12 Z"/></clipPath></defs>
+      <path d="M60 -12 C84 -12 96 6 90 24 C86 34 72 40 66 44 H54 C48 40 34 34 30 24 C24 6 36 -12 60 -12 Z" fill="${P.c.body}"/>
+      <g clip-path="url(#${P.id}e)"><path d="M48 -14 H56 V46 H48 Z M64 -14 H72 V46 H64 Z M30 -14 H38 V46 H30 Z M82 -14 H90 V46 H82 Z" fill="${P.c.stripe}"/></g>
+      <path d="M60 -12 C84 -12 96 6 90 24 C86 34 72 40 66 44 H54 C48 40 34 34 30 24 C24 6 36 -12 60 -12 Z" fill="url(#${P.id}g)" stroke="${dk(P.c.body, 0.3)}" stroke-width="1"/>
+      <path d="M54 44 L50 54 M66 44 L70 54" stroke="#7a5530" stroke-width="1.2"/>
+      ${driver(P.c.driver, 60, 48, 7)}
+      <rect x="47" y="52" width="26" height="12" rx="2" fill="#b07a3e" stroke="#7a5530" stroke-width="1"/><path d="M47 56 H73 M47 60 H73" stroke="#7a5530" stroke-width=".8"/>`,
+    p_blimp: P => `
+      <path d="M16 16 L4 2 L22 10 Z M16 28 L4 42 L22 34 Z" fill="${P.c.stripe}"/>
+      <ellipse cx="62" cy="22" rx="52" ry="18" ${BODY(P)}/>
+      <path d="M12 22 H112" stroke="${P.c.stripe}" stroke-width="3"/>
+      <path d="M58 39 L56 44 M76 39 L78 44" stroke="#7c8291" stroke-width="1.4"/>
+      <rect x="50" y="42" width="34" height="12" rx="5" fill="${P.c.stripe}"/>
+      ${inWindow(P, 'k', [[54, 44, 26, 8]], driver(P.c.driver, 67, 50, 6))}`,
+    p_seaplane: P => `
+      ${water(62)}
+      <path d="M58 25 L52 40 M76 25 L80 40" stroke="#9aa0ae" stroke-width="1.6"/>
+      <path d="M46 46 L42 56 M84 46 L88 56" stroke="#55565e" stroke-width="1.8"/>
+      <path d="M28 56 H98 Q106 56 104 60 H32 Q26 60 28 56 Z" fill="#f4f5f7" stroke="#9aa0ae" stroke-width="1"/>
+      <path d="M14 32 L8 18 L16 18 L26 32 Z" fill="${dk(P.c.body, 0.15)}"/>
+      <path d="M14 38 Q16 30 30 30 H82 Q100 30 104 38 Q100 46 82 46 H30 Q16 46 14 38 Z" ${BODY(P)}/>
+      <path d="M20 40 H102" stroke="${P.c.stripe}" stroke-width="2.4"/>
+      ${inWindow(P, 'k', [[64, 30.5, 18, 8]], driver(P.c.driver, 73, 37, 7))}
+      <rect x="40" y="20" width="50" height="5" rx="2.5" fill="${dk(P.c.body, 0.1)}" stroke="${P.dark}" stroke-width=".8"/>
+      ${prop(108)}`,
+    p_glider: P => `
+      <path d="M12 36 L8 18 L14 18 L20 36 Z" fill="${P.c.stripe}"/><path d="M3 18 H20" stroke="${P.c.stripe}" stroke-width="2.4" stroke-linecap="round"/>
+      <path d="M10 36 Q30 32 80 32 Q104 33 112 37 Q104 41 80 41 Q30 40 10 38 Z" ${BODY(P)}/>
+      ${bubble(P, 'M74 33 Q88 22 104 35 Z', driver(P.c.driver, 88, 31, 6.5))}
+      <ellipse cx="62" cy="34" rx="56" ry="2.6" fill="${dk(P.c.body, 0.08)}" stroke="#9aa0ae" stroke-width=".8"/>
+      <path d="M8 34 H116" stroke="${P.c.stripe}" stroke-width="1" opacity=".7"/>`,
+    p_aerobatic: P => `
+      ${[0, 8, 16, 24].map((x, i) => `<circle cx="${x}" cy="${36 + (i % 2 ? 2 : -2)}" r="${4 + i}" fill="${i % 2 ? '#fff' : P.c.stripe}" opacity="${0.35 + i * 0.12}"/>`).join('')}
+      <path d="M18 31 L12 16 L22 16 L32 31 Z" fill="${P.c.stripe}"/>
+      <path d="M44 40 L86 40 L80 48 L48 48 Z" fill="${dk(P.c.body, 0.1)}"/>
+      <path d="M16 36 Q18 30 30 30 H86 Q102 31 106 36 Q102 41 86 42 H30 Q18 42 16 36 Z" ${BODY(P)}/>
+      <path d="M30 36 H100" stroke="${P.c.stripe}" stroke-width="3"/>
+      ${bubble(P, 'M60 31 Q70 20 86 31 Z', driver(P.c.driver, 73, 29, 7))}
+      ${prop(109)}`,
+
+    // ===== 바다의 탈것 =====
+    // 거북선: 쇠못 박은 지붕과 용머리
+    s_turtle: P => `
+      ${driver(P.c.driver, 62, 22, 7)}
+      <path d="M100 40 Q108 26 118 30 Q117 40 106 44 Z" fill="#d9a441" stroke="#9c7a1c" stroke-width="1"/><circle cx="110" cy="32" r="1.6" fill="#2b2633"/><circle cx="119" cy="30" r="3" fill="#e9eef5" opacity=".9"/>
+      <path d="M14 46 Q60 14 104 46 Z" ${BODY(P)}/>
+      <path d="M30 40 l6 -8 M46 32 l4 -8 M62 28 l0 -8 M78 32 l-4 -8 M94 40 l-6 -8" stroke="${P.c.stripe}" stroke-width="1.6"/>
+      ${[24, 36, 48, 60, 72, 84, 96].map(x => { const t = (x - 14) / 90, y = 46 - 64 * t + 64 * t * t; return `<path d="M${x} ${f1(y - 4)} l-2 4 h4 Z" fill="#cfd2da"/>`; }).join('')}
+      <path d="M10 46 H108 L100 58 H18 Z" fill="${dk(P.c.body, 0.15)}" stroke="${P.dark}" stroke-width="1"/>
+      ${[28, 44, 60, 76, 92].map(x => `<path d="M${x} 54 l-6 12" stroke="#7a5530" stroke-width="2" stroke-linecap="round"/>`).join('')}
+      ${water(60)}`,
+    // 판옥선: 2층 갑판과 누각, 깃발
+    s_panokseon: P => `
+      <path d="M40 30 V6 M84 30 V8" stroke="#6b4423" stroke-width="2"/><path d="M40 6 l14 4 l-14 4 Z" fill="${P.c.stripe}"/><path d="M84 8 l12 4 l-12 4 Z" fill="#0a84ff"/>
+      ${driver(P.c.driver, 30, 24, 6.5)}
+      <rect x="20" y="28" width="80" height="16" fill="${lt(P.c.body, 0.25)}" stroke="${P.dark}" stroke-width="1"/>
+      ${Array.from({ length: 9 }, (_, i) => `<path d="M${26 + i * 9} 28 V44" stroke="${P.dark}" stroke-width=".8"/>`).join('')}
+      <path d="M52 28 L56 18 H84 L88 28 Z" fill="#3b3a4a"/><rect x="58" y="20" width="24" height="8" fill="#e9d9b5"/>
+      <path d="M8 44 H112 L102 58 H18 Z" ${BODY(P)}/>
+      ${[28, 44, 60, 76, 92].map(x => `<path d="M${x} 54 l-6 12" stroke="#7a5530" stroke-width="2" stroke-linecap="round"/>`).join('')}
+      ${water(60)}`,
+    // 황포 돛배(돛단배)
+    s_sailboat: P => `
+      <path d="M62 50 V-10" stroke="#6b4423" stroke-width="2.4"/>
+      <path d="M34 -6 H90 L94 44 H30 Z" fill="${P.c.stripe}" stroke="#b8862e" stroke-width="1"/>
+      ${[6, 18, 30].map(y => `<path d="M33 ${y} H92" stroke="#b8862e" stroke-width="1.2"/>`).join('')}
+      ${driver(P.c.driver, 98, 40, 7)}
+      <path d="M16 48 H108 L98 60 H26 Z" ${BODY(P)}/>
+      ${water(60)}`,
+    s_yacht: P => `
+      <path d="M58 50 V-12" stroke="#9aa0ae" stroke-width="2"/>
+      <path d="M60 -10 Q78 14 92 44 H60 Z" fill="${P.c.stripe}"/><path d="M56 -6 Q44 18 30 44 H56 Z" fill="#fff" stroke="#c9ccd6" stroke-width="1"/>
+      ${driver(P.c.driver, 96, 41, 7)}
+      <path d="M12 46 H112 Q108 56 96 58 H26 Q14 54 12 46 Z" ${BODY(P)}/>
+      <path d="M18 51 H104" stroke="${P.c.stripe}" stroke-width="2"/>
+      ${water(58)}`,
+    s_carrier: P => `
+      <path d="M4 44 H116 L110 58 H12 Z" ${BODY(P)}/>
+      <rect x="2" y="40" width="116" height="5" fill="${dk(P.c.body, 0.15)}"/><path d="M8 42.5 H70" stroke="#fff" stroke-width="1" stroke-dasharray="5 4"/>
+      <rect x="74" y="16" width="18" height="24" rx="2" fill="${lt(P.c.body, 0.15)}" stroke="${P.dark}" stroke-width="1"/><path d="M83 16 V8" stroke="#55565e" stroke-width="1.4"/><rect x="78" y="5" width="10" height="3" rx="1.5" fill="#55565e" transform="rotate(-12 83 6.5)"/>
+      ${inWindow(P, 'k', [[76, 20, 14, 8]], driver(P.c.driver, 83, 26, 5.5))}
+      ${[20, 42].map(x => `<path d="M${x} 38 L${x + 14} 36 L${x + 14} 40 Z M${x + 6} 37 L${x + 3} 33 L${x + 9} 37 Z" fill="#55565e"/>`).join('')}
+      ${water(56)}`,
+    s_submarine: P => `
+      ${driver(P.c.driver, 62, 25, 7.5)}
+      <path d="M72 30 V14 H80" stroke="#55565e" stroke-width="2" fill="none"/>
+      <rect x="50" y="28" width="24" height="16" rx="4" fill="${dk(P.c.body, 0.1)}" stroke="${P.dark}" stroke-width="1"/>
+      <ellipse cx="60" cy="50" rx="52" ry="11" ${BODY(P)}/>
+      ${[38, 52, 66, 80].map(x => `<circle cx="${x}" cy="48" r="2.6" fill="#7fa4c0" stroke="${P.dark}" stroke-width=".8"/>`).join('')}
+      <path d="M8 44 L2 40 M8 56 L2 60" stroke="${P.c.stripe}" stroke-width="2.4" stroke-linecap="round"/>
+      ${water(52)}`,
+    s_cruise: P => `
+      <rect x="60" y="4" width="10" height="14" fill="${P.c.stripe}"/><rect x="60" y="4" width="10" height="3" fill="#2b2b33"/>
+      <rect x="24" y="18" width="70" height="12" rx="2" fill="#fff" stroke="#c9ccd6" stroke-width="1"/>
+      <rect x="14" y="30" width="92" height="14" rx="2" fill="#fff" stroke="#c9ccd6" stroke-width="1"/>
+      ${Array.from({ length: 12 }, (_, i) => `<rect x="${18 + i * 7}" y="35" width="4" height="4" rx="1" fill="#7fa4c0"/>`).join('')}
+      ${Array.from({ length: 8 }, (_, i) => `<rect x="${28 + i * 7}" y="22" width="4" height="4" rx="1" fill="#7fa4c0"/>`).join('')}
+      ${inWindow(P, 'k', [[84, 20, 9, 8]], driver(P.c.driver, 88.5, 26, 4.5))}
+      <path d="M4 44 H116 L108 60 H12 Z" ${BODY(P)}/>
+      ${water(58)}`,
+    s_fishing: P => `
+      <path d="M34 44 V8 M34 10 L56 28" stroke="#6b4423" stroke-width="1.6"/>
+      ${[0, 1, 2, 3].map(i => `<path d="M${37 + i * 5} ${13 + i * 4} l3 5 l-5 0 Z" fill="${['#ff3b30', '#ffd60a', '#34c759', '#0a84ff'][i]}"/>`).join('')}
+      <rect x="54" y="26" width="28" height="18" rx="2" fill="#fff" stroke="#c9ccd6" stroke-width="1"/>
+      ${inWindow(P, 'k', [[58, 29, 20, 9]], driver(P.c.driver, 68, 36, 7))}
+      <path d="M12 44 H100 L110 40 L102 60 H24 Z" ${BODY(P)}/>
+      <path d="M16 48 H102" stroke="${P.c.stripe}" stroke-width="2.4"/>
+      <circle cx="20" cy="56" r="3" fill="#ff9f0a"/>
+      ${water(58)}`,
+    s_motorboat: P => `
+      ${driver(P.c.driver, 54, 41, 7.5)}
+      <path d="M60 48 L70 37 H78 L72 48 Z" fill="url(#${P.id}w)" stroke="#9aa0ae" stroke-width="1"/>
+      <path d="M8 48 H96 Q112 44 118 40 L114 50 Q108 60 94 60 H16 Q8 56 8 48 Z" ${BODY(P)}/>
+      <path d="M12 52 H108" stroke="${P.c.stripe}" stroke-width="2.4"/>
+      <path d="M8 54 q-4 -4 -8 -2 M10 58 q-6 -2 -10 2" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round"/>
+      ${water(58)}`,
+    s_container: P => `
+      ${[['#e2412e', '#0a84ff', '#ffd60a', '#34c759', '#ff9f0a', '#8a55d6'], ['#34c759', '#ff9f0a', '#e2412e', '#0a84ff', '#8a55d6', '#ffd60a']].map((row, j) => row.map((c, i) => `<rect x="${30 + i * 13.5}" y="${j ? 36 : 26}" width="13" height="10" fill="${c}" stroke="rgba(0,0,0,.25)" stroke-width=".8"/>`).join('')).join('')}
+      <rect x="8" y="16" width="16" height="30" rx="2" fill="#fff" stroke="#c9ccd6" stroke-width="1"/>
+      ${inWindow(P, 'k', [[10, 20, 12, 8]], driver(P.c.driver, 16, 26, 5))}
+      <path d="M2 46 H118 L112 60 H8 Z" ${BODY(P)}/>
+      <path d="M6 50 H114" stroke="${P.c.stripe}" stroke-width="1.6"/>
+      ${water(58)}`,
+
+    // ===== 귀여운 새 =====
+    b_chick: P => bird(P, 'chick', { body: '#ffd84a', wing: '#f5c21f', belly: '#fff2a8' }),
+    b_duck: P => bird(P, 'duck', { body: '#fffaf0', wing: '#e6e1d6', legs: '#ff9f1c' }),
+    b_penguin: P => `
+      <path d="M52 64 h9 M64 64 h9" stroke="#ffb02e" stroke-width="3.2" stroke-linecap="round"/>
+      <ellipse cx="62" cy="42" rx="19" ry="22" fill="#2c3550"/><ellipse cx="64" cy="46" rx="12" ry="16" fill="#fff"/>
+      <ellipse cx="44" cy="44" rx="5" ry="12" fill="#2c3550" transform="rotate(25 44 44)"/><ellipse cx="80" cy="44" rx="5" ry="12" fill="#2c3550" transform="rotate(-25 80 44)"/>
+      ${driver('penguin', 62, 18, 14)}<path d="M50 31 H74 M72 31 l3 9" stroke="#e2412e" stroke-width="4" stroke-linecap="round"/>`,
+    b_owl: P => `
+      <path d="M52 64 h7 M65 64 h7" stroke="#f2b13a" stroke-width="2.8" stroke-linecap="round"/>
+      <ellipse cx="62" cy="45" rx="21" ry="19" fill="#a8774f" stroke="#7a5232" stroke-width="1.1"/><ellipse cx="62" cy="50" rx="13" ry="12" fill="#f3e2c8"/>
+      ${[44, 50, 56].map(y => `<path d="M${57} ${y} l2.5 2.5 l2.5 -2.5 M${63} ${y + 2} l2.5 2.5 l2.5 -2.5" stroke="#a8774f" stroke-width="1" fill="none"/>`).join('')}
+      <ellipse cx="42" cy="46" rx="6" ry="13" fill="#8a5d3b" transform="rotate(12 42 46)"/><ellipse cx="82" cy="46" rx="6" ry="13" fill="#8a5d3b" transform="rotate(-12 82 46)"/>
+      ${driver('owl', 62, 22, 16)}`,
+    b_sparrow: P => bird(P, 'sparrow', { body: '#b07d52', wing: '#7a5232', belly: '#f4e6d4', legs: '#c98b55' }),
+    b_parrot: P => bird(P, 'parrot', { body: '#3cc46b', wing: '#1f8fd6', tail: '#e2412e', belly: '#bff0cf', legs: '#8a8f99' }),
+    b_magpie: P => bird(P, 'magpie', { body: '#26262e', wing: '#2f5fb8', belly: '#ffffff', tail: '#1b2f6b', legs: '#3a3a40' }),
+    b_eagle: P => bird(P, 'eagle', { body: '#7a5232', wing: '#5a3a22', belly: '#c9a57e', tail: '#f4efe6', legs: '#ffc21a' }),
+    b_flamingo: P => `
+      <path d="M52 46 L52 64 M60 46 L62 55 L55 57" stroke="#ff7fa6" stroke-width="2.4" stroke-linecap="round" fill="none"/>
+      <path d="M38 36 L22 30 L28 40 Z" fill="#ff7fa6"/>
+      <ellipse cx="54" cy="38" rx="20" ry="12" fill="#ff9cbc" stroke="#ff7fa6" stroke-width="1"/><ellipse cx="50" cy="37" rx="11" ry="6" fill="#ff7fa6" transform="rotate(-12 50 37)"/>
+      <path d="M70 34 q10 -4 6 -14 q-4 -10 7 -14" stroke="#ff9cbc" stroke-width="6" fill="none" stroke-linecap="round"/>
+      ${driver('flamingo', 84, 4, 11)}`,
+    b_swan: P => `
+      <path d="M30 44 L16 36 L22 46 Z" fill="#f1f1f4" stroke="#d9d9df" stroke-width="1"/>
+      <ellipse cx="54" cy="46" rx="26" ry="13" fill="#fff" stroke="#d9d9df" stroke-width="1.1"/>
+      <path d="M36 44 q12 -12 30 -4 q-14 2 -30 4 Z" fill="#eef0f4" stroke="#d9d9df" stroke-width=".8"/>
+      <path d="M72 42 q8 -6 4 -16 q-3 -10 7 -13" stroke="#cfd3dc" stroke-width="9" fill="none" stroke-linecap="round"/><path d="M72 42 q8 -6 4 -16 q-3 -10 7 -13" stroke="#fff" stroke-width="6.5" fill="none" stroke-linecap="round"/>
+      ${driver('swan', 84, 10, 11.5)}
+      ${water(54)}`,
+
+    // ===== 귀여운 동물 =====
+    a_puppy: P => beast(P, 'puppy', { body: '#fffaf2', dark: '#c98b55', legs: '#e7c59f', tail: 'curl' }),
+    a_cat: P => beast(P, 'cat', { body: '#f8c27e', dark: '#e08f3c', tail: 'long' }),
+    a_rabbit: P => beast(P, 'rabbit', { body: '#ffffff', dark: '#d9d4d0', legs: '#f1ece8', tail: 'round', tip: '#fff' }),
+    a_bear: P => beast(P, 'bear', { body: '#c8946a', dark: '#9a6b45', tail: 'round', belly: '#f1dcc4' }),
+    a_panda: P => beast(P, 'panda', { body: '#ffffff', dark: '#2b2633', legs: '#2b2633', tail: 'round', tip: '#2b2633', belly: '#fff' }),
+    a_hamster: P => beast(P, 'hamster', { body: '#f4cf9c', dark: '#d9a868', tail: 'round', belly: '#fff7ea' }),
+    a_fox: P => beast(P, 'fox', { body: '#f39a4c', dark: '#d0702a', tail: 'bushy', belly: '#fff8ef' }),
+    a_tiger: P => beast(P, 'tiger', { body: '#f6a13a', dark: '#d07d1c', tail: 'long', stripes: true, belly: '#fff8ef' }),
+    a_pig: P => beast(P, 'pig', { body: '#f9bccb', dark: '#e58da3', tail: 'curl', belly: '#fde0e7' }),
+    a_koala: P => beast(P, 'koala', { body: '#b4bac4', dark: '#8d939e', tail: 'round', belly: '#e8eaee' })
+  });
 
   // 그림마다 색 id를 따로 둡니다(숨겨진 화면의 그림을 참조하면 색이 사라지는 문제 방지)
   let carUid = 0;

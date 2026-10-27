@@ -143,27 +143,28 @@
     }
   }
 
-  // 세트 이름 앞의 단원 번호("2-10 4·19 혁명")로 대단원별로 묶어 정렬합니다. 기본은 내림차순.
+  // 세트 이름 앞의 책과 단원 번호로 묶어 정렬합니다. 기본은 내림차순.
+  //  "한국사1 3-07 동학 농민 운동" → 한국사1 대단원 3, "2-10 4·19 혁명"(책 이름 없음) → 한국사2 대단원 2
   let setOrder = 'desc';
   try { setOrder = localStorage.getItem('hkr-set-order') || 'desc'; } catch (e) { /* 무시 */ }
   function setCode(title) {
-    const m = /^\s*(\d+)\s*-\s*(\d+)/.exec(title || '');
-    return m ? [+m[1], +m[2]] : null;
+    const m = /^\s*(?:한국사\s*([12])\s+)?(\d+)\s*-\s*(\d+)/.exec(title || '');
+    return m ? [m[1] ? +m[1] : 2, +m[2], +m[3]] : null;
   }
   function sortedSets() {
     const dir = setOrder === 'asc' ? 1 : -1;
     return Object.entries(sets).map(([id, s]) => Object.assign({ id, code: setCode(s.title) }, s)).sort((a, b) => {
-      if (a.code && b.code) return dir * ((a.code[0] - b.code[0]) || (a.code[1] - b.code[1]));
+      if (a.code && b.code) return dir * ((a.code[0] - b.code[0]) || (a.code[1] - b.code[1]) || (a.code[2] - b.code[2]));
       if (a.code) return -1;
       if (b.code) return 1;
       return (b.updatedAt || 0) - (a.updatedAt || 0);
     });
   }
-  // 대단원 제목줄을 끼워 넣으며 목록을 만듭니다
+  // 책·대단원 제목줄을 끼워 넣으며 목록을 만듭니다
   function groupedHtml(list, itemHtml) {
     let last = null, html = '';
     list.forEach(s => {
-      const unit = s.code ? '대단원 ' + s.code[0] : '단원 번호가 없는 세트';
+      const unit = s.code ? `한국사${s.code[0]} 대단원 ${s.code[1]}` : '단원 번호가 없는 세트';
       if (unit !== last) { html += `<h3 class="unit-head">${unit}</h3>`; last = unit; }
       html += itemHtml(s);
     });
@@ -391,7 +392,7 @@
   function renderStudents() {
     const el = $('#recList');
     const cards = [];
-    for (let no = 1; no <= (C.studentsPerClass || 24); no++) {
+    for (let no = 1; no <= (C.studentsPerClass || 30); no++) {
       const { items, played } = studentReview(no);
       const missed = items.filter(i => i.missed).length, fixed = items.length - missed;
       cards.push(`<button class="stu-card ${pickedStudent === no ? 'on' : ''}" data-no="${no}" ${played ? '' : 'disabled'}>
@@ -424,7 +425,7 @@
   function saveClassExcel() {
     const q = v => '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"';
     const rows = [['출석번호', '단원', '문제', '정답', '상태', '틀린 횟수', '시간 초과 횟수']];
-    for (let no = 1; no <= (C.studentsPerClass || 24); no++) {
+    for (let no = 1; no <= (C.studentsPerClass || 30); no++) {
       const { items, played } = studentReview(no);
       if (!played) continue;
       if (!items.length) { rows.push([no, '', '틀린 문제 없음', '', '모두 맞힘', 0, 0]); continue; }

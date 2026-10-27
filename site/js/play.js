@@ -159,13 +159,20 @@
   function showJoin(note) {
     if (!joinBuilt) {
       joinBuilt = true;
-      $('#carPick').innerHTML = A.CARS.map((c, i) => (i === 0 || c.group !== A.CARS[i - 1].group ? `<p class="car-group">${c.group}</p>` : '') + `
-        <button type="button" class="car-opt" role="radio" aria-checked="false" data-car="${i}" aria-label="${c.name}">${A.carSVG(i)}<span>${c.name}</span></button>`).join('');
+      // 탈것이 많아서 종류별 탭을 눌러 한 종류씩 봐요
+      const groups = [...new Set(A.CARS.map(c => c.group))];
+      $('#carPick').innerHTML = `<div class="car-tabs" role="tablist">${groups.map((g, k) => `<button type="button" class="car-tab" role="tab" data-g="${k}" aria-selected="${k === 0}">${g}</button>`).join('')}</div>` +
+        A.CARS.map((c, i) => `<button type="button" class="car-opt" role="radio" aria-checked="false" data-car="${i}" data-g="${groups.indexOf(c.group)}" aria-label="${c.name}"${groups.indexOf(c.group) ? ' hidden' : ''}>${A.carSVG(i)}<span>${c.name}</span></button>`).join('');
+      $$('#carPick .car-tab').forEach(t => t.addEventListener('click', () => {
+        $$('#carPick .car-tab').forEach(x => x.setAttribute('aria-selected', String(x === t)));
+        $$('#carPick .car-opt').forEach(o => { o.hidden = o.dataset.g !== t.dataset.g; });
+        t.scrollIntoView({ inline: 'nearest', block: 'nearest' });
+      }));
       $$('#carPick .car-opt').forEach(b => b.addEventListener('click', () => {
         carChoice = +b.dataset.car;
         $$('#carPick .car-opt').forEach(x => x.setAttribute('aria-checked', String(x === b)));
       }));
-      const max = C.studentsPerClass || 24;
+      const max = C.studentsPerClass || 30;
       $('#noPick').innerHTML = Array.from({ length: max }, (_, i) => `<button type="button" class="no-opt" role="radio" aria-checked="false" data-no="${i + 1}">${i + 1}</button>`).join('');
       $$('#noPick .no-opt').forEach(b => b.addEventListener('click', () => {
         if (b.disabled) return;
@@ -552,10 +559,9 @@
     phase = 'done';
     cur = null;
     hideOverlay();
-    const r = myRank();
     $('#doneCar').innerHTML = A.carSVG(myP.car || 0);
-    $('#doneTitle').textContent = '완주했어요! 🏁';
-    $('#doneRank').textContent = `${r.rank}위로 들어왔어요`;
+    $('#doneTitle').textContent = '골인! 🏁';
+    $('#doneRank').textContent = '마지막 친구를 기다리고 있습니다';
     $('#doneStat').textContent = `정답 ${me.correct}개, 오답 ${me.wrong}개`;
     show('#sDone');
   }
@@ -567,7 +573,7 @@
     const r = me ? myRank() : null;
     $('#doneCar').innerHTML = A.carSVG((myP && myP.car) || 0);
     $('#doneTitle').textContent = '레이스 끝!';
-    $('#doneRank').textContent = r && myP && myP.status === 'approved' ? `${r.rank}위` : '';
+    $('#doneRank').textContent = r && myP && myP.status === 'approved' ? '순위는 큰 화면 시상대에서 확인해요' : '';
     $('#doneStat').textContent = me ? `정답 ${me.correct}개, 오답 ${me.wrong}개` : '이번 레이스는 끝났어요.';
     show('#sDone');
   }
