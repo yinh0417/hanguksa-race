@@ -334,6 +334,25 @@
     if (me.pos >= C.finishCells) { me.finishedAt = now; me.fx = { type: 'finish', at: now }; }
   }
 
+  // 아이템을 쓰면 1초 동안 화면 가득 큰 글자와 내 탈것이 달려 나가는 장면을 보여 줘요
+  let fxTimer = null;
+  function itemFx(type, sub) {
+    const it = C.items[type] || {};
+    const kind = type === 'shield' ? 'shield' : type === 'star' ? 'star' : ['boost1', 'boost2', 'turbo'].includes(type) ? 'boost' : 'throw';
+    const pop = $('#fxPop');
+    pop.className = `fx-pop ${kind}`;
+    $('#fxTitle').textContent = `${it.icon || ''} ${it.name || ''} ${kind === 'throw' ? '발사!' : '사용!'}`;
+    $('#fxSub').textContent = sub || it.desc || '';
+    $('#fxCar').innerHTML = A.carSVG((myP && myP.car) || 0);
+    $('#fxProj').textContent = kind === 'throw' ? (it.icon || '') : '';
+    $('#fxLines').innerHTML = kind === 'boost' ? Array.from({ length: 9 }, (_, i) => `<i style="top:${8 + i * 10}%;width:${30 + (i * 37) % 45}%;animation-delay:${(i * 0.07).toFixed(2)}s"></i>`).join('') : '';
+    void pop.offsetWidth; // 애니메이션을 처음부터 다시
+    pop.classList.add('go');
+    clearTimeout(fxTimer);
+    fxTimer = setTimeout(() => pop.classList.add('hidden'), 1100);
+    if (navigator.vibrate) navigator.vibrate(kind === 'throw' ? [40, 30, 40] : 60);
+  }
+
   function applyItem(item, now) {
     const it = C.items[item];
     me.fx = { type: item, at: now };
@@ -359,7 +378,14 @@
       const r = myRank();
       move(1, now);
       let sub = '앞으로 1칸';
-      if (!me.finishedAt) sub = applyItem(G.rollGoodItem(r.rank, r.n, { holding: !!me.hold, hasShield: !!me.shield }), now);
+      if (!me.finishedAt) {
+        const got = G.rollGoodItem(r.rank, r.n, { holding: !!me.hold, hasShield: !!me.shield });
+        sub = applyItem(got, now);
+        // 바로 효과가 나는 아이템(파발마·지름길 지도·방패)은 쓰는 장면을 보여 줘요
+        if (got === 'boost1') itemFx(got, '앞으로 1칸 더 가요');
+        else if (got === 'boost2') itemFx(got, '앞으로 2칸 더 가요');
+        else if (got === 'shield') itemFx(got, '친구의 공격을 1번 막아요');
+      }
       save();
       btn.classList.add('right');
       flash('good', '정답!', sub);
@@ -454,7 +480,7 @@
       me.fx = { type: 'turbo', at: now };
       save();
       renderItem();
-      flash('good', `${it.icon} ${it.name}!`, '3초 동안 3칸 질주해요');
+      itemFx('turbo', '3초 동안 3칸 질주해요');
       return;
     }
     if (type === 'star') {
@@ -463,7 +489,7 @@
       me.fx = { type: 'star', at: now };
       save();
       renderItem();
-      flash('good', `${it.icon} ${it.name}!`, '8초 동안 무적이에요');
+      itemFx('star', '8초 동안 무적이에요');
       return;
     }
     const r = myRank();
@@ -476,7 +502,7 @@
     renderItem();
     try {
       await Promise.all(targets.map(t => DB.push(`rooms/${room}/hits/${t.uid}`, { type, from: uid, nick: myP.nick, at: DB.now() })));
-      flash('good', `${it.icon} ${it.name} 발사!`, targets.length > 1 ? `앞선 친구 ${targets.length}명에게 쾅!` : `${targets[0].nick}에게 날아갔어요`);
+      itemFx(type, targets.length > 1 ? `앞선 친구 ${targets.length}명에게 쾅!` : `${targets[0].nick}에게 날아갔어요`);
     } catch (e) { console.warn(e); }
   });
 
@@ -551,6 +577,8 @@
       kind = 'fuel'; icon = C.items.fuel.icon; title = `${C.items.fuel.name}! 엔진이 멈췄어요`; sub = '틀렸어요. 끝나면 같은 문제를 다시 풀어요';
     }
     ov.className = 'overlay ' + kind;
+    // 내 탈것이 연기를 뿜으며 멈추고(오염 연료), 먹물을 뒤집어쓰고(먹물), 물풍선에 갇혀요(맞음)
+    if (ov.dataset.kind !== kind || !$('#ovCar').innerHTML) { ov.dataset.kind = kind; $('#ovCar').innerHTML = A.carSVG((myP && myP.car) || 0); }
     $('#ovIcon').textContent = icon;
     $('#ovTitle').textContent = title;
     $('#ovSub').textContent = sub;

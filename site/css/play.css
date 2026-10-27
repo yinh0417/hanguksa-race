@@ -204,7 +204,7 @@ body.phone { background: var(--cheong-deep); }
 .stu-bg::after { content: ''; position: absolute; inset: 0; background: linear-gradient(to bottom, rgba(16,16,20,.62), rgba(16,16,20,.5) 40%, rgba(16,16,20,.78)); }
 .stu-bg.in .scene-svg { animation: stu-bg-in 1s ease-out; }
 @keyframes stu-bg-in { from { opacity: 0; transform: scale(1.05); } }
-.race-screen > :not(.stu-bg):not(.overlay):not(.flash) { position: relative; z-index: 1; }
+.race-screen > :not(.stu-bg):not(.overlay):not(.flash):not(.fx-pop) { position: relative; z-index: 1; }
 @media (prefers-reduced-motion: reduce) { .stu-bg.in .scene-svg { animation-duration: 1s !important; } }
 .race-screen .qcard { background: rgba(255,255,255,.9); backdrop-filter: blur(6px); }
 .race-screen .ans:not(.right):not(.wrong):not(.sa-submit) { background: rgba(255,255,255,.8); backdrop-filter: blur(6px); }
@@ -241,3 +241,83 @@ body.phone { background: var(--cheong-deep); }
 /* 학생 화면 오른쪽 아래 만든이 */
 .maker { position: fixed; right: 10px; bottom: calc(6px + env(safe-area-inset-bottom)); margin: 0; z-index: 5;
   font-size: 11px; color: rgba(255,255,255,.55); pointer-events: none; letter-spacing: -0.01em; }
+
+/* ===== 아이템 쓰는 장면(1초): 큰 글자 + 내 탈것이 달려 나감 ===== */
+.fx-pop { position: fixed; inset: 0; z-index: 35; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px;
+  pointer-events: none; overflow: hidden; padding: 24px; background: radial-gradient(circle at 50% 45%, rgba(10,132,255,.5), rgba(8,10,20,.88) 70%); }
+.fx-pop.boost { background: radial-gradient(circle at 50% 45%, rgba(255,159,10,.6), rgba(30,12,0,.9) 70%); }
+.fx-pop.star { background: radial-gradient(circle at 50% 45%, rgba(255,255,255,.35), rgba(20,10,40,.9) 70%); }
+.fx-pop.shield { background: radial-gradient(circle at 50% 45%, rgba(245,194,66,.55), rgba(20,16,0,.9) 70%); }
+.fx-title { margin: 0; font: 800 clamp(30px, 9.5vw, 44px)/1.15 var(--font-body); color: #fff; text-align: center; word-break: keep-all; letter-spacing: -0.03em; text-shadow: 0 3px 0 rgba(0,0,0,.35); }
+.fx-sub { margin: 0; font: 600 17px var(--font-body); color: #fff; background: rgba(0,0,0,.4); border-radius: 9999px; padding: 5px 14px; }
+.fx-stage { position: relative; width: 100%; height: 150px; }
+.fx-car { position: absolute; left: 50%; top: 50%; width: 64%; max-width: 300px; transform: translate(-50%, -50%); }
+.fx-car .car-svg { width: 100%; display: block; }
+.fx-lines { position: absolute; inset: 0; }
+.fx-lines i { position: absolute; right: -50%; height: 3px; border-radius: 3px; background: linear-gradient(90deg, rgba(255,255,255,0), rgba(255,255,255,.9)); animation: fx-streak .35s linear infinite; }
+.fx-proj { position: absolute; left: 60%; top: 40%; font-size: 44px; opacity: 0; }
+.fx-pop.go .fx-title { animation: fx-zoom .45s cubic-bezier(.2,1.6,.4,1) both; }
+.fx-pop.go .fx-sub { animation: fx-fade .3s .2s ease-out both; }
+/* 부스터: 왼쪽에서 들어와 쌩 하고 오른쪽으로 빠져나가요(불꽃 꼬리) */
+.fx-pop.boost.go .fx-car { animation: fx-dash 1.05s cubic-bezier(.45,0,.25,1) both; }
+.fx-pop.boost .fx-car::before { content: ''; position: absolute; right: 88%; top: 28%; width: 70%; height: 46%; border-radius: 50% 0 0 50%;
+  background: radial-gradient(ellipse at 100% 50%, #fff6c2 0 18%, #ffd23f 32%, #ff7a1a 58%, rgba(255,59,48,0) 80%); animation: flame .1s infinite alternate; }
+/* 부적: 무지개 빛을 내며 커졌다 작아져요 */
+.fx-pop.star.go .fx-car { animation: fx-star 1s ease-in-out both; }
+/* 방패: 금빛 막이 퍼져요 */
+.fx-pop.shield .fx-car::after { content: ''; position: absolute; inset: -30% -12%; border-radius: 50%; border: 5px solid #ffd60a; box-shadow: 0 0 24px #ffd60a, inset 0 0 24px rgba(255,214,10,.6); }
+.fx-pop.shield.go .fx-car::after { animation: fx-ring .8s ease-out both; }
+/* 공격: 내 탈것이 움찔하며 아이템이 오른쪽으로 날아가요 */
+.fx-pop.throw.go .fx-car { animation: fx-recoil .5s ease-out both; }
+.fx-pop.throw.go .fx-proj { animation: fx-shot .8s .1s ease-in both; }
+@keyframes fx-zoom { from { transform: scale(.3); opacity: 0; } 60% { transform: scale(1.12); opacity: 1; } to { transform: scale(1); } }
+@keyframes fx-fade { from { opacity: 0; transform: translateY(8px); } }
+@keyframes fx-dash { 0% { left: -45%; } 38% { left: 46%; } 62% { left: 54%; } 100% { left: 160%; } }
+@keyframes fx-streak { from { transform: translateX(0); opacity: 0; } 30% { opacity: 1; } to { transform: translateX(-260%); opacity: 0; } }
+@keyframes fx-star { 0% { transform: translate(-50%, -50%) scale(.6); filter: hue-rotate(0) drop-shadow(0 0 0 #fff); }
+  50% { transform: translate(-50%, -50%) scale(1.15) rotate(-4deg); filter: hue-rotate(180deg) drop-shadow(0 0 16px #fff); }
+  100% { transform: translate(-50%, -50%) scale(1); filter: hue-rotate(360deg) drop-shadow(0 0 8px #ffd60a); } }
+@keyframes fx-ring { from { transform: scale(.4); opacity: 0; } 60% { opacity: 1; } to { transform: scale(1.1); opacity: .9; } }
+@keyframes fx-recoil { 0% { transform: translate(-50%, -50%); } 25% { transform: translate(-56%, -50%) rotate(-3deg); } 100% { transform: translate(-50%, -50%); } }
+@keyframes fx-shot { 0% { left: 58%; opacity: 1; transform: scale(.6); } 100% { left: 130%; opacity: 1; transform: scale(1.8) rotate(25deg); } }
+
+/* ===== 오답 벌칙 화면의 내 탈것 ===== */
+.ov-car { position: relative; width: 58%; max-width: 260px; }
+.ov-car .car-svg { width: 100%; display: block; }
+/* 오염 연료: 덜컹거리며 검은 연기를 뿜고 뒤로 밀려나요(속도 감소) */
+.overlay.fuel .ov-car { animation: ov-slow 3s ease-out forwards; }
+.overlay.fuel .ov-car .car-svg { animation: ov-sputter .16s steps(2) infinite; filter: grayscale(.55) brightness(.85); }
+.overlay.fuel .ov-car::before, .overlay.fuel .ov-car::after { content: ''; position: absolute; left: -8%; top: 22%; width: 34%; aspect-ratio: 1; border-radius: 50%;
+  background: radial-gradient(circle, rgba(185,185,195,.95) 0 35%, rgba(185,185,195,0) 70%); animation: ov-smoke 1s ease-out infinite; }
+.overlay.fuel .ov-car::after { animation-delay: .5s; left: 0; }
+/* 먹물: 탈것에 먹물이 튀어 덮여요 */
+.overlay.ink .ov-car .car-svg { animation: ov-wobble .6s ease-in-out infinite alternate; }
+.overlay.ink .ov-car::after { content: ''; position: absolute; inset: -6% 4% 8% 4%;
+  background: radial-gradient(circle at 40% 45%, #111 0 22%, transparent 23%), radial-gradient(circle at 68% 30%, #111 0 12%, transparent 13%),
+              radial-gradient(circle at 24% 72%, #111 0 10%, transparent 11%), radial-gradient(circle at 78% 70%, #111 0 9%, transparent 10%);
+  animation: ov-splat .35s ease-out both; }
+/* 친구 공격에 맞음: 물방울 막에 갇혀 흔들려요 */
+.overlay.hit .ov-car::after { content: ''; position: absolute; inset: -34% -10% -14%; border-radius: 50%;
+  background: radial-gradient(circle at 32% 28%, rgba(255,255,255,.9) 0 8%, rgba(170,225,255,.4) 9% 58%, rgba(63,182,232,.6) 100%); border: 2px solid #2B8FC2; animation: wobble .5s infinite alternate ease-in-out; }
+@keyframes ov-slow { from { transform: translateX(0); } to { transform: translateX(-16%); } }
+@keyframes ov-sputter { 50% { transform: translate(-2px, 1px) rotate(-1.2deg); } }
+@keyframes ov-smoke { from { transform: translate(0, 0) scale(.4); opacity: .95; } to { transform: translate(-35%, -95%) scale(1.7); opacity: 0; } }
+@keyframes ov-wobble { to { transform: rotate(2deg) translateY(-2px); } }
+@keyframes ov-splat { from { transform: scale(.2); opacity: 0; } }
+
+/* 이 노트북처럼 '동작 줄이기'가 켜진 기기에서도 짧은 효과는 보여 줘요 */
+@media (prefers-reduced-motion: reduce) {
+  .fx-pop.go .fx-title { animation-duration: .45s !important; }
+  .fx-pop.go .fx-sub { animation-duration: .3s !important; }
+  .fx-pop.boost.go .fx-car { animation-duration: 1.05s !important; }
+  .fx-pop.star.go .fx-car { animation-duration: 1s !important; }
+  .fx-pop.shield.go .fx-car::after { animation-duration: .8s !important; }
+  .fx-pop.throw.go .fx-car { animation-duration: .5s !important; }
+  .fx-pop.throw.go .fx-proj { animation-duration: .8s !important; }
+  .fx-lines i { animation-duration: .35s !important; animation-iteration-count: infinite !important; }
+  .overlay.fuel .ov-car { animation-duration: 3s !important; }
+  .overlay.fuel .ov-car .car-svg, .overlay.fuel .ov-car::before, .overlay.fuel .ov-car::after,
+  .overlay.ink .ov-car .car-svg, .overlay.hit .ov-car::after { animation-duration: .6s !important; animation-iteration-count: infinite !important; }
+}
+@keyframes flame { from { transform: scaleX(.85) scaleY(.92); opacity: .85; } to { transform: scaleX(1.12) scaleY(1.05); opacity: 1; } }
+@keyframes wobble { to { transform: scale(1.06, .95); } }
