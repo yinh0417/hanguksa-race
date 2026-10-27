@@ -227,17 +227,32 @@
     joining = true;
     btn.disabled = true;
     btn.textContent = '들어가는 중…';
+    // 와이파이가 약하면 저장이 끝나지 않고 멈춰 있을 수 있어서 10초까지만 기다려요
+    const save = () => Promise.race([
+      DB.set(`rooms/${room}/players/${uid}`, { nick, no: noChoice, car: carChoice, status: 'pending', joinedAt: DB.now() }),
+      new Promise((_, no) => setTimeout(() => no(new Error('timeout')), 10000))
+    ]);
+    const denied = ex => /permission/i.test(ex && (ex.code || ex.message) || '');
     try {
-      // 와이파이가 약하면 저장이 끝나지 않고 멈춰 있을 수 있어서 10초까지만 기다려요
-      await Promise.race([
-        DB.set(`rooms/${room}/players/${uid}`, { nick, no: noChoice, car: carChoice, status: 'pending', joinedAt: DB.now() }),
-        new Promise((_, no) => setTimeout(() => no(new Error('timeout')), 10000))
-      ]);
+      // 휴대폰이 잠깐 잠겼다 깨면 로그인이 바뀌거나 만료될 수 있어서, 지금 로그인으로 다시 맞춰요
+      uid = (await DB.signInStudent()).uid;
+      try { await save(); }
+      catch (ex) {
+        if (!denied(ex)) throw ex;
+        await DB.refreshAuth();
+        await save();
+      }
     } catch (ex) {
       console.warn(ex);
-      joinError(ex && ex.message === 'timeout'
+      const why = ex && (ex.code || ex.message) || '';
+      // Firebase 규칙이 옛날(닉네임 6글자까지) 그대로면 긴 닉네임만 거절돼요
+      const tooLong = denied(ex) && Array.from(nick).length > 6;
+      joinError(why === 'timeout'
         ? '인터넷 연결이 약해서 들어가지 못했어요. 와이파이를 확인하고 다시 눌러 주세요.'
-        : '입장하지 못했어요. 다시 눌러 주세요. 계속 안 되면 선생님께 알려 주세요.');
+        : tooLong
+          ? '닉네임을 6글자 이하로 줄여서 다시 눌러 주세요.'
+          : `입장하지 못했어요. 다시 눌러 주세요. 계속 안 되면 선생님께 알려 주세요. (${why || '알 수 없는 오류'})`,
+        tooLong ? $('#nickInput') : undefined);
     } finally {
       joining = false;
       btn.disabled = !!G.bannedWordIn($('#nickInput').value);

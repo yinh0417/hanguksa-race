@@ -38,6 +38,7 @@
       signInStudent: () => fauth.currentUser
         ? Promise.resolve(fauth.currentUser)
         : fauth.signInAnonymously().then(c => c.user),
+      refreshAuth: () => fauth.currentUser ? fauth.currentUser.getIdToken(true) : Promise.resolve(),
       signInTeacher: (email, pw) => fauth.signInWithEmailAndPassword(email, pw).then(c => c.user),
       signOut: () => fauth.signOut(),
       isTeacher: () => !!(fauth.currentUser && !fauth.currentUser.isAnonymous)
@@ -136,6 +137,7 @@
     authReady: () => Promise.resolve(demoUser()),
     user: () => demoUser(),
     signInStudent: () => Promise.resolve(demoUser()),
+    refreshAuth: () => Promise.resolve(),
     signInTeacher: () => Promise.resolve({ uid: 'teacher', email: 'demo' }),
     signOut: () => Promise.resolve(),
     isTeacher: () => true,
