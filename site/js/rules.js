@@ -42,22 +42,32 @@
   }
 
   // 정답을 맞혔을 때 받는 좋은 아이템. 뒤쪽 절반일수록 강한 아이템이 잘 나옵니다(마리오카트처럼).
-  // self = 바로 효과, use·attack = 손에 들고 있다가 버튼을 눌러 씀(한 번에 하나만)
-  const AHEAD_ATTACKS = ['balloon', 'lightning', 'thunder'];
+  // self = 바로 효과, use·attack = 손에 들고 있다가 버튼을 눌러 씀(한 번에 하나만, 안 누르면 몇 초 뒤 저절로)
+  const AHEAD_ATTACKS = ['balloon', 'lightning', 'thunder', 'smoke', 'warp']; // 1위에게는 쓸모없는 아이템
   function rollGoodItem(rank, n, opts) {
     const lower = n > 1 && (rank - 1) / (n - 1) >= 0.5;
     let table = lower
-      ? [['turbo', 22], ['boost2', 18], ['balloon', 14], ['lightning', 10], ['thunder', 8], ['star', 12], ['boost1', 16]]
-      : [['boost1', 34], ['shield', 20], ['caltrop', 20], ['balloon', 10], ['star', 8], ['turbo', 8]];
+      ? [['turbo', 16], ['boost2', 13], ['warp', 13], ['yut', 12], ['balloon', 10], ['lightning', 8], ['thunder', 6], ['smoke', 6], ['star', 9], ['boost1', 9], ['mapae', 8], ['ginseng', 6]]
+      : [['boost1', 22], ['yut', 14], ['shield', 15], ['caltrop', 13], ['ginseng', 11], ['mapae', 10], ['balloon', 7], ['smoke', 4], ['star', 6], ['turbo', 6]];
     table = table.filter(([k]) => ITEMS[k]);
     if (opts.holding) table = table.filter(([k]) => ITEMS[k].kind === 'self');
-    if (n < 2) table = table.filter(([k]) => ITEMS[k].kind !== 'attack');
+    if (n < 2) table = table.filter(([k]) => ITEMS[k].kind !== 'attack' && k !== 'warp');
     if (rank === 1) table = table.filter(([k]) => !AHEAD_ATTACKS.includes(k));
     if (opts.hasShield) table = table.filter(([k]) => k !== 'shield');
+    if (opts.hasGinseng) table = table.filter(([k]) => k !== 'ginseng');
     if (!table.length) table = [['boost1', 1]];
     return pick(table);
   }
   function rollBadItem() { return Math.random() < 0.5 ? 'fuel' : 'ink'; }
+  // 윷 던지기: 도 1칸, 개 2칸, 걸 3칸, 윷 4칸, 모 5칸
+  function rollYut() {
+    return pick([[['도', 1], 25], [['개', 2], 34], [['걸', 3], 25], [['윷', 4], 11], [['모', 5], 5]]);
+  }
+  // 연속 정답 보너스 칸 (2연속 +2, 3연속부터 +3)
+  function comboBonus(streak) {
+    const b = C.comboBonus || [];
+    return b.length ? (b[Math.min(streak, b.length - 1)] || 0) : 0;
+  }
 
   function accuracy(s) {
     const c = s.correct || 0, w = s.wrong || 0;
@@ -93,7 +103,7 @@
   function attackTarget(type, myUid, ranked) {
     const alive = ranked.filter(r => !r.finishedAt && r.uid !== myUid);
     if (!alive.length) return null;
-    if (type === 'lightning') return alive[0];
+    if (type === 'lightning' || type === 'smoke') return alive[0];
     const me = ranked.find(r => r.uid === myUid);
     const myRank = me ? me.rank : Infinity;
     const ahead = alive.filter(r => r.rank < myRank);
@@ -250,7 +260,7 @@
 
   window.GAME = {
     bannedWordIn, normalizeNick,
-    ITEMS, ERAS, era, shuffle, nextOrder, rollGoodItem, rollBadItem, ranking, attackTarget,
+    ITEMS, ERAS, era, shuffle, nextOrder, rollGoodItem, rollBadItem, rollYut, comboBonus, ranking, attackTarget,
     accuracy, sceneIndex, questionStats, answerText, TEMPLATE, parseSheet, validateRow,
     cleanQuestion, SAMPLE_7B, checkShort, choHint,
     timeLimit: q => (q.type === 'ox' ? C.timeLimit.ox : q.type === 'sa' ? (C.timeLimit.sa || 40) : C.timeLimit.mc) * 1000

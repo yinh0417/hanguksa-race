@@ -25,14 +25,16 @@ window.APP_CONFIG = {
   classCount: 7,          // 반 개수
   studentsPerClass: 30,   // 한 반 최대 학생 수(출석번호 1~이 숫자, 전학생까지 넉넉하게)
   questionsPerSet: 6,     // 세트당 문제 수 (O/X·4지선다 5개 + 단답형 1개)
-  raceSeconds: 180,       // 한 판 시간(초)
-  finishCells: 15,        // 결승선까지 칸 수
-  cellsPerScene: 3,       // 몇 칸마다 배경 장면이 바뀌는지
-  timeLimit: { ox: 15, mc: 25, sa: 35 },  // 문제별 제한 시간(초), sa = 단답형. 틀려서 다시 풀어도 이 시간 안에서 이어져요
+  raceSeconds: 300,       // 한 판 시간(초) = 5분
+  finishCells: 40,        // 결승선까지 칸 수 (5분 + 연속 정답 부스터에 맞춰 늘림. 너무 빨리 골인하면 더 늘려요)
+  cellsPerScene: 8,       // 몇 칸마다 배경 장면이 바뀌는지 (결승선 칸 수 ÷ 5)
+  timeLimit: { ox: 30, mc: 30, sa: 50 },  // 문제별 제한 시간(초), sa = 단답형. 틀려서 다시 풀어도 이 시간 안에서 이어져요
   saHint: true,           // 단답형에 초성 힌트(예: ㅂㅇㄷ ㅈㅌ)를 보여 줄지
   penaltySeconds: 3,      // 오답 벌칙 시간(초)
   hitSeconds: 3,          // 물풍선·신기전에 맞았을 때 멈추는 시간(초)
-  maxNick: 10,            // 닉네임 최대 글자 수(바꾸면 firebase-rules.json의 닉네임 길이 규칙도 함께)
+  comboBonus: [0, 0, 2, 3], // 한 번에 맞힌 연속 정답 보너스 칸: 2연속 +2칸, 3연속부터 매번 +3칸 (부스터로 달려요)
+  autoItemSeconds: 6,     // 받은 아이템을 누르지 않으면 이 시간(초) 뒤 저절로 써요. 0이면 저절로 쓰지 않아요
+  maxNick: 10,           // 닉네임 최대 글자 수(바꾸면 firebase-rules.json의 닉네임 길이 규칙도 함께)
 
   // ⑤ 닉네임 금칙어: 기본 목록에 더해 막고 싶은 말을 여기에 따옴표로 적어 넣으세요. 예: ["바보", "멍청이"]
   //    띄어쓰기·숫자·기호를 끼워 넣어도(예: "바 1 보") 걸러냅니다.
@@ -58,6 +60,11 @@ window.APP_CONFIG = {
     star:      { kind: "use",    icon: "✨", name: "도깨비 부적", desc: "8초 동안 공격도 벌칙도 안 받아요" },
     caltrop:   { kind: "attack", icon: "✳️", name: "마름쇠",      desc: "바로 뒤 친구를 3초 멈춰요" },
     thunder:   { kind: "attack", icon: "💥", name: "비격진천뢰", desc: "나보다 앞선 친구 모두 2초 멈춰요" },
+    yut:       { kind: "self",   icon: "🎲", name: "윷 던지기",   desc: "도·개·걸·윷·모만큼 앞으로" },
+    ginseng:   { kind: "self",   icon: "🌿", name: "인삼",        desc: "다음 오답 벌칙을 1번 막아요" },
+    warp:      { kind: "use",    icon: "🌀", name: "축지법",      desc: "바로 앞 친구 자리로 순간 이동(최대 6칸)" },
+    mapae:     { kind: "use",    icon: "📜", name: "암행어사 마패", desc: "지금 문제의 틀린 보기를 지워요" },
+    smoke:     { kind: "attack", icon: "🌫️", name: "봉화 연기",   desc: "1위의 문제를 3초 동안 가려요" },
     fuel:      { kind: "bad",    icon: "🛢️", name: "오염 연료",   desc: "3초 동안 멈춰요" },
     ink:       { kind: "bad",    icon: "🖌️", name: "먹물",        desc: "3초 동안 문제가 가려져요" }
   }

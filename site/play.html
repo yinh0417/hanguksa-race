@@ -53,9 +53,10 @@
 <!-- 레이스 -->
 <main id="sRace" class="screen race-screen hidden">
   <div id="stuBg" class="stu-bg" aria-hidden="true"></div>
-  <div class="status">
-    <span class="st-pos" id="stPos">-등 / -명</span>
-    <span class="st-time" id="stTime">3:00</span>
+  <div class="hud">
+    <div class="mini" id="mini" role="img" aria-label="전체 코스에서 친구들이 달리는 모습"></div>
+    <span class="st-time" id="stTime">5:00</span>
+    <div class="rank-box" id="rankBox" aria-live="polite"><b id="stRank">-</b><span>등</span><small id="stN">/ -명</small></div>
   </div>
   <p class="st-scene" id="stScene"></p>
   <div class="qtime"><span id="qBar"></span></div>
@@ -82,6 +83,7 @@
     <p class="fx-sub" id="fxSub"></p>
   </div>
   <div id="flash" class="flash hidden" aria-live="polite"></div>
+  <div id="rankPop" class="rank-pop hidden" aria-hidden="true"><small>순위 상승!</small><b id="rankPopNo"></b><span id="rankPopUp"></span></div>
 </main>
 
 <!-- 끝 -->
@@ -115,6 +117,7 @@
 <script src="js/db.js"></script>
 <script src="js/rules.js"></script>
 <script src="js/art.js"></script>
+<script src="js/tracks.js"></script>
 <script src="js/pictures.js"></script>
 <script src="js/play.js"></script>
 </body>

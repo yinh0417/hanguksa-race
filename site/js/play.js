@@ -3,7 +3,7 @@
   const C = window.APP_CONFIG, G = window.GAME, A = window.ART;
   const $ = s => document.querySelector(s);
   const $$ = s => Array.from(document.querySelectorAll(s));
-  const HIT_TYPES = ['balloon', 'lightning', 'caltrop', 'thunder']; // 친구가 던져서 맞는 아이템
+  const HIT_TYPES = ['balloon', 'lightning', 'caltrop', 'thunder', 'smoke']; // 친구가 던져서 맞는 아이템
 
   let room = null, uid = null, meta = null, questions = [], players = {}, states = {}, myP = null;
   let metaLoaded = false, playersLoaded = false, statesLoaded = false;
@@ -285,6 +285,7 @@
     me.q = q;
     if (!questions.length) { msg('문제가 없어요', '선생님께 문제 세트를 확인해 달라고 말해 주세요.'); return; }
     show('#sRace');
+    buildMini();
     listenHits();
     renderItem();
     if (!states[uid]) save();
@@ -312,7 +313,7 @@
     const i = resume != null ? resume : pickQuestion();
     lastIdx = i;
     // 새 문제면 틀린 기록(지운 선지, 틀린 횟수)을 비워요. 다시 연결돼서 이어 풀 때는 그대로 둬요.
-    if (resume == null) { const st = stat(i); st.s = (st.s || 0) + 1; me.tried = []; me.miss = 0; }
+    if (resume == null) { const st = stat(i); st.s = (st.s || 0) + 1; me.tried = []; me.miss = 0; me.peek = false; }
     me.lastQ = i;
     me.openQ = i;
     save();
@@ -340,6 +341,7 @@
       const len = String(q.answer).replace(/\s/g, '').length;
       box.innerHTML = `<form class="sa-form" autocomplete="off">
         ${miss >= 2 ? `<p class="sa-hint reveal">정답은 <b>${escapeHtml(q.answer)}</b> <span>그대로 써 봐요</span></p>`
+          : me.peek ? `<p class="sa-hint">${C.items.mapae.icon} 힌트 <b>${escapeHtml(String(q.answer).charAt(0) + G.choHint(String(q.answer).slice(1)))}</b> <span>${len}글자</span></p>`
           : C.saHint !== false ? `<p class="sa-hint">힌트 <b>${escapeHtml(G.choHint(q.answer))}</b> <span>${len}글자</span></p>` : ''}
         <input class="sa-input" type="text" maxlength="30" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="정답을 써요" aria-label="정답 입력">
         <button class="ans sa-submit" type="submit">제출</button>
@@ -381,7 +383,7 @@
   function itemFx(type, sub, opt) {
     opt = opt || {};
     const it = C.items[type] || {};
-    const kind = opt.kind || (type === 'shield' ? 'shield' : type === 'star' ? 'star' : ['boost1', 'boost2', 'turbo'].includes(type) ? 'boost' : 'throw');
+    const kind = opt.kind || (type === 'shield' ? 'shield' : ['star', 'ginseng', 'mapae'].includes(type) ? 'star' : ['boost1', 'boost2', 'turbo', 'yut', 'warp'].includes(type) ? 'boost' : 'throw');
     const pop = $('#fxPop');
     pop.className = `fx-pop ${kind} fx-${type}`;
     $('#fxTitle').textContent = opt.title || `${it.icon || ''} ${it.name || ''} ${kind === 'throw' ? '발사!' : '사용!'}`;
@@ -407,6 +409,7 @@
     if (type === 'balloon') return '<span class="wb"></span>' + Array.from({ length: 8 }, (_, i) => `<b class="drop" style="--a:${i * 45}deg"></b>`).join('') + '<i class="splash"></i>';
     if (type === 'caltrop') return Array.from({ length: 5 }, (_, i) => `<span class="sp" style="--x:${-34 - i * 18}px;--y:${18 + (i % 2) * 16}px;--r:${i * 80 + 40}deg;--d:${(i * 0.06).toFixed(2)}s">${icon}</span>`).join('');
     if (type === 'thunder') return '<i class="shock"></i><i class="shock s2"></i><span class="bang">' + icon + '</span>';
+    if (type === 'smoke') return Array.from({ length: 6 }, (_, i) => `<span class="puff" style="--i:${i}">${icon}</span>`).join('');
     return `<span class="wb"></span>`;
   }
 
@@ -416,8 +419,23 @@
     if (item === 'boost1') { move(1, now); return `${it.icon} ${it.name}! 1칸 더 가요`; }
     if (item === 'boost2') { move(2, now); return `${it.icon} ${it.name}! 2칸 더 가요`; }
     if (item === 'shield') { me.shield = true; return `${it.icon} ${josa(it.name, '을', '를')} 얻었어요`; }
+    if (item === 'ginseng') { me.ginseng = true; return `${it.icon} ${josa(it.name, '을', '를')} 먹었어요. 다음 오답 벌칙이 없어요`; }
+    if (item === 'yut') {
+      const [name, n] = G.rollYut();
+      move(n, now);
+      me.fx = { type: item, at: now, n };
+      return `${it.icon} ${josa(name, '이', '가')} 나왔어요! ${n}칸 더 가요`;
+    }
     me.hold = item;
+    me.holdAt = now;
     return `${it.icon} ${josa(it.name, '을', '를')} 얻었어요. 아래 버튼을 눌러요!`;
+  }
+
+  // 부스터로 n칸을 1초에 1칸씩 저절로 달려요(천리마 부스터, 연속 정답 보너스)
+  function startRun(n, now) {
+    me.turboLeft = (me.turboLeft || 0) + n;
+    if (!(me.turboNext > now)) me.turboNext = now + 250;
+    me.turboUntil = Math.max(me.turboUntil || 0, now) + n * 1000;
   }
 
   function answer(v, btn) {
@@ -432,20 +450,31 @@
       st.c++;
       me.openQ = null;
       me.correct++;
+      // 한 번에 맞힌 문제가 이어지면 연속 정답 보너스(2연속 +2칸, 3연속부터 +3칸)
+      const first = !(me.miss > 0);
+      me.streak = first ? (me.streak || 0) + 1 : 0;
+      const bonus = first ? G.comboBonus(me.streak) : 0;
       const r = myRank();
       move(1, now);
       let sub = '앞으로 1칸';
       if (!me.finishedAt) {
-        const got = G.rollGoodItem(r.rank, r.n, { holding: !!me.hold, hasShield: !!me.shield });
+        const got = G.rollGoodItem(r.rank, r.n, { holding: !!me.hold, hasShield: !!me.shield, hasGinseng: !!me.ginseng });
         sub = applyItem(got, now);
-        // 바로 효과가 나는 아이템(파발마·지름길 지도·방패)은 쓰는 장면을 보여 줘요
-        if (got === 'boost1') itemFx(got, '앞으로 1칸 더 가요');
+        if (bonus) {
+          startRun(bonus, now);
+          me.fx = { type: 'combo', at: now, n: me.streak };
+          itemFx('turbo', `부스터로 ${bonus}칸 더 달려요`, { kind: 'boost', title: `🔥 ${me.streak}연속 정답!` });
+        }
+        // 바로 효과가 나는 아이템은 쓰는 장면을 보여 줘요(연속 정답 장면이 먼저)
+        else if (got === 'boost1') itemFx(got, '앞으로 1칸 더 가요');
         else if (got === 'boost2') itemFx(got, '앞으로 2칸 더 가요');
         else if (got === 'shield') itemFx(got, '친구의 공격을 1번 막아요');
+        else if (got === 'ginseng') itemFx(got, '다음 오답 벌칙을 1번 막아요');
+        else if (got === 'yut') itemFx(got, sub.replace(/^\S+ /, ''), { title: `${C.items.yut.icon} 윷 던지기!` });
       }
       save();
       btn.classList.add('right');
-      flash('good', '정답!', sub);
+      flash('good', bonus ? `정답! 🔥 ${me.streak}연속` : '정답!', sub);
       renderItem();
       phase = 'feedback';
       phaseUntil = now + 900;
@@ -456,12 +485,16 @@
       me.miss = (me.miss || 0) + 1;
       if (q.type !== 'sa') me.tried = (me.tried || []).concat(q.type === 'mc' ? Number(v) : v);
       me.openQ = cur.i;
+      me.streak = 0;
       cur.retry = true;
-      if (now < (me.guardUntil || 0)) {
-        // 도깨비 부적: 벌칙 없이 바로 다시 풀어요
+      const guard = now < (me.guardUntil || 0);
+      if (guard || me.ginseng) {
+        // 도깨비 부적·인삼: 벌칙 없이 바로 다시 풀어요
+        if (!guard) me.ginseng = false;
         save();
         btn.classList.add('wrong');
-        flash('good', `${C.items.star.icon} 부적이 벌칙을 막았어요`, '다시 풀어 봐요');
+        renderMarks();
+        flash('good', guard ? `${C.items.star.icon} 부적이 벌칙을 막았어요` : `${C.items.ginseng.icon} 인삼 덕분에 벌칙이 없어요`, '다시 풀어 봐요');
         phase = 'penalty';
         phaseUntil = now + 1200;
         cur.deadline += 1200;
@@ -486,6 +519,7 @@
     stat(cur.i).t++;
     me.openQ = null;
     me.timeouts++;
+    me.streak = 0;
     save();
     flash('time', '시간이 지났어요', '이 문제는 나중에 다시 나와요');
     phase = 'feedback';
@@ -514,7 +548,8 @@
           itemFx('shield', `${h.nick || '친구'}의 ${josa(it.name, '을', '를')} 막아 냈어요`, { kind: 'block', title: `${C.items.shield.icon} 방패로 막았어요!`, incoming: it.icon });
         } else {
           const before = Math.max(now, blockedUntil());
-          me.frozenUntil = Math.max(me.frozenUntil || 0, now) + (type === 'thunder' ? 2 : C.hitSeconds) * 1000;
+          if (type === 'smoke') me.blindUntil = Math.max(me.blindUntil || 0, now) + C.hitSeconds * 1000; // 봉화 연기: 문제가 가려져요
+          else me.frozenUntil = Math.max(me.frozenUntil || 0, now) + (type === 'thunder' ? 2 : C.hitSeconds) * 1000;
           const added = Math.max(0, blockedUntil() - before);
           if (phase === 'question' && cur) cur.deadline += added;
           me.fx = { type, at: now, by: h.nick || '친구' };
@@ -525,49 +560,89 @@
     });
   }
 
-  $('#itemBtn').addEventListener('click', async () => {
-    if (!me || !me.hold || phase === 'over' || phase === 'done' || phase === 'idle') return;
-    const type = me.hold, it = C.items[type], now = DB.now();
+  $('#itemBtn').addEventListener('click', () => useItem(false));
+
+  // 들고 있는 아이템 쓰기. auto = 시간이 지나 저절로 쓰는 경우(쓸 수 없으면 조용히 조금 뒤 다시 해 봐요)
+  // 쓰지 못하면 false를 돌려줘요
+  function useItem(auto) {
+    if (!me || !me.hold || phase === 'over' || phase === 'done' || phase === 'idle') return false;
+    const type = me.hold, now = DB.now();
+    const done = () => { me.hold = null; me.holdAt = null; save(); renderItem(); };
     if (type === 'turbo') {
       // 천리마 부스터: 3초 동안 1초마다 1칸씩, 모두 3칸 저절로 달려요
-      me.hold = null;
-      me.turboLeft = 3;
-      me.turboNext = now + 250;
-      me.turboUntil = now + 3250;
+      startRun(3, now);
       me.fx = { type: 'turbo', at: now };
-      save();
-      renderItem();
+      done();
       itemFx('turbo', '3초 동안 3칸 질주해요');
-      return;
+      return true;
     }
     if (type === 'star') {
-      me.hold = null;
       me.guardUntil = now + 8000;
       me.fx = { type: 'star', at: now };
-      save();
-      renderItem();
+      done();
       itemFx('star', '8초 동안 무적이에요');
-      return;
+      return true;
+    }
+    if (type === 'warp') {
+      // 축지법: 나보다 앞에 있는 친구 중 가장 가까운 친구 자리까지 순간 이동(최대 6칸)
+      const ahead = myRank().ranked.filter(x => x.uid !== uid && x.pos > (me.pos || 0));
+      // 저절로 쓸 때 앞에 아무도 없으면(내가 1등) 2칸만 앞으로 가요
+      if (!ahead.length && !auto) { toast('지금은 앞에 친구가 없어요. 조금 뒤에 다시 눌러 보세요.'); return false; }
+      const t = ahead.length ? ahead.reduce((a, b) => (b.pos < a.pos ? b : a)) : null;
+      const gap = t ? Math.min(6, t.pos - (me.pos || 0)) : 2;
+      move(gap, now);
+      me.fx = { type: 'warp', at: now };
+      done();
+      itemFx('warp', t ? `${t.nick} 옆으로 ${gap}칸 순간 이동!` : `앞에 아무도 없어서 ${gap}칸 앞으로 갔어요`);
+      updateStatus(true);
+      if (me.finishedAt) finished();
+      return true;
+    }
+    if (type === 'mapae') {
+      // 암행어사 마패: 지금 문제의 틀린 보기를 지워요(4지선다 2개, O/X 1개, 단답형은 첫 글자 공개)
+      if (phase !== 'question' || !cur) { if (!auto) toast('문제가 나오면 눌러 주세요.'); return false; }
+      const q = cur.q;
+      if (q.type === 'sa') me.peek = true;
+      else {
+        const wrong = (q.type === 'ox' ? ['O', 'X'] : [0, 1, 2, 3]).filter(v => v !== q.answer && !(me.tried || []).includes(v));
+        me.tried = (me.tried || []).concat(G.shuffle(wrong).slice(0, q.type === 'ox' ? 1 : 2));
+      }
+      me.fx = { type: 'mapae', at: now };
+      done();
+      itemFx('mapae', q.type === 'sa' ? '정답 첫 글자를 알려 줘요' : '틀린 보기를 지웠어요');
+      renderQuestion();
+      return true;
     }
     const r = myRank();
     const found = G.attackTarget(type, uid, r.ranked);
     const targets = Array.isArray(found) ? found : found ? [found] : [];
-    if (!targets.length) { toast(type === 'caltrop' ? '지금은 뒤에 친구가 없어요. 조금 뒤에 다시 눌러 보세요.' : '지금은 맞힐 친구가 없어요. 조금 뒤에 다시 눌러 보세요.'); return; }
-    me.hold = null;
+    if (!targets.length && !auto) { toast(type === 'caltrop' ? '지금은 뒤에 친구가 없어요. 조금 뒤에 다시 눌러 보세요.' : '지금은 맞힐 친구가 없어요. 조금 뒤에 다시 눌러 보세요.'); return false; }
+    if (!targets.length) {
+      // 저절로 쓸 때 맞힐 친구가 없으면 버리지 않고 1칸 앞으로 가요
+      move(1, now);
+      me.fx = { type: 'boost1', at: now };
+      done();
+      itemFx(type, '맞힐 친구가 없어서 1칸 앞으로 갔어요', { kind: 'boost' });
+      updateStatus(true);
+      if (me.finishedAt) finished();
+      return true;
+    }
     me.fx = { type: 'throw', at: now, item: type };
-    save();
-    renderItem();
-    try {
-      await Promise.all(targets.map(t => DB.push(`rooms/${room}/hits/${t.uid}`, { type, from: uid, nick: myP.nick, at: DB.now() })));
-      itemFx(type, targets.length > 1 ? `앞선 친구 ${targets.length}명에게 쾅!` : `${targets[0].nick}에게 날아갔어요`);
-    } catch (e) { console.warn(e); }
-  });
+    done();
+    Promise.all(targets.map(t => DB.push(`rooms/${room}/hits/${t.uid}`, { type, from: uid, nick: myP.nick, at: DB.now() })))
+      .then(() => itemFx(type, targets.length > 1 ? `앞선 친구 ${targets.length}명에게 쾅!` : `${targets[0].nick}에게 날아갔어요`))
+      .catch(e => console.warn(e));
+    return true;
+  }
 
   function renderItem() {
     const btn = $('#itemBtn');
     if (me && me.hold) {
       const it = C.items[me.hold];
-      btn.innerHTML = `<span class="ib-icon">${it.icon}</span><span><b>${it.name} 쓰기</b><small>${it.desc}</small></span>`;
+      // 누르지 않으면 몇 초 뒤 저절로 써요. 아래 막대가 줄어들며 남은 시간을 보여 줘요
+      const auto = (C.autoItemSeconds || 0) * 1000;
+      const left = auto ? Math.max(0, (me.holdAt || DB.now()) + auto - DB.now()) : 0;
+      btn.innerHTML = `<span class="ib-icon">${it.icon}</span><span><b>${it.name} 쓰기</b><small>${it.desc}${auto ? ' · 안 누르면 저절로 써요' : ''}</small></span>${auto ? `<i class="ib-auto" style="--d:${(left / 1000).toFixed(1)}s"></i>` : ''}`;
       btn.dataset.item = me.hold;
       btn.classList.remove('hidden');
     } else btn.classList.add('hidden');
@@ -580,6 +655,8 @@
     if (me && now < (me.guardUntil || 0)) marks.push(`${C.items.star.icon} 무적 ${Math.ceil((me.guardUntil - now) / 1000)}초`);
     if (me && me.turboLeft > 0) marks.push(`${C.items.turbo.icon} 질주 중 (${me.turboLeft}칸 남음)`);
     if (me && me.shield) marks.push(`${C.items.shield.icon} ${C.items.shield.name} 있음`);
+    if (me && me.ginseng) marks.push(`${C.items.ginseng.icon} ${C.items.ginseng.name} 있음`);
+    if (me && me.streak >= 2) marks.push(`🔥 ${me.streak}연속 정답 중`);
     const text = marks.join(' · ');
     if (text === lastMarks) return;
     lastMarks = text;
@@ -591,12 +668,23 @@
   function updateStatus(force) {
     if (!me) return;
     const r = myRank();
+    renderMini(r.ranked);
     const e = G.era(meta && meta.era);
     const s = `${me.pos}|${r.rank}|${r.n}|${G.sceneIndex(me.pos)}`;
     if (!force && s === lastStatus) return;
     lastStatus = s;
-    // 왼쪽 위: 참여 인원 중 지금 몇 등인지
-    $('#stPos').textContent = `${r.rank}등 / ${r.n}명`;
+    // 오른쪽 위: 참여 인원 중 지금 몇 등인지. 올라서면 가운데에 크게 알려 줘요
+    $('#stRank').textContent = r.rank;
+    $('#stN').textContent = `/ ${r.n}명`;
+    const box = $('#rankBox');
+    box.dataset.rank = r.rank <= 3 ? r.rank : '';
+    if (lastRank && r.rank !== lastRank && phase !== 'done' && phase !== 'over') {
+      box.classList.remove('up', 'down');
+      void box.offsetWidth;
+      box.classList.add(r.rank < lastRank ? 'up' : 'down');
+      if (r.rank < lastRank) rankPop(r.rank, lastRank - r.rank);
+    }
+    lastRank = r.rank;
     $('#stScene').textContent = `지금 지나는 곳: ${e.scenes[G.sceneIndex(me.pos)]} (${me.pos}/${C.finishCells}칸)`;
     // 배경: 지금 지나는 곳의 단원 장면을 화면 가득(문제 카드는 그 위에)
     const key = e.id + G.sceneIndex(me.pos);
@@ -608,6 +696,58 @@
       void bg.offsetWidth;
       bg.classList.add('in');
     }
+  }
+
+  let lastRank = 0, popTimer = null, popUp = 0, popRank = 0, popWaiting = false;
+  function rankPop(rank, up) {
+    const el = $('#rankPop');
+    popUp = el.classList.contains('hidden') && !popWaiting ? up : popUp + up; // 잇달아 오르면 합쳐서 보여 줘요
+    popRank = rank;
+    if (popWaiting) return;
+    popWaiting = true;
+    // 아이템·연속 정답 장면이 떠 있으면 끝난 뒤에 보여 줘요
+    setTimeout(() => {
+      popWaiting = false;
+      $('#rankPopNo').textContent = `${popRank}등!`;
+      $('#rankPopUp').textContent = `▲ ${popUp}계단 올라섰어요`;
+      el.dataset.rank = popRank <= 3 ? popRank : '';
+      el.className = 'rank-pop';
+      void el.offsetWidth;
+      el.classList.add('go');
+      clearTimeout(popTimer);
+      popTimer = setTimeout(() => el.classList.add('hidden'), 1500);
+    }, $('#fxPop').classList.contains('hidden') ? 0 : 1000);
+  }
+
+  // 왼쪽 위 작은 화면: 큰 화면과 같은 코스에 모든 친구의 위치를 점으로 보여 줘요(영상 통화 작은 창처럼)
+  const MINI_W = 480, MINI_H = 300;
+  let miniGeo = null, miniSig = '';
+  function buildMini() {
+    if (!window.TRACKS) return;
+    miniGeo = TRACKS.build((meta && meta.track) || 'oval', MINI_W, MINI_H, { x: 0, y: 0, w: MINI_W, h: MINI_H });
+    miniSig = '';
+    $('#mini').innerHTML = `<svg viewBox="0 0 ${MINI_W} ${MINI_H}" preserveAspectRatio="xMidYMid slice">${miniGeo.svg(1)}<g class="mini-dots"></g></svg><span class="mini-live">전체 코스</span>`;
+  }
+  function renderMini(ranked) {
+    if (!miniGeo) return;
+    const sig = ranked.map(x => x.uid + ':' + (x.finishedAt ? 'f' : x.pos)).join('|');
+    if (sig === miniSig) return;
+    miniSig = sig;
+    const spot = (pos, i) => {
+      const p = Math.min(pos, C.finishCells) / C.finishCells;
+      return miniGeo.at(miniGeo.sAt(p), ((i % 3) - 1) * miniGeo.TW * 0.26);
+    };
+    let others = '', mine = '';
+    ranked.forEach((x, i) => {
+      const pt = spot(x.finishedAt ? C.finishCells : x.pos, i);
+      if (x.uid === uid) {
+        mine = `<circle cx="${pt.x.toFixed(1)}" cy="${pt.y.toFixed(1)}" r="22" class="mini-me-ring"/><circle cx="${pt.x.toFixed(1)}" cy="${pt.y.toFixed(1)}" r="15" fill="#ff3b30" stroke="#fff" stroke-width="5"/><text x="${pt.x.toFixed(1)}" y="${(pt.y + 6).toFixed(1)}" text-anchor="middle" font-size="17" font-weight="800" fill="#fff" font-family="Pretendard Variable, sans-serif">나</text>`;
+      } else {
+        const car = A.CARS[x.car] || {};
+        others += `<circle cx="${pt.x.toFixed(1)}" cy="${pt.y.toFixed(1)}" r="10" fill="${car.body || '#ccc'}" stroke="#fff" stroke-width="3"/>`;
+      }
+    });
+    document.querySelector('#mini .mini-dots').innerHTML = others + mine; // 내 점은 맨 위에
   }
 
   let flashTimer = null;
@@ -623,7 +763,11 @@
     const ov = $('#overlay');
     const fx = me.fx || {};
     let kind, icon, title, sub;
-    if (HIT_TYPES.includes(fx.type) && now < (me.frozenUntil || 0)) {
+    if (fx.type === 'smoke' && now < (me.blindUntil || 0)) {
+      kind = 'smoke'; icon = C.items.smoke.icon;
+      title = `${fx.by || '친구'}의 ${C.items.smoke.name}에 앞이 안 보여요!`;
+      sub = '연기가 걷히면 이어서 풀어요';
+    } else if (HIT_TYPES.includes(fx.type) && now < (me.frozenUntil || 0)) {
       const it = C.items[fx.type];
       kind = 'hit'; icon = it.icon;
       title = `${fx.by || '친구'}의 ${it.name}에 ${fx.type === 'balloon' ? '갇혔어요' : fx.type === 'caltrop' ? '바퀴가 찔렸어요' : '맞았어요'}!`;
@@ -706,6 +850,12 @@
     }
 
     renderMarks();
+
+    // 받은 아이템을 한동안 누르지 않으면 저절로 써요(못 쓰면 2초 뒤 다시)
+    if (me.hold && C.autoItemSeconds > 0) {
+      if (!me.holdAt) me.holdAt = now;
+      if (now >= me.holdAt + C.autoItemSeconds * 1000 && !useItem(true)) { me.holdAt = now - (C.autoItemSeconds - 2) * 1000; renderItem(); }
+    }
 
     const block = blockedUntil();
     if (now < block) showOverlay(now, block); else hideOverlay();

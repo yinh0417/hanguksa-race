@@ -811,8 +811,17 @@
     thunder: () => C.items.thunder.icon + ' 쾅!',
     fuel: () => C.items.fuel.icon,
     ink: () => C.items.ink.icon,
+    yut: f => C.items.yut.icon + ' ' + (['', '도', '개', '걸', '윷', '모'][f.n] || '윷') + '!',
+    ginseng: () => C.items.ginseng.icon + ' 인삼!',
+    warp: () => C.items.warp.icon + ' 순간 이동!',
+    mapae: () => C.items.mapae.icon + ' 마패!',
+    smoke: () => C.items.smoke.icon + ' 연기!',
+    combo: f => '🔥 ' + (f.n || 2) + '연속!',
     finish: () => '🏁 완주!'
   };
+
+  // 새 아이템은 비슷한 소리를 빌려 써요
+  const FX_SOUND = { yut: 'boost2', warp: 'turbo', ginseng: 'shield', mapae: 'star', smoke: 'ink', combo: 'turbo' };
 
   function updateRace(initial) {
     if (!meta) return;
@@ -836,7 +845,7 @@
       racer.classList.toggle('smoking', now < (s.frozenUntil || 0) && fx.type === 'fuel');
       racer.classList.toggle('inked', now < (s.blindUntil || 0));
       racer.classList.toggle('shielded', !!s.shield);
-      racer.classList.toggle('boosting', (fx.type === 'boost1' || fx.type === 'boost2') && age < 900);
+      racer.classList.toggle('boosting', ['boost1', 'boost2', 'yut', 'warp'].includes(fx.type) && age < 900);
       racer.classList.toggle('struck', (fx.type === 'lightning' || fx.type === 'thunder') && age < 800);
       racer.classList.toggle('done', !!s.finishedAt);
       const r = rankOf[p.uid];
@@ -849,10 +858,10 @@
         if (fresh && age < 3000 && FX_TEXT[fx.type]) {
           const f = document.createElement('span');
           f.className = 'fx-float fx-' + fx.type;
-          f.textContent = FX_TEXT[fx.type]();
+          f.textContent = FX_TEXT[fx.type](fx);
           racer.appendChild(f);
           setTimeout(() => f.remove(), 1300);
-          SOUND.play(fx.type);
+          SOUND.play(FX_SOUND[fx.type] || fx.type);
         }
       }
     });
