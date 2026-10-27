@@ -147,13 +147,12 @@
     });
     return s;
   }
+  // 이미 고른 친구가 있는 번호는 표시만 하고 막지 않아요.
+  // (QR을 다른 앱으로 다시 찍으면 같은 학생이 새 사람으로 들어와, 막으면 자기 번호로 못 들어가요.
+  //  겹친 번호는 선생님 화면에 '번호 겹침'으로 보여서 선생님이 정리해요.)
   function markTakenNumbers() {
     const taken = takenNumbers();
-    $$('#noPick .no-opt').forEach(b => {
-      const t = taken.has(+b.dataset.no);
-      b.disabled = t;
-      if (t && noChoice === +b.dataset.no) { noChoice = null; b.setAttribute('aria-checked', 'false'); }
-    });
+    $$('#noPick .no-opt').forEach(b => b.classList.toggle('taken', taken.has(+b.dataset.no)));
   }
 
   function showJoin(note) {
@@ -202,22 +201,47 @@
     $('#joinForm button[type=submit]').disabled = !!bad;
   });
 
+  // 입장이 안 되는 까닭을 크게 보여 주고, 고쳐야 할 칸으로 화면을 옮겨 줘요
+  function joinError(text, target) {
+    const err = $('#joinErr');
+    err.textContent = text;
+    err.classList.remove('shake');
+    void err.offsetWidth;
+    err.classList.add('shake');
+    (target || err).scrollIntoView({ behavior: 'smooth', block: 'center' });
+    if (target) { target.classList.remove('need'); void target.offsetWidth; target.classList.add('need'); }
+    if (navigator.vibrate && (!navigator.userActivation || navigator.userActivation.hasBeenActive)) navigator.vibrate(120);
+  }
+  let joining = false;
   $('#joinForm').addEventListener('submit', async e => {
     e.preventDefault();
+    if (joining) return;
     const nick = $('#nickInput').value.trim();
-    const err = $('#joinErr');
-    if (!nick) { err.textContent = '닉네임을 적어 주세요.'; return; }
-    if (Array.from(nick).length > C.maxNick) { err.textContent = `닉네임은 ${C.maxNick}글자까지 쓸 수 있어요.`; return; }
-    if (G.bannedWordIn(nick)) { err.textContent = BANNED_MSG; $('#nickInput').focus(); return; }
-    if (noChoice == null) { err.textContent = '내 출석번호를 골라 주세요.'; return; }
-    if (takenNumbers().has(noChoice)) { err.textContent = `${noChoice}번은 이미 다른 친구가 골랐어요. 번호를 확인해 주세요.`; return; }
-    if (carChoice == null) { err.textContent = '탈것을 하나 골라 주세요.'; return; }
-    err.textContent = '';
+    if (!nick) { joinError('닉네임을 적어 주세요.', $('#nickInput')); return; }
+    if (Array.from(nick).length > C.maxNick) { joinError(`닉네임은 ${C.maxNick}글자까지 쓸 수 있어요.`, $('#nickInput')); return; }
+    if (G.bannedWordIn(nick)) { joinError(BANNED_MSG, $('#nickInput')); return; }
+    if (noChoice == null) { joinError('내 출석번호를 골라 주세요.', $('#noPick')); return; }
+    if (carChoice == null) { joinError('탈것을 하나 골라 주세요.', $('#carPick')); return; }
+    $('#joinErr').textContent = '';
+    const btn = $('#joinForm button[type=submit]');
+    joining = true;
+    btn.disabled = true;
+    btn.textContent = '들어가는 중…';
     try {
-      await DB.set(`rooms/${room}/players/${uid}`, { nick, no: noChoice, car: carChoice, status: 'pending', joinedAt: DB.now() });
+      // 와이파이가 약하면 저장이 끝나지 않고 멈춰 있을 수 있어서 10초까지만 기다려요
+      await Promise.race([
+        DB.set(`rooms/${room}/players/${uid}`, { nick, no: noChoice, car: carChoice, status: 'pending', joinedAt: DB.now() }),
+        new Promise((_, no) => setTimeout(() => no(new Error('timeout')), 10000))
+      ]);
     } catch (ex) {
       console.warn(ex);
-      err.textContent = '입장하지 못했어요. 다시 눌러 주세요.';
+      joinError(ex && ex.message === 'timeout'
+        ? '인터넷 연결이 약해서 들어가지 못했어요. 와이파이를 확인하고 다시 눌러 주세요.'
+        : '입장하지 못했어요. 다시 눌러 주세요. 계속 안 되면 선생님께 알려 주세요.');
+    } finally {
+      joining = false;
+      btn.disabled = !!G.bannedWordIn($('#nickInput').value);
+      btn.textContent = '입장하기';
     }
   });
 

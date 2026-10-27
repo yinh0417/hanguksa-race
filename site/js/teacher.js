@@ -538,6 +538,18 @@
       .map(([uid, p]) => ({ uid, nick: p.nick, car: p.car || 0, no: p.no || null, approvedAt: p.approvedAt || p.joinedAt || 0 }))
       .sort((a, b) => a.approvedAt - b.approvedAt);
   }
+  // 승인 대기·입장한 학생 중 출석번호가 겹치는 번호들
+  // (같은 학생이 QR을 다른 앱으로 다시 찍었거나, 친구가 번호를 잘못 고른 경우 → 선생님이 거절·강퇴로 정리)
+  function dupNumbers() {
+    const seen = {}, dup = new Set();
+    Object.values(players).forEach(p => {
+      if (!p || !p.no || (p.status !== 'pending' && p.status !== 'approved')) return;
+      if (seen[p.no]) dup.add(p.no); else seen[p.no] = true;
+    });
+    return dup;
+  }
+  const dupFlag = (no, dup) => (no && dup.has(no) ? `<b class="bad-flag dup-flag" title="같은 번호로 들어온 학생이 또 있어요">번호 겹침</b>` : '');
+
   function pendingList() {
     return Object.entries(players)
       .filter(([, p]) => p && p.status === 'pending')
@@ -580,8 +592,9 @@
     if (qrEl.dataset.code !== room) { renderQR(qrEl, playUrl(room), 8); qrEl.dataset.code = room; }
     const ap = approvedList();
     $('#lbCount').textContent = ap.length;
+    const dup = dupNumbers();
     $('#lbApproved').innerHTML = ap.length
-      ? ap.map(p => `<div class="roster-item"><div class="mini-car">${A.carSVG(p.car)}</div><span class="roster-nick${Array.from(p.nick).length > 6 ? ' long' : ''}">${esc(p.nick)}</span><button class="kick-x" data-kick="${p.uid}" title="${esc(p.nick)} 강퇴" aria-label="${esc(p.nick)} 강퇴">강퇴</button></div>`).join('')
+      ? ap.map(p => `<div class="roster-item"><div class="mini-car">${A.carSVG(p.car)}</div><span class="roster-nick${Array.from(p.nick).length > 6 ? ' long' : ''}">${p.no ? `<small class="r-no">${p.no}</small>` : ''}${esc(p.nick)}</span>${dupFlag(p.no, dup)}<button class="kick-x" data-kick="${p.uid}" title="${esc(p.nick)} 강퇴" aria-label="${esc(p.nick)} 강퇴">강퇴</button></div>`).join('')
       : '<p class="roster-empty">아직 아무도 없어요. QR을 찍고 들어와 주세요.</p>';
     $$('#lbApproved [data-kick]').forEach(b => b.addEventListener('click', () => kick(b.dataset.kick)));
     renderPendingList($('#lbPending'));
@@ -593,13 +606,13 @@
 
   // 승인 대기: 닉네임은 선생님 화면에 그대로 보이고, 금칙어가 섞여 있으면 경고를 붙입니다
   function renderPendingList(el) {
-    const pend = pendingList();
+    const pend = pendingList(), dup = dupNumbers();
     el.innerHTML = pend.length ? pend.map(p => {
       const bad = G.bannedWordIn(p.nick);
       return `<li class="pending-item ${bad ? 'is-bad' : ''}">
         <div class="mini-car">${A.carSVG(p.car)}</div>
         <span class="p-no">${p.no ? p.no + '번' : '번호 없음'}</span>
-        <span class="nick-show">${esc(p.nick)}${bad ? '<b class="bad-flag">금칙어</b>' : ''}</span>
+        <span class="nick-show">${esc(p.nick)}${bad ? '<b class="bad-flag">금칙어</b>' : ''}${dupFlag(p.no, dup)}</span>
         <button class="btn small primary" data-ok="${p.uid}" ${bad ? 'disabled' : ''}>승인</button>
         <button class="btn small" data-no="${p.uid}" title="닉네임을 다시 입력하게 해요">거절</button>
         <button class="btn small danger" data-kick="${p.uid}" title="이번 게임에서 내보내요">강퇴</button>

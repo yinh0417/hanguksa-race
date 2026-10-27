@@ -746,3 +746,7 @@
 /* 강퇴 버튼은 마우스를 올렸을 때만 보여서 닉네임 자리를 넉넉하게 */
 .roster-item .kick-x { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); opacity: 0; transition: opacity .15s; }
 .roster-item:hover .kick-x, .roster-item .kick-x:focus-visible { opacity: 1; }
+/* 출석번호가 겹친 학생 표시 */
+.dup-flag { background: #ff9f0a; flex: none; }
+.roster-item .dup-flag { font-size: 11px; padding: 1px 6px; margin-left: 2px; }
+.r-no { font-size: .72em; opacity: .7; margin-right: 4px; font-weight: 600; }

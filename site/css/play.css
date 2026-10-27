@@ -400,3 +400,14 @@ body.phone { background: var(--cheong-deep); }
   .overlay.hit[data-fx="lightning"] .ov-car .car-svg, .overlay.hit[data-fx="thunder"] .ov-car .car-svg { animation-duration: .9s, .2s !important; animation-iteration-count: 1, infinite !important; }
 }
 .fx-pop { -webkit-backdrop-filter: blur(5px); backdrop-filter: blur(5px); }
+
+/* 입장: 이미 고른 친구가 있는 번호는 작은 점으로만 표시(막지 않음) */
+.no-opt.taken { position: relative; }
+.no-opt.taken::after { content: ''; position: absolute; top: 5px; right: 6px; width: 6px; height: 6px; border-radius: 50%; background: #ff9f0a; }
+/* 입장이 안 될 때: 눈에 띄는 빨간 안내 상자 + 고칠 칸 깜빡임 */
+#joinErr:not(:empty) { background: #ffe9e7; color: #c4231a; font-weight: 600; font-size: 16px; line-height: 1.4; border-radius: 12px; padding: 10px 12px; word-break: keep-all; }
+#joinErr.shake { animation: shake .4s; }
+.need { animation: need-flash .9s ease-out 2; border-radius: 12px; }
+@keyframes need-flash { 0%, 100% { box-shadow: 0 0 0 0 rgba(255,59,48,0); } 40% { box-shadow: 0 0 0 4px rgba(255,59,48,.6); } }
+#joinForm button[type=submit]:disabled { opacity: .7; }
+@media (prefers-reduced-motion: reduce) { #joinErr.shake { animation-duration: .4s !important; } .need { animation-duration: .9s !important; animation-iteration-count: 2 !important; } }
