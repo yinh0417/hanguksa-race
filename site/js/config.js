@@ -19,7 +19,7 @@ window.APP_CONFIG = {
   teacherEmail: "yinh0417@gmail.com",
 
   // 학생들이 접속하는 실제 사이트 주소 (QR에 들어가는 주소)
-  publicUrl: "https://hanguksa-race.netlify.app/",
+  publicUrl: "https://yinh0417.github.io/hanguksa-race/",
 
   // ③ 게임 숫자 (시범 수업 뒤 여기서 조정)
   classCount: 7,          // 반 개수
