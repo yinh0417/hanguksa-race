@@ -159,6 +159,9 @@
   function showJoin(note) {
     if (!joinBuilt) {
       joinBuilt = true;
+      // 닉네임 글자 수는 config.js의 maxNick 하나로 맞춰요
+      $('#nickInput').maxLength = C.maxNick;
+      $('#nickLabel').textContent = `닉네임 (${C.maxNick}글자까지)`;
       // 탈것이 많아서 종류별 탭을 눌러 한 종류씩 봐요
       const groups = [...new Set(A.CARS.map(c => c.group))];
       $('#carPick').innerHTML = `<div class="car-tabs" role="tablist">${groups.map((g, k) => `<button type="button" class="car-tab" role="tab" data-g="${k}" aria-selected="${k === 0}">${g}</button>`).join('')}</div>` +

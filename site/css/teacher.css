@@ -733,3 +733,6 @@
 @media (prefers-reduced-motion: reduce) {
   .bg-screen.flip .scene-svg { animation-duration: .7s !important; }
 }
+/* 7~10글자 닉네임은 시상대에서 한 줄로 보이게 글자를 줄여요 */
+.podium-nick { white-space: nowrap; }
+.podium-nick.long { font-size: clamp(1rem, 3vh, 2.1rem); }

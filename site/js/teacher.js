@@ -1065,7 +1065,7 @@
       return `<div class="podium-col p${r.rank}" style="--d:${[0, 1.1, 0.6, 0.2][r.rank]}s">
         ${r.rank === 1 ? '<div class="podium-crown">👑</div>' : ''}
         <div class="podium-car">${A.carSVG(r.car)}</div>
-        <div class="podium-nick">${esc(r.nick)}</div>
+        <div class="podium-nick${Array.from(r.nick).length > 6 ? ' long' : ''}">${esc(r.nick)}</div>
         <div class="podium-block"><span>${r.rank}</span><small>${['', '🥇', '🥈', '🥉'][r.rank]}</small></div>
       </div>`;
     }).join('');
