@@ -750,3 +750,18 @@
 .dup-flag { background: #ff9f0a; flex: none; }
 .roster-item .dup-flag { font-size: 11px; padding: 1px 6px; margin-left: 2px; }
 .r-no { font-size: .72em; opacity: .7; margin-right: 4px; font-weight: 600; }
+/* 같은 학생이 다시 접속: 승인하면 예전 접속은 지워져요 */
+.again-flag { font-size: 12px; font-weight: 600; color: #fff; background: #0a84ff; border-radius: 9999px; padding: 1px 8px; margin-left: 4px; flex: none; }
+
+/* 막판 역전 구간 */
+.countdown.final-cd { font-size: 15vh; color: #ffd84a; text-align: center; line-height: 1.1; animation: count-pop .9s ease-out; }
+.countdown.final-cd small { display: block; font-size: 4.5vh; color: #fff; margin-top: 1.5vh; }
+#vRace.final .timer { color: #ff453a; animation: final-beat 1s ease-in-out infinite; }
+#vRace.final::after { content: '⚡ 역전 구간 · 정답 하나에 2칸'; position: fixed; left: 50%; top: 9vh; transform: translateX(-50%); z-index: 30;
+  font: 700 clamp(16px, 2.6vh, 26px) var(--font-body); color: #3a2700; background: #ffd84a; border-radius: 9999px; padding: .35em 1.2em;
+  box-shadow: 0 6px 20px rgba(0,0,0,.35); pointer-events: none; }
+@keyframes final-beat { 50% { transform: scale(1.08); } }
+@media (prefers-reduced-motion: reduce) {
+  .countdown.final-cd { animation-duration: .9s !important; }
+  #vRace.final .timer { animation-duration: 1s !important; animation-iteration-count: infinite !important; }
+}

@@ -476,3 +476,14 @@ body.phone { background: var(--cheong-deep); }
 /* 봉화 연기에 맞으면: 뿌연 잿빛 연기 */
 .overlay.smoke { background: radial-gradient(circle at 25% 30%, rgba(200,200,205,.55) 0 22%, transparent 40%), radial-gradient(circle at 75% 60%, rgba(170,170,176,.6) 0 26%, transparent 45%), radial-gradient(circle at 40% 85%, rgba(150,150,156,.5) 0 20%, transparent 38%), #4a4a50; color: #fff; }
 .overlay.smoke .ov-car { filter: grayscale(.6) blur(1.5px); opacity: .85; }
+
+/* 순위가 떨어졌을 때: 빨간 팝업 */
+.rank-pop.down { background: linear-gradient(160deg, #ff6b5e, #c4241a); color: #fff; }
+.rank-pop.down b { font-size: 54px; }
+
+/* 막판 역전 구간: 남은 시간이 빨갛게 깜빡여요 */
+.final .hud .st-time { background: #ff3b30; color: #fff; animation: final-beat 1s ease-in-out infinite; }
+@keyframes final-beat { 50% { transform: scale(1.1); box-shadow: 0 0 0 5px rgba(255,59,48,.35); } }
+@media (prefers-reduced-motion: reduce) {
+  .final .hud .st-time { animation-duration: 1s !important; animation-iteration-count: infinite !important; }
+}

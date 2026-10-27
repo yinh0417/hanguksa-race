@@ -370,11 +370,23 @@
 
   function stat(i) { return me.q[i] || (me.q[i] = { c: 0, w: 0, t: 0 }); }
 
+  // 막판 역전 구간: 끝나기 finalSeconds초 전부터
+  function inFinal(now) { return !!(C.finalSeconds && meta && meta.endAt && now >= meta.endAt - C.finalSeconds * 1000 && now < meta.endAt); }
+  // 선두 맞바람: 시간이 흐른 만큼의 칸 + leadCells까지만 갈 수 있어요(1등이 너무 일찍 골인해 기다리지 않게)
+  function paceCap(now) {
+    if (!C.leadCells || !meta || !meta.startAt || !meta.endAt) return C.finishCells;
+    const f = Math.max(0, Math.min(1, (now - meta.startAt) / (meta.endAt - meta.startAt)));
+    return Math.floor(C.finishCells * f) + C.leadCells;
+  }
+  // 실제로 간 칸 수를 돌려줘요
   function move(n, now) {
-    if (me.finishedAt) return;
-    me.pos = Math.min(C.finishCells, (me.pos || 0) + n);
-    me.movedAt = now;
+    if (me.finishedAt) return 0;
+    const before = me.pos || 0;
+    me.pos = Math.min(C.finishCells, before + n, Math.max(before, paceCap(now)));
+    if (me.pos < Math.min(C.finishCells, before + n)) me.windAt = now;
+    if (me.pos > before) me.movedAt = now;
     if (me.pos >= C.finishCells) { me.finishedAt = now; me.fx = { type: 'finish', at: now }; }
+    return me.pos - before;
   }
 
   // 아이템을 쓰면 1초 동안 화면 가득 큰 글자와 내 탈것이 달려 나가는 장면을 보여 줘요
@@ -416,15 +428,16 @@
   function applyItem(item, now) {
     const it = C.items[item];
     me.fx = { type: item, at: now };
-    if (item === 'boost1') { move(1, now); return `${it.icon} ${it.name}! 1칸 더 가요`; }
-    if (item === 'boost2') { move(2, now); return `${it.icon} ${it.name}! 2칸 더 가요`; }
+    const WIND = '🌬️ 맞바람 때문에 더 못 갔어요';
+    if (item === 'boost1') return move(1, now) ? `${it.icon} ${it.name}! 1칸 더 가요` : WIND;
+    if (item === 'boost2') { const w = move(2, now); return w ? `${it.icon} ${it.name}! ${w}칸 더 가요` : WIND; }
     if (item === 'shield') { me.shield = true; return `${it.icon} ${josa(it.name, '을', '를')} 얻었어요`; }
     if (item === 'ginseng') { me.ginseng = true; return `${it.icon} ${josa(it.name, '을', '를')} 먹었어요. 다음 오답 벌칙이 없어요`; }
     if (item === 'yut') {
       const [name, n] = G.rollYut();
-      move(n, now);
+      const w = move(n, now);
       me.fx = { type: item, at: now, n };
-      return `${it.icon} ${josa(name, '이', '가')} 나왔어요! ${n}칸 더 가요`;
+      return `${it.icon} ${josa(name, '이', '가')} 나왔어요! ${w ? w + '칸 더 가요' : '그런데 맞바람 때문에 제자리예요'}`;
     }
     me.hold = item;
     me.holdAt = now;
@@ -455,12 +468,16 @@
       me.streak = first ? (me.streak || 0) + 1 : 0;
       const bonus = first ? G.comboBonus(me.streak) : 0;
       const r = myRank();
-      move(1, now);
-      let sub = '앞으로 1칸';
+      const step = inFinal(now) ? 2 : 1; // 역전 구간에서는 정답 하나에 2칸
+      const went = move(step, now);
+      let sub = went ? `앞으로 ${went}칸${step > 1 ? ' (역전 구간)' : ''}` : '🌬️ 선두 맞바람! 친구들이 따라올 때까지 제자리예요';
+      // 선두 맞바람에 걸리면 연속 정답 부스터와 달리는 장면은 쉬어요(연속 기록은 이어져요)
+      const windy = !me.finishedAt && (me.pos || 0) >= paceCap(now);
       if (!me.finishedAt) {
         const got = G.rollGoodItem(r.rank, r.n, { holding: !!me.hold, hasShield: !!me.shield, hasGinseng: !!me.ginseng });
         sub = applyItem(got, now);
-        if (bonus) {
+        if (windy) { if (!went) sub = '친구들이 따라올 때까지 제자리예요 · ' + sub; }
+        else if (bonus) {
           startRun(bonus, now);
           me.fx = { type: 'combo', at: now, n: me.streak };
           itemFx('turbo', `부스터로 ${bonus}칸 더 달려요`, { kind: 'boost', title: `🔥 ${me.streak}연속 정답!` });
@@ -474,7 +491,7 @@
       }
       save();
       btn.classList.add('right');
-      flash('good', bonus ? `정답! 🔥 ${me.streak}연속` : '정답!', sub);
+      flash('good', windy ? '정답! 🌬️ 선두 맞바람' : bonus ? `정답! 🔥 ${me.streak}연속` : '정답!', sub);
       renderItem();
       phase = 'feedback';
       phaseUntil = now + 900;
@@ -657,6 +674,8 @@
     if (me && me.shield) marks.push(`${C.items.shield.icon} ${C.items.shield.name} 있음`);
     if (me && me.ginseng) marks.push(`${C.items.ginseng.icon} ${C.items.ginseng.name} 있음`);
     if (me && me.streak >= 2) marks.push(`🔥 ${me.streak}연속 정답 중`);
+    if (me && inFinal(now)) marks.push('⚡ 역전 구간: 정답 2칸');
+    if (me && now - (me.windAt || 0) < 5000) marks.push('🌬️ 선두 맞바람');
     const text = marks.join(' · ');
     if (text === lastMarks) return;
     lastMarks = text;
@@ -682,7 +701,7 @@
       box.classList.remove('up', 'down');
       void box.offsetWidth;
       box.classList.add(r.rank < lastRank ? 'up' : 'down');
-      if (r.rank < lastRank) rankPop(r.rank, lastRank - r.rank);
+      rankPop(lastRank, r.rank);
     }
     lastRank = r.rank;
     $('#stScene').textContent = `지금 지나는 곳: ${e.scenes[G.sceneIndex(me.pos)]} (${me.pos}/${C.finishCells}칸)`;
@@ -698,20 +717,24 @@
     }
   }
 
-  let lastRank = 0, popTimer = null, popUp = 0, popRank = 0, popWaiting = false;
-  function rankPop(rank, up) {
+  // 순위가 오르거나 떨어지면 가운데에 잠깐 크게 보여 줘요. 잇달아 바뀌면 처음 순위와 비교해 합쳐서 보여 줘요
+  let lastRank = 0, lastFinal = false, popTimer = null, popBase = 0, popRank = 0, popWaiting = false;
+  function rankPop(from, to) {
     const el = $('#rankPop');
-    popUp = el.classList.contains('hidden') && !popWaiting ? up : popUp + up; // 잇달아 오르면 합쳐서 보여 줘요
-    popRank = rank;
+    if (el.classList.contains('hidden') && !popWaiting) popBase = from;
+    popRank = to;
     if (popWaiting) return;
     popWaiting = true;
     // 아이템·연속 정답 장면이 떠 있으면 끝난 뒤에 보여 줘요
     setTimeout(() => {
       popWaiting = false;
-      $('#rankPopNo').textContent = `${popRank}등!`;
-      $('#rankPopUp').textContent = `▲ ${popUp}계단 올라섰어요`;
-      el.dataset.rank = popRank <= 3 ? popRank : '';
-      el.className = 'rank-pop';
+      const d = popBase - popRank;
+      if (!d) return;
+      $('#rankPopTag').textContent = d > 0 ? '순위 상승!' : '순위 하락';
+      $('#rankPopNo').textContent = `${popRank}등${d > 0 ? '!' : ''}`;
+      $('#rankPopUp').textContent = d > 0 ? `▲ ${d}계단 올라섰어요` : `▼ ${-d}계단 밀렸어요. 힘내요!`;
+      el.dataset.rank = d > 0 && popRank <= 3 ? popRank : '';
+      el.className = 'rank-pop' + (d < 0 ? ' down' : '');
       void el.offsetWidth;
       el.classList.add('go');
       clearTimeout(popTimer);
@@ -833,6 +856,13 @@
     if (phase === 'idle' || phase === 'over') return;
     if (meta.status === 'finished' || (meta.endAt && now >= meta.endAt)) { endRace(); return; }
     $('#stTime').textContent = fmt(meta.endAt - now);
+    // 막판 역전 구간이 시작되면 크게 알리고, 시간을 빨갛게
+    const fin = inFinal(now);
+    if (fin !== lastFinal) {
+      lastFinal = fin;
+      $('#sRace').classList.toggle('final', fin);
+      if (fin && phase !== 'done') itemFx('turbo', `남은 ${C.finalSeconds}초! 정답 하나에 2칸씩 가요`, { kind: 'boost', title: '⚡ 역전 구간 시작!' });
+    }
     if (phase === 'done') return;
 
     // 천리마 부스터: 문제를 푸는 동안에도 차가 저절로 달려요(맞아서 멈추면 그동안은 쉬어요)

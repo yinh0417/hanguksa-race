@@ -538,22 +538,36 @@
       .map(([uid, p]) => ({ uid, nick: p.nick, car: p.car || 0, no: p.no || null, approvedAt: p.approvedAt || p.joinedAt || 0 }))
       .sort((a, b) => a.approvedAt - b.approvedAt);
   }
-  // 승인 대기·입장한 학생 중 출석번호가 겹치는 번호들
-  // (같은 학생이 QR을 다른 앱으로 다시 찍었거나, 친구가 번호를 잘못 고른 경우 → 선생님이 거절·강퇴로 정리)
+  // 같은 학생: 출석번호와 닉네임이 같으면 한 사람으로 봐요.
+  // 와이파이가 약해 QR을 다시 찍거나 다른 앱(카메라→사파리·카카오톡)으로 열면 새 사람처럼 또 들어오기 때문이에요.
+  const sameKey = p => (p && p.no ? p.no + '|' + String(p.nick || '').replace(/\s/g, '').toLowerCase() : null);
+  const live = p => p && (p.status === 'pending' || p.status === 'approved');
+  // uid와 같은 학생으로 들어온 다른 기록들
+  function twinsOf(uid) {
+    const key = sameKey(players[uid]);
+    return key ? Object.keys(players).filter(id => id !== uid && live(players[id]) && sameKey(players[id]) === key) : [];
+  }
+
+  // 승인 대기·입장한 학생 중 출석번호가 겹치는 번호들 (같은 학생이 여러 번 들어온 것은 빼고, 닉네임이 다른 친구끼리만)
   function dupNumbers() {
-    const seen = {}, dup = new Set();
+    const keys = {}, dup = new Set();
     Object.values(players).forEach(p => {
-      if (!p || !p.no || (p.status !== 'pending' && p.status !== 'approved')) return;
-      if (seen[p.no]) dup.add(p.no); else seen[p.no] = true;
+      if (!live(p) || !p.no) return;
+      (keys[p.no] = keys[p.no] || new Set()).add(sameKey(p));
     });
+    Object.keys(keys).forEach(no => { if (keys[no].size > 1) dup.add(+no); });
     return dup;
   }
-  const dupFlag = (no, dup) => (no && dup.has(no) ? `<b class="bad-flag dup-flag" title="같은 번호로 들어온 학생이 또 있어요">번호 겹침</b>` : '');
+  const dupFlag = (no, dup) => (no && dup.has(no) ? `<b class="bad-flag dup-flag" title="같은 번호로 들어온 다른 친구가 있어요">번호 겹침</b>` : '');
 
+  // 같은 학생이 여러 번 들어왔으면 가장 나중에 들어온 것 하나만 보여 줘요(again: 다시 들어온 횟수)
   function pendingList() {
-    return Object.entries(players)
+    const all = Object.entries(players)
       .filter(([, p]) => p && p.status === 'pending')
-      .map(([uid, p]) => ({ uid, nick: p.nick, car: p.car || 0, no: p.no || null, joinedAt: p.joinedAt || 0 }))
+      .map(([uid, p]) => ({ uid, nick: p.nick, car: p.car || 0, no: p.no || null, joinedAt: p.joinedAt || 0 }));
+    const newer = (id, p) => { const j = players[id].joinedAt || 0; return j > p.joinedAt || (j === p.joinedAt && id > p.uid); };
+    return all.filter(p => !twinsOf(p.uid).some(id => players[id].status === 'pending' && newer(id, p)))
+      .map(p => Object.assign(p, { again: twinsOf(p.uid).length }))
       .sort((a, b) => a.joinedAt - b.joinedAt);
   }
 
@@ -612,7 +626,7 @@
       return `<li class="pending-item ${bad ? 'is-bad' : ''}">
         <div class="mini-car">${A.carSVG(p.car)}</div>
         <span class="p-no">${p.no ? p.no + '번' : '번호 없음'}</span>
-        <span class="nick-show">${esc(p.nick)}${bad ? '<b class="bad-flag">금칙어</b>' : ''}${dupFlag(p.no, dup)}</span>
+        <span class="nick-show">${esc(p.nick)}${bad ? '<b class="bad-flag">금칙어</b>' : ''}${dupFlag(p.no, dup)}${p.again ? `<b class="again-flag" title="같은 학생이 다시 접속했어요. 승인하면 예전 접속은 지워져요">다시 접속</b>` : ''}</span>
         <button class="btn small primary" data-ok="${p.uid}" ${bad ? 'disabled' : ''}>승인</button>
         <button class="btn small" data-no="${p.uid}" title="닉네임을 다시 입력하게 해요">거절</button>
         <button class="btn small danger" data-kick="${p.uid}" title="이번 게임에서 내보내요">강퇴</button>
@@ -627,8 +641,18 @@
     if (meta.status === 'lobby') renderPendingList($('#lbPending'));
     else renderPendingPop();
   }
+  // 승인할 때 같은 학생의 예전 접속 기록은 지워요. 이미 달리고 있었으면 그 기록(위치·정답)을 새 접속으로 옮겨요.
+  function approveUpdates(uid, at) {
+    const upd = { [`players/${uid}/status`]: 'approved', [`players/${uid}/approvedAt`]: at };
+    const old = twinsOf(uid);
+    const carry = old.filter(id => players[id].status === 'approved' && states && states[id])
+      .sort((a, b) => (states[b].pos || 0) - (states[a].pos || 0))[0];
+    if (carry && !(states && states[uid])) upd[`state/${uid}`] = states[carry];
+    old.forEach(id => { upd[`players/${id}`] = null; upd[`state/${id}`] = null; });
+    return upd;
+  }
   function approve(uid) {
-    return DB.update(`rooms/${room}/players/${uid}`, { status: 'approved', approvedAt: DB.now() });
+    return DB.update(`rooms/${room}`, approveUpdates(uid, DB.now()));
   }
   function reject(uid) {
     return DB.update(`rooms/${room}/players/${uid}`, { status: 'rejected' });
@@ -643,8 +667,8 @@
   $('#lbApproveAll').addEventListener('click', () => {
     const t = DB.now();
     const upd = {};
-    pendingList().filter(p => !G.bannedWordIn(p.nick)).forEach((p, i) => { upd[`${p.uid}/status`] = 'approved'; upd[`${p.uid}/approvedAt`] = t + i; });
-    DB.update(`rooms/${room}/players`, upd);
+    pendingList().filter(p => !G.bannedWordIn(p.nick)).forEach((p, i) => Object.assign(upd, approveUpdates(p.uid, t + i)));
+    DB.update(`rooms/${room}`, upd);
   });
   $('#lbClose').addEventListener('click', () => {
     if (confirm('게임을 닫을까요? 들어온 학생들은 처음 화면으로 돌아가요.')) closeRoom();
@@ -872,7 +896,7 @@
       <li data-rank="${r.rank}"><span class="lr-rank">${r.rank}</span><span class="lr-car">${A.carSVG(r.car)}</span><span class="lr-nick">${esc(r.nick)}</span><span class="lr-pos">${r.finishedAt ? '🏁' : r.pos + '칸'}</span></li>`).join('');
   }
 
-  let lastCountShown = null, lastTickSec = null, lastSongName = null, trackToastFor = null;
+  let lastCountShown = null, lastTickSec = null, finalOn = false, lastSongName = null, trackToastFor = null;
   function tick() {
     if (!meta || !room) return;
     const now = DB.now();
@@ -898,6 +922,19 @@
         SOUND.setIntensity(left < 30000);
         const sec = Math.ceil(left / 1000);
         if (left > 0 && sec <= 10 && sec !== lastTickSec) { lastTickSec = sec; SOUND.play('tick'); }
+        // 막판 역전 구간: 시작할 때 큰 글자로 알리고, 끝날 때까지 위쪽에 띠를 띄워요
+        const fin = !!C.finalSeconds && left > 0 && left <= C.finalSeconds * 1000;
+        if (fin !== finalOn) {
+          finalOn = fin;
+          $('#vRace').classList.toggle('final', fin);
+          if (fin) {
+            const cd = $('#countdown');
+            cd.innerHTML = `⚡ 역전 구간!<small>남은 ${C.finalSeconds}초, 정답 하나에 2칸</small>`;
+            cd.className = 'countdown final-cd';
+            setTimeout(() => cd.classList.add('hidden'), 2200);
+            SOUND.play('go');
+          }
+        }
       }
       updateRace();
       updateBackdrop();
@@ -1017,6 +1054,7 @@
   function showFinish() {
     show('#vRace');
     const cd = $('#countdown');
+    cd.className = 'countdown';
     cd.textContent = '경기 끝!';
     cd.classList.remove('hidden');
     cd.classList.add('go');
