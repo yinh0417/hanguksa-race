@@ -238,3 +238,7 @@ body.phone { background: var(--cheong-deep); }
 /* 골인 화면: '골인!'을 크게, 기다림 문구는 작게(순위는 큰 화면 시상대에서) */
 .done h2 { font-size: 44px; letter-spacing: -0.03em; }
 .done-rank { font-size: 20px; line-height: 1.4; word-break: keep-all; max-width: 18em; }
+
+/* 학생 화면 오른쪽 아래 만든이 */
+.maker { position: fixed; right: 10px; bottom: calc(6px + env(safe-area-inset-bottom)); margin: 0; z-index: 5;
+  font-size: 11px; color: rgba(255,255,255,.55); pointer-events: none; letter-spacing: -0.01em; }

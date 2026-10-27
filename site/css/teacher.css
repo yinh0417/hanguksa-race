@@ -736,3 +736,13 @@
 /* 7~10글자 닉네임은 시상대에서 한 줄로 보이게 글자를 줄여요 */
 .podium-nick { white-space: nowrap; }
 .podium-nick.long { font-size: clamp(1rem, 3vh, 2.1rem); }
+
+/* 대기실 들어온 친구: 긴 닉네임(최대 10글자)도 한 줄로 가로로 */
+.roster-grid { grid-template-columns: repeat(auto-fill, minmax(min(178px, 30vw), 1fr)); }
+.roster-nick { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.roster-nick.long { font-size: .74em; letter-spacing: -0.04em; }
+.roster-item .mini-car { width: clamp(36px, 4vw, 52px); }
+.kick-x { flex: none; white-space: nowrap; }
+/* 강퇴 버튼은 마우스를 올렸을 때만 보여서 닉네임 자리를 넉넉하게 */
+.roster-item .kick-x { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); opacity: 0; transition: opacity .15s; }
+.roster-item:hover .kick-x, .roster-item .kick-x:focus-visible { opacity: 1; }

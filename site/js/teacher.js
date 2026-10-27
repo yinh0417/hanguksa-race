@@ -581,7 +581,7 @@
     const ap = approvedList();
     $('#lbCount').textContent = ap.length;
     $('#lbApproved').innerHTML = ap.length
-      ? ap.map(p => `<div class="roster-item"><div class="mini-car">${A.carSVG(p.car)}</div><span>${esc(p.nick)}</span><button class="kick-x" data-kick="${p.uid}" title="${esc(p.nick)} 강퇴" aria-label="${esc(p.nick)} 강퇴">강퇴</button></div>`).join('')
+      ? ap.map(p => `<div class="roster-item"><div class="mini-car">${A.carSVG(p.car)}</div><span class="roster-nick${Array.from(p.nick).length > 6 ? ' long' : ''}">${esc(p.nick)}</span><button class="kick-x" data-kick="${p.uid}" title="${esc(p.nick)} 강퇴" aria-label="${esc(p.nick)} 강퇴">강퇴</button></div>`).join('')
       : '<p class="roster-empty">아직 아무도 없어요. QR을 찍고 들어와 주세요.</p>';
     $$('#lbApproved [data-kick]').forEach(b => b.addEventListener('click', () => kick(b.dataset.kick)));
     renderPendingList($('#lbPending'));
