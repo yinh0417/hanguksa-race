@@ -163,7 +163,7 @@
       $('#nickInput').maxLength = C.maxNick;
       $('#nickLabel').textContent = `닉네임 (${C.maxNick}글자까지)`;
       // 탈것이 많아서 종류별 탭을 눌러 한 종류씩 봐요
-      const groups = [...new Set(A.CARS.map(c => c.group))];
+      const groups = A.GROUPS.filter(g => A.CARS.some(c => c.group === g));
       $('#carPick').innerHTML = `<div class="car-tabs" role="tablist">${groups.map((g, k) => `<button type="button" class="car-tab" role="tab" data-g="${k}" aria-selected="${k === 0}">${g}</button>`).join('')}</div>` +
         A.CARS.map((c, i) => `<button type="button" class="car-opt" role="radio" aria-checked="false" data-car="${i}" data-g="${groups.indexOf(c.group)}" aria-label="${c.name}"${groups.indexOf(c.group) ? ' hidden' : ''}>${A.carSVG(i)}<span>${c.name}</span></button>`).join('');
       $$('#carPick .car-tab').forEach(t => t.addEventListener('click', () => {

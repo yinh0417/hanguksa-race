@@ -1,5 +1,5 @@
 /*
- * 그림: 탈것 75종과 시대별 배경 장면
+ * 그림: 탈것 102종과 시대별 배경 장면
  * 모든 그림은 코드로 그린 평면 그림입니다. 장면 하나를 바꾸려면
  * SCENE_ART의 해당 함수만 고치면 됩니다.
  */
@@ -8,85 +8,114 @@
   const SKIN = '#F2C7A0';
   const W = 300, H = 200, GROUND = 150; // 장면 한 칸의 크기
 
-  // 탈것 75종(8가지 종류): 실제 종류의 느낌만 살린 창작 디자인(상표·로고·국가 표식 없음), 운전자는 귀여운 동물
+  // 탈것 102종(10가지 종류): 실제 종류의 느낌만 살린 창작 디자인(상표·로고·국가 표식 없음), 운전자는 귀여운 동물
   // 순서를 바꾸면 이미 고른 학생의 차가 달라지니, 새 탈것은 맨 뒤에 붙여 주세요.
   const CARS = [
-    { name: '전기차',   group: '자동차', kind: 'ev',     driver: 'rabbit',  body: '#E2412E', stripe: '#FFD9CF' },
-    { name: 'SUV',      group: '자동차', kind: 'suv',    driver: 'bear',    body: '#F28C28', stripe: '#FFE6C2' },
-    { name: '스포츠카', group: '자동차', kind: 'sport',  driver: 'cat',     body: '#F5C242', stripe: '#FFF6D2' },
-    { name: '고급 세단', group: '자동차', kind: 'luxury', driver: 'hamster', body: '#2E9E5B', stripe: '#CDEFD9' },
-    { name: '해치백',   group: '자동차', kind: 'hatch',  driver: 'puppy',   body: '#3FB6E8', stripe: '#D8F2FC' },
-    { name: '픽업트럭', group: '자동차', kind: 'pickup', driver: 'penguin', body: '#2350B8', stripe: '#CFDBF7' },
-    { name: '박스카',   group: '자동차', kind: 'box',    driver: 'panda',   body: '#8A55D6', stripe: '#E6D9F8' },
-    { name: '레트로카', group: '자동차', kind: 'retro',  driver: 'chick',   body: '#F07AAE', stripe: '#FDE0EC' },
-    { name: '돌바퀴 수레', group: '역사 속 탈것', kind: 'stonecart', driver: 'bear',    body: '#A0703F', stripe: '#E9D2B0' },
-    { name: '가마',       group: '역사 속 탈것', kind: 'gama',      driver: 'cat',     body: '#B3262E', stripe: '#F5C242' },
-    { name: '말마차',     group: '역사 속 탈것', kind: 'carriage',  driver: 'rabbit',  body: '#2C5AA0', stripe: '#F5C242' },
-    { name: '신기전 화차', group: '역사 속 탈것', kind: 'hwacha',    driver: 'penguin', body: '#8B5A2B', stripe: '#E2412E' },
-    { name: '인력거',     group: '역사 속 탈것', kind: 'rickshaw',  driver: 'hamster', body: '#2A2A35', stripe: '#C9A227' },
-    { name: '한성 전차',  group: '역사 속 탈것', kind: 'tram',      driver: 'puppy',   body: '#C9A15A', stripe: '#7A4E2D' },
-    { name: '증기 기관차', group: '역사 속 탈것', kind: 'steam',     driver: 'panda',   body: '#34343F', stripe: '#E2412E' },
-    { name: '경운기',     group: '역사 속 탈것', kind: 'tiller',    driver: 'chick',   body: '#2F7FD1', stripe: '#D8E9FA' },
-    { name: '전차(탱크)', group: '일하는 차·군용 차', kind: 'tank',      driver: 'bear',    body: '#5E6B3A', stripe: '#8E9A5E' },
-    { name: '자주포',     group: '일하는 차·군용 차', kind: 'spg',       driver: 'puppy',   body: '#6E7550', stripe: '#9AA27A' },
-    { name: '군용 지프',  group: '일하는 차·군용 차', kind: 'jeep',      driver: 'cat',     body: '#5B6B33', stripe: '#AEB98A' },
-    { name: '군용 트럭',  group: '일하는 차·군용 차', kind: 'mtruck',    driver: 'panda',   body: '#56632F', stripe: '#A3AD7C' },
-    { name: '구급차',     group: '일하는 차·군용 차', kind: 'ambulance', driver: 'rabbit',  body: '#F4F5F7', stripe: '#E2412E' },
-    { name: '경찰차',     group: '일하는 차·군용 차', kind: 'police',    driver: 'penguin', body: '#1F3B8C', stripe: '#FFFFFF' },
-    { name: '소방차',     group: '일하는 차·군용 차', kind: 'fire',      driver: 'hamster', body: '#D7261E', stripe: '#FFD84A' },
-    { name: '시내버스',   group: '일하는 차·군용 차', kind: 'bus',       driver: 'chick',   body: '#2F9E44', stripe: '#D7F5DF' },
-    { name: '택시',       group: '일하는 차·군용 차', kind: 'taxi',      driver: 'puppy',   body: '#F7A11A', stripe: '#FFF0C8' },
-    { name: '루돌프 썰매', group: '특별한 탈것', kind: 'x_rudolph',    driver: 'bear',    body: '#D7261E', stripe: '#F5C242' },
-    { name: '호박 마차',   group: '특별한 탈것', kind: 'x_pumpkin',    driver: 'cat',     body: '#F28C28', stripe: '#D4A72C' },
-    { name: '마법 양탄자', group: '특별한 탈것', kind: 'x_carpet',     driver: 'fox',     body: '#B3262E', stripe: '#F5C242' },
-    { name: '마법 빗자루', group: '특별한 탈것', kind: 'x_broom',      driver: 'rabbit',  body: '#8A5A2B', stripe: '#6B3FA0' },
-    { name: '둥실 구름',   group: '특별한 탈것', kind: 'x_cloud',      driver: 'hamster', body: '#FFFFFF', stripe: '#8FD3FF' },
-    { name: '우주 로켓',   group: '특별한 탈것', kind: 'x_rocket',     driver: 'penguin', body: '#F4F5F7', stripe: '#E2412E' },
-    { name: '비행접시',    group: '특별한 탈것', kind: 'x_ufo',        driver: 'koala',   body: '#A9B1BD', stripe: '#34C759' },
-    { name: '종이비행기',  group: '특별한 탈것', kind: 'x_paperplane', driver: 'puppy',   body: '#FFFFFF', stripe: '#3FB6E8' },
-    { name: '눈썰매',      group: '특별한 탈것', kind: 'x_sled',       driver: 'panda',   body: '#C98B55', stripe: '#D7261E' },
-    { name: '거북이 등',   group: '특별한 탈것', kind: 'x_turtle',     driver: 'chick',   body: '#3E9A4D', stripe: '#FF8FA3' },
-    { name: '여객기',      group: '하늘을 나는 탈것', kind: 'p_airliner',  driver: 'owl',     body: '#F4F5F7', stripe: '#0A6AD8' },
-    { name: '전투기',      group: '하늘을 나는 탈것', kind: 'p_fighter',   driver: 'eagle',   body: '#8A95A8', stripe: '#5B6578' },
-    { name: '경비행기',    group: '하늘을 나는 탈것', kind: 'p_light',     driver: 'sparrow', body: '#E2412E', stripe: '#FFFFFF' },
-    { name: '복엽기',      group: '하늘을 나는 탈것', kind: 'p_biplane',   driver: 'tiger',   body: '#F5C242', stripe: '#D7261E' },
-    { name: '헬리콥터',    group: '하늘을 나는 탈것', kind: 'p_heli',      driver: 'bear',    body: '#2F7FD1', stripe: '#FFFFFF' },
-    { name: '열기구',      group: '하늘을 나는 탈것', kind: 'p_balloon',   driver: 'pig',     body: '#FF6B6B', stripe: '#FFD93B' },
-    { name: '비행선',      group: '하늘을 나는 탈것', kind: 'p_blimp',     driver: 'duck',    body: '#C9CED8', stripe: '#0A84FF' },
-    { name: '수상 비행기', group: '하늘을 나는 탈것', kind: 'p_seaplane',  driver: 'parrot',  body: '#2F9E44', stripe: '#FFFFFF' },
-    { name: '글라이더',    group: '하늘을 나는 탈것', kind: 'p_glider',    driver: 'magpie',  body: '#FFFFFF', stripe: '#E2412E' },
-    { name: '곡예 비행기', group: '하늘을 나는 탈것', kind: 'p_aerobatic', driver: 'cat',     body: '#0A3D91', stripe: '#FFFFFF' },
-    { name: '거북선',      group: '바다의 탈것', kind: 's_turtle',    driver: 'tiger',   body: '#6B4A2B', stripe: '#D9A441' },
-    { name: '판옥선',      group: '바다의 탈것', kind: 's_panokseon', driver: 'bear',    body: '#A0703F', stripe: '#E2412E' },
-    { name: '황포 돛배',   group: '바다의 탈것', kind: 's_sailboat',  driver: 'rabbit',  body: '#8B5A2B', stripe: '#E8B04A' },
-    { name: '요트',        group: '바다의 탈것', kind: 's_yacht',     driver: 'penguin', body: '#FFFFFF', stripe: '#0A84FF' },
-    { name: '항공모함',    group: '바다의 탈것', kind: 's_carrier',   driver: 'eagle',   body: '#7C8594', stripe: '#5B6578' },
-    { name: '잠수함',      group: '바다의 탈것', kind: 's_submarine', driver: 'koala',   body: '#F5C242', stripe: '#2B2B33' },
-    { name: '크루즈선',    group: '바다의 탈것', kind: 's_cruise',    driver: 'hamster', body: '#1F3B8C', stripe: '#E2412E' },
-    { name: '어선',        group: '바다의 탈것', kind: 's_fishing',   driver: 'puppy',   body: '#2F7FD1', stripe: '#FFD84A' },
-    { name: '모터보트',    group: '바다의 탈것', kind: 's_motorboat', driver: 'fox',     body: '#E2412E', stripe: '#FFFFFF' },
-    { name: '컨테이너선',  group: '바다의 탈것', kind: 's_container', driver: 'panda',   body: '#9C3B2B', stripe: '#FFFFFF' },
-    { name: '병아리',      group: '귀여운 새', kind: 'b_chick',    driver: 'chick',    body: '#FFD84A', stripe: '#F5C21F' },
-    { name: '오리',        group: '귀여운 새', kind: 'b_duck',     driver: 'duck',     body: '#FFFAF0', stripe: '#FF9F1C' },
-    { name: '펭귄',        group: '귀여운 새', kind: 'b_penguin',  driver: 'penguin',  body: '#2C3550', stripe: '#E2412E' },
-    { name: '부엉이',      group: '귀여운 새', kind: 'b_owl',      driver: 'owl',      body: '#A8774F', stripe: '#F3E2C8' },
-    { name: '참새',        group: '귀여운 새', kind: 'b_sparrow',  driver: 'sparrow',  body: '#B07D52', stripe: '#F4E6D4' },
-    { name: '앵무새',      group: '귀여운 새', kind: 'b_parrot',   driver: 'parrot',   body: '#3CC46B', stripe: '#1F8FD6' },
-    { name: '까치',        group: '귀여운 새', kind: 'b_magpie',   driver: 'magpie',   body: '#26262E', stripe: '#2F5FB8' },
-    { name: '독수리',      group: '귀여운 새', kind: 'b_eagle',    driver: 'eagle',    body: '#7A5232', stripe: '#FFC21A' },
-    { name: '홍학',        group: '귀여운 새', kind: 'b_flamingo', driver: 'flamingo', body: '#FF9CBC', stripe: '#FF7FA6' },
-    { name: '백조',        group: '귀여운 새', kind: 'b_swan',     driver: 'swan',     body: '#FFFFFF', stripe: '#FF8C1A' },
-    { name: '강아지',      group: '귀여운 동물', kind: 'a_puppy',   driver: 'puppy',   body: '#FFFAF2', stripe: '#C98B55' },
-    { name: '고양이',      group: '귀여운 동물', kind: 'a_cat',     driver: 'cat',     body: '#F8C27E', stripe: '#E08F3C' },
-    { name: '토끼',        group: '귀여운 동물', kind: 'a_rabbit',  driver: 'rabbit',  body: '#FFFFFF', stripe: '#FFC2CF' },
-    { name: '곰',          group: '귀여운 동물', kind: 'a_bear',    driver: 'bear',    body: '#C8946A', stripe: '#F1DCC4' },
-    { name: '판다',        group: '귀여운 동물', kind: 'a_panda',   driver: 'panda',   body: '#FFFFFF', stripe: '#2B2633' },
-    { name: '햄스터',      group: '귀여운 동물', kind: 'a_hamster', driver: 'hamster', body: '#F4CF9C', stripe: '#FFF7EA' },
-    { name: '여우',        group: '귀여운 동물', kind: 'a_fox',     driver: 'fox',     body: '#F39A4C', stripe: '#FFF8EF' },
-    { name: '호랑이',      group: '귀여운 동물', kind: 'a_tiger',   driver: 'tiger',   body: '#F6A13A', stripe: '#3A2A1E' },
-    { name: '아기 돼지',   group: '귀여운 동물', kind: 'a_pig',     driver: 'pig',     body: '#F9BCCB', stripe: '#F28EA6' },
-    { name: '코알라',      group: '귀여운 동물', kind: 'a_koala',   driver: 'koala',   body: '#B4BAC4', stripe: '#E8EAEE' }
+    { name: '전기차',   group: '육상 교통수단', kind: 'ev',     driver: 'rabbit',  body: '#E2412E', stripe: '#FFD9CF' },
+    { name: 'SUV',      group: '육상 교통수단', kind: 'suv',    driver: 'bear',    body: '#F28C28', stripe: '#FFE6C2' },
+    { name: '스포츠카', group: '육상 교통수단', kind: 'sport',  driver: 'cat',     body: '#F5C242', stripe: '#FFF6D2' },
+    { name: '고급 세단', group: '육상 교통수단', kind: 'luxury', driver: 'hamster', body: '#2E9E5B', stripe: '#CDEFD9' },
+    { name: '해치백',   group: '육상 교통수단', kind: 'hatch',  driver: 'puppy',   body: '#3FB6E8', stripe: '#D8F2FC' },
+    { name: '픽업트럭', group: '육상 교통수단', kind: 'pickup', driver: 'penguin', body: '#2350B8', stripe: '#CFDBF7' },
+    { name: '박스카',   group: '육상 교통수단', kind: 'box',    driver: 'panda',   body: '#8A55D6', stripe: '#E6D9F8' },
+    { name: '레트로카', group: '육상 교통수단', kind: 'retro',  driver: 'chick',   body: '#F07AAE', stripe: '#FDE0EC' },
+    { name: '돌바퀴 수레', group: '전통 교통수단', kind: 'stonecart', driver: 'bear',    body: '#A0703F', stripe: '#E9D2B0' },
+    { name: '가마',       group: '전통 교통수단', kind: 'gama',      driver: 'cat',     body: '#B3262E', stripe: '#F5C242' },
+    { name: '말마차',     group: '전통 교통수단', kind: 'carriage',  driver: 'rabbit',  body: '#2C5AA0', stripe: '#F5C242' },
+    { name: '신기전 화차', group: '전통 교통수단', kind: 'hwacha',    driver: 'penguin', body: '#8B5A2B', stripe: '#E2412E' },
+    { name: '인력거',     group: '전통 교통수단', kind: 'rickshaw',  driver: 'hamster', body: '#2A2A35', stripe: '#C9A227' },
+    { name: '한성 전차',  group: '전통 교통수단', kind: 'tram',      driver: 'puppy',   body: '#C9A15A', stripe: '#7A4E2D' },
+    { name: '증기 기관차', group: '전통 교통수단', kind: 'steam',     driver: 'panda',   body: '#34343F', stripe: '#E2412E' },
+    { name: '경운기',     group: '농기계', kind: 'tiller',    driver: 'chick',   body: '#2F7FD1', stripe: '#D8E9FA' },
+    { name: '전차(탱크)', group: '특수 차량', kind: 'tank',      driver: 'bear',    body: '#5E6B3A', stripe: '#8E9A5E' },
+    { name: '자주포',     group: '특수 차량', kind: 'spg',       driver: 'puppy',   body: '#6E7550', stripe: '#9AA27A' },
+    { name: '군용 지프',  group: '특수 차량', kind: 'jeep',      driver: 'cat',     body: '#5B6B33', stripe: '#AEB98A' },
+    { name: '군용 트럭',  group: '특수 차량', kind: 'mtruck',    driver: 'panda',   body: '#56632F', stripe: '#A3AD7C' },
+    { name: '구급차',     group: '특수 차량', kind: 'ambulance', driver: 'rabbit',  body: '#F4F5F7', stripe: '#E2412E' },
+    { name: '경찰차',     group: '특수 차량', kind: 'police',    driver: 'penguin', body: '#1F3B8C', stripe: '#FFFFFF' },
+    { name: '소방차',     group: '특수 차량', kind: 'fire',      driver: 'hamster', body: '#D7261E', stripe: '#FFD84A' },
+    { name: '시내버스',   group: '특수 차량', kind: 'bus',       driver: 'chick',   body: '#2F9E44', stripe: '#D7F5DF' },
+    { name: '택시',       group: '특수 차량', kind: 'taxi',      driver: 'puppy',   body: '#F7A11A', stripe: '#FFF0C8' },
+    { name: '루돌프 썰매', group: '상상 교통수단', kind: 'x_rudolph',    driver: 'bear',    body: '#D7261E', stripe: '#F5C242' },
+    { name: '호박 마차',   group: '상상 교통수단', kind: 'x_pumpkin',    driver: 'cat',     body: '#F28C28', stripe: '#D4A72C' },
+    { name: '마법 양탄자', group: '상상 교통수단', kind: 'x_carpet',     driver: 'fox',     body: '#B3262E', stripe: '#F5C242' },
+    { name: '마법 빗자루', group: '상상 교통수단', kind: 'x_broom',      driver: 'rabbit',  body: '#8A5A2B', stripe: '#6B3FA0' },
+    { name: '둥실 구름',   group: '상상 교통수단', kind: 'x_cloud',      driver: 'hamster', body: '#FFFFFF', stripe: '#8FD3FF' },
+    { name: '우주 로켓',   group: '상상 교통수단', kind: 'x_rocket',     driver: 'penguin', body: '#F4F5F7', stripe: '#E2412E' },
+    { name: 'UFO',         group: '상상 교통수단', kind: 'x_ufo',        driver: 'koala',   body: '#A9B1BD', stripe: '#34C759' },
+    { name: '종이비행기',  group: '상상 교통수단', kind: 'x_paperplane', driver: 'puppy',   body: '#FFFFFF', stripe: '#3FB6E8' },
+    { name: '눈썰매',      group: '상상 교통수단', kind: 'x_sled',       driver: 'panda',   body: '#C98B55', stripe: '#D7261E' },
+    { name: '거북이 등',   group: '상상 교통수단', kind: 'x_turtle',     driver: 'chick',   body: '#3E9A4D', stripe: '#FF8FA3' },
+    { name: '여객기',      group: '항공 교통수단', kind: 'p_airliner',  driver: 'owl',     body: '#F4F5F7', stripe: '#0A6AD8' },
+    { name: '전투기',      group: '항공 교통수단', kind: 'p_fighter',   driver: 'eagle',   body: '#8A95A8', stripe: '#5B6578' },
+    { name: '경비행기',    group: '항공 교통수단', kind: 'p_light',     driver: 'sparrow', body: '#E2412E', stripe: '#FFFFFF' },
+    { name: '복엽기',      group: '항공 교통수단', kind: 'p_biplane',   driver: 'tiger',   body: '#F5C242', stripe: '#D7261E' },
+    { name: '헬리콥터',    group: '항공 교통수단', kind: 'p_heli',      driver: 'bear',    body: '#2F7FD1', stripe: '#FFFFFF' },
+    { name: '열기구',      group: '항공 교통수단', kind: 'p_balloon',   driver: 'pig',     body: '#FF6B6B', stripe: '#FFD93B' },
+    { name: '비행선',      group: '항공 교통수단', kind: 'p_blimp',     driver: 'duck',    body: '#C9CED8', stripe: '#0A84FF' },
+    { name: '수상 비행기', group: '항공 교통수단', kind: 'p_seaplane',  driver: 'parrot',  body: '#2F9E44', stripe: '#FFFFFF' },
+    { name: '글라이더',    group: '항공 교통수단', kind: 'p_glider',    driver: 'magpie',  body: '#FFFFFF', stripe: '#E2412E' },
+    { name: '곡예 비행기', group: '항공 교통수단', kind: 'p_aerobatic', driver: 'cat',     body: '#0A3D91', stripe: '#FFFFFF' },
+    { name: '거북선',      group: '해상 교통수단', kind: 's_turtle',    driver: 'tiger',   body: '#6B4A2B', stripe: '#D9A441' },
+    { name: '판옥선',      group: '해상 교통수단', kind: 's_panokseon', driver: 'bear',    body: '#A0703F', stripe: '#E2412E' },
+    { name: '황포 돛배',   group: '해상 교통수단', kind: 's_sailboat',  driver: 'rabbit',  body: '#8B5A2B', stripe: '#E8B04A' },
+    { name: '요트',        group: '해상 교통수단', kind: 's_yacht',     driver: 'penguin', body: '#FFFFFF', stripe: '#0A84FF' },
+    { name: '항공모함',    group: '해상 교통수단', kind: 's_carrier',   driver: 'eagle',   body: '#7C8594', stripe: '#5B6578' },
+    { name: '잠수함',      group: '해상 교통수단', kind: 's_submarine', driver: 'koala',   body: '#F5C242', stripe: '#2B2B33' },
+    { name: '크루즈선',    group: '해상 교통수단', kind: 's_cruise',    driver: 'hamster', body: '#1F3B8C', stripe: '#E2412E' },
+    { name: '어선',        group: '해상 교통수단', kind: 's_fishing',   driver: 'puppy',   body: '#2F7FD1', stripe: '#FFD84A' },
+    { name: '모터보트',    group: '해상 교통수단', kind: 's_motorboat', driver: 'fox',     body: '#E2412E', stripe: '#FFFFFF' },
+    { name: '컨테이너선',  group: '해상 교통수단', kind: 's_container', driver: 'panda',   body: '#9C3B2B', stripe: '#FFFFFF' },
+    { name: '병아리',      group: '조류 캐릭터', kind: 'b_chick',    driver: 'chick',    body: '#FFD84A', stripe: '#F5C21F' },
+    { name: '오리',        group: '조류 캐릭터', kind: 'b_duck',     driver: 'duck',     body: '#FFFAF0', stripe: '#FF9F1C' },
+    { name: '펭귄',        group: '조류 캐릭터', kind: 'b_penguin',  driver: 'penguin',  body: '#2C3550', stripe: '#E2412E' },
+    { name: '부엉이',      group: '조류 캐릭터', kind: 'b_owl',      driver: 'owl',      body: '#A8774F', stripe: '#F3E2C8' },
+    { name: '참새',        group: '조류 캐릭터', kind: 'b_sparrow',  driver: 'sparrow',  body: '#B07D52', stripe: '#F4E6D4' },
+    { name: '앵무새',      group: '조류 캐릭터', kind: 'b_parrot',   driver: 'parrot',   body: '#3CC46B', stripe: '#1F8FD6' },
+    { name: '까치',        group: '조류 캐릭터', kind: 'b_magpie',   driver: 'magpie',   body: '#26262E', stripe: '#2F5FB8' },
+    { name: '독수리',      group: '조류 캐릭터', kind: 'b_eagle',    driver: 'eagle',    body: '#7A5232', stripe: '#FFC21A' },
+    { name: '홍학',        group: '조류 캐릭터', kind: 'b_flamingo', driver: 'flamingo', body: '#FF9CBC', stripe: '#FF7FA6' },
+    { name: '백조',        group: '조류 캐릭터', kind: 'b_swan',     driver: 'swan',     body: '#FFFFFF', stripe: '#FF8C1A' },
+    { name: '강아지',      group: '포유류 캐릭터', kind: 'a_puppy',   driver: 'puppy',   body: '#FFFAF2', stripe: '#C98B55' },
+    { name: '고양이',      group: '포유류 캐릭터', kind: 'a_cat',     driver: 'cat',     body: '#F8C27E', stripe: '#E08F3C' },
+    { name: '토끼',        group: '포유류 캐릭터', kind: 'a_rabbit',  driver: 'rabbit',  body: '#FFFFFF', stripe: '#FFC2CF' },
+    { name: '곰',          group: '포유류 캐릭터', kind: 'a_bear',    driver: 'bear',    body: '#C8946A', stripe: '#F1DCC4' },
+    { name: '판다',        group: '포유류 캐릭터', kind: 'a_panda',   driver: 'panda',   body: '#FFFFFF', stripe: '#2B2633' },
+    { name: '햄스터',      group: '포유류 캐릭터', kind: 'a_hamster', driver: 'hamster', body: '#F4CF9C', stripe: '#FFF7EA' },
+    { name: '여우',        group: '포유류 캐릭터', kind: 'a_fox',     driver: 'fox',     body: '#F39A4C', stripe: '#FFF8EF' },
+    { name: '호랑이',      group: '포유류 캐릭터', kind: 'a_tiger',   driver: 'tiger',   body: '#F6A13A', stripe: '#3A2A1E' },
+    { name: '아기 돼지',   group: '포유류 캐릭터', kind: 'a_pig',     driver: 'pig',     body: '#F9BCCB', stripe: '#F28EA6' },
+    { name: '코알라',      group: '포유류 캐릭터', kind: 'a_koala',   driver: 'koala',   body: '#B4BAC4', stripe: '#E8EAEE' },
+    { name: '바다사자',    group: '해양 동물 캐릭터', kind: 'm_sealion', driver: 'sealion', body: '#9A7350', stripe: '#C8A67F' },
+    { name: '독도 강치',   group: '해양 동물 캐릭터', kind: 'm_kangchi', driver: 'kangchi', body: '#66615D', stripe: '#8F8984' },
+    { name: '바다표범',    group: '해양 동물 캐릭터', kind: 'm_seal',    driver: 'seal',    body: '#AAB5C3', stripe: '#DFE5EC' },
+    { name: '해달',        group: '해양 동물 캐릭터', kind: 'm_otter',   driver: 'otter',   body: '#8B6545', stripe: '#D9C1A2' },
+    { name: '돌고래',      group: '해양 동물 캐릭터', kind: 'm_dolphin', driver: 'puppy',   body: '#7FB6E6', stripe: '#F4F8FB' },
+    { name: '상어',        group: '해양 동물 캐릭터', kind: 'm_shark',   driver: 'puppy',   body: '#8494A8', stripe: '#F4F8FB' },
+    { name: '혹등고래',    group: '해양 동물 캐릭터', kind: 'm_whale',   driver: 'puppy',   body: '#4A6FA5', stripe: '#F4F8FB' },
+    { name: '범고래',      group: '해양 동물 캐릭터', kind: 'm_orca',    driver: 'puppy',   body: '#26262E', stripe: '#FFFFFF' },
+    { name: '시베리안 허스키', group: '포유류 캐릭터', kind: 'a_husky', driver: 'husky',   body: '#8C96A5', stripe: '#FDFDFD' },
+    { name: '진돗개',      group: '포유류 캐릭터', kind: 'a_jindo',   driver: 'jindo',   body: '#E2B675', stripe: '#FBF1DE' },
+    { name: '풍산개',      group: '포유류 캐릭터', kind: 'a_pungsan', driver: 'pungsan', body: '#FBFAF6', stripe: '#E4E0D8' },
+    { name: '삽살개',      group: '포유류 캐릭터', kind: 'a_sapsal',  driver: 'sapsal',  body: '#A3988C', stripe: '#7D7268' },
+    { name: '사자',        group: '포유류 캐릭터', kind: 'a_lion',    driver: 'lion',    body: '#F2B552', stripe: '#C9752A' },
+    { name: '미어캣',      group: '포유류 캐릭터', kind: 'a_meerkat', driver: 'meerkat', body: '#DCB57E', stripe: '#F1DCBC' },
+    { name: '닭',          group: '조류 캐릭터', kind: 'b_rooster', driver: 'rooster', body: '#FFFAF0', stripe: '#E2412E' },
+    { name: '바나나보트',  group: '해상 교통수단', kind: 's_banana', driver: 'rabbit', body: '#FFD93B', stripe: '#E0B000' },
+    { name: '지하철',      group: '특수 차량', kind: 't_subway',    driver: 'owl',     body: '#E9EDF2', stripe: '#34A853' },
+    { name: '기차',        group: '특수 차량', kind: 't_train',     driver: 'eagle',   body: '#F4F5F7', stripe: '#1F3B8C' },
+    { name: '포클레인',    group: '특수 차량', kind: 't_excavator', driver: 'bear',    body: '#F5B700', stripe: '#3A3A40' },
+    { name: '덤프트럭',    group: '특수 차량', kind: 't_dump',      driver: 'tiger',   body: '#F28C28', stripe: '#9AA0AE' },
+    { name: '레미콘',      group: '특수 차량', kind: 't_mixer',     driver: 'hamster', body: '#2F7FD1', stripe: '#E2412E' },
+    { name: '지게차',      group: '특수 차량', kind: 't_forklift',  driver: 'koala',   body: '#F5C242', stripe: '#3A3A40' },
+    { name: '크레인차',    group: '특수 차량', kind: 't_crane',     driver: 'fox',     body: '#E2412E', stripe: '#F5C242' },
+    { name: '트랙터',      group: '농기계', kind: 'f_tractor',      driver: 'pig',     body: '#2F9E44', stripe: '#F5C242' },
+    { name: '콤바인',      group: '농기계', kind: 'f_combine',      driver: 'rooster', body: '#E2412E', stripe: '#F5C242' },
+    { name: '이앙기',      group: '농기계', kind: 'f_transplanter', driver: 'duck',    body: '#2F7FD1', stripe: '#FFFFFF' },
+    { name: '농업용 드론', group: '농기계', kind: 'f_drone',        driver: 'jindo',   body: '#F4F5F7', stripe: '#34C759' }
   ];
+  // 학생 화면 탭 순서(새 종류를 만들면 여기에도 넣어 주세요)
+  const GROUPS = ['육상 교통수단', '전통 교통수단', '특수 차량', '농기계', '항공 교통수단', '해상 교통수단', '상상 교통수단', '조류 캐릭터', '포유류 캐릭터', '해양 동물 캐릭터'];
 
   // 차 모양: 몸체, 창문, 창문 아랫선(운전자가 보이는 높이), 운전자 위치, 바퀴 위치, 앞등 위치
   const SHAPES = {
@@ -130,7 +159,7 @@
       win: ['M28 38 C32 26 42 18 55 17 L56 38 Z', 'M60 38 L60 17 C74 18 84 26 89 38 Z'], belt: 38,
       head: [73, 28, 9.5], wheels: [30, 90], light: 'bigRound', lx: 106, ly: 43
     },
-    // 일하는 차·군용 차 (extra: 몸체 위에 덧그리는 장식)
+    // 특수 차량 (extra: 몸체 위에 덧그리는 장식)
     jeep: {
       body: ['M6 50 L6 33 C6 30 8 28 11 28 L104 28 C108 28 111 30 112 33 L117 40 L117 51 C117 54 115 56 112 56 L10 56 C8 56 6 54 6 50 Z'],
       win: ['M76 28 L82 11 L85 11 L79 28 Z'], belt: 28,
@@ -265,6 +294,44 @@
           `<path d="M${f(x - r * 0.18)} ${f(y + r * 0.16)} q${f(r * 0.18)} ${f(-r * 0.1)} ${f(r * 0.36)} 0 q0 ${f(r * 0.24)} ${f(-r * 0.18)} ${f(r * 0.34)} q${f(-r * 0.18)} ${f(-r * 0.1)} ${f(-r * 0.18)} ${f(-r * 0.34)} Z" fill="#ffc21a" stroke="#d99a00" stroke-width=".6"/>`;
       case 'flamingo':
         return head('#ff9cbc') + face(-r * 0.05) + `<path d="M${f(x - r * 0.1)} ${f(y + r * 0.2)} q${f(r * 0.45)} ${f(-r * 0.05)} ${f(r * 0.5)} ${f(r * 0.32)} l${f(-r * 0.2)} ${f(r * 0.12)} q${f(-r * 0.05)} ${f(-r * 0.2)} ${f(-r * 0.3)} ${f(-r * 0.2)} Z" fill="#fff0f4" stroke="#2b2633" stroke-width=".6"/>`;
+      // 개: 시베리안 허스키, 진돗개(황구), 풍산개(흰 털), 삽살개(눈을 덮는 털)
+      case 'husky':
+      case 'jindo':
+      case 'pungsan': {
+        const C = { husky: ['#7f8a99', '#fdfdfd', '#6a7482'], jindo: ['#e2b675', '#fbf1de', '#c99a58'], pungsan: ['#fbfaf6', '#ffffff', '#e4e0d8'] }[kind];
+        return [-1, 1].map(s => `<path d="M${f(x + s * r * 0.95)} ${f(y - r * 0.15)} L${f(x + s * r * 0.72)} ${f(y - r * 1.3)} L${f(x + s * r * 0.15)} ${f(y - r * 0.85)} Z" fill="${C[0]}" stroke="${C[2]}" stroke-width=".8"/><path d="M${f(x + s * r * 0.72)} ${f(y - r * 0.6)} L${f(x + s * r * 0.68)} ${f(y - r * 1.05)} L${f(x + s * r * 0.38)} ${f(y - r * 0.8)} Z" fill="#f7d6d6"/>`).join('') +
+          head(C[0], C[2]) + `<ellipse cx="${x}" cy="${f(y + r * 0.35)}" rx="${f(r * 0.8)}" ry="${f(r * 0.56)}" fill="${C[1]}"/>` +
+          (kind === 'husky' ? `<path d="M${x} ${f(y - r * 0.95)} L${f(x + r * 0.16)} ${f(y - r * 0.2)} L${x} ${f(y)} L${f(x - r * 0.16)} ${f(y - r * 0.2)} Z" fill="#fff"/>` : '') +
+          face() + `<ellipse cx="${x}" cy="${f(y + r * 0.18)}" rx="${f(r * 0.14)}" ry="${f(r * 0.1)}" fill="#2b2633"/>`;
+      }
+      case 'sapsal':
+        return [-1, 1].map(s => `<ellipse cx="${f(x + s * r * 0.95)}" cy="${f(y + r * 0.2)}" rx="${f(r * 0.32)}" ry="${f(r * 0.72)}" fill="#7d7268"/>`).join('') + head('#a3988c') + face(r * 0.12) +
+          `<path d="M${f(x - r * 0.98)} ${f(y - r * 0.05)} q${f(r * 0.2)} ${f(-r * 0.1)} ${f(r * 0.3)} ${f(r * 0.12)} q${f(r * 0.15)} ${f(-r * 0.22)} ${f(r * 0.34)} 0 q${f(r * 0.18)} ${f(-r * 0.22)} ${f(r * 0.34)} 0 q${f(r * 0.18)} ${f(-r * 0.22)} ${f(r * 0.34)} 0 q${f(r * 0.15)} ${f(-r * 0.2)} ${f(r * 0.34)} ${f(-r * 0.12)} q${f(r * 0.1)} ${f(-r * 0.5)} ${f(-r * 0.3)} ${f(-r * 0.85)} q${f(-r * 0.7)} ${f(-r * 0.2)} ${f(-r * 1.36)} 0 q${f(-r * 0.4)} ${f(r * 0.35)} ${f(-r * 0.4)} ${f(r * 0.85)} Z" fill="#8e8378"/>` +
+          `<ellipse cx="${x}" cy="${f(y + r * 0.32)}" rx="${f(r * 0.13)}" ry="${f(r * 0.09)}" fill="#2b2633"/>`;
+      case 'lion':
+        return `<circle cx="${x}" cy="${y}" r="${f(r * 1.32)}" fill="#c9752a"/>` + Array.from({ length: 12 }, (_, i) => { const t = i * Math.PI / 6; return `<circle cx="${f(x + Math.cos(t) * r * 1.22)}" cy="${f(y + Math.sin(t) * r * 1.22)}" r="${f(r * 0.32)}" fill="#c9752a"/>`; }).join('') +
+          [-1, 1].map(s => `<circle cx="${f(x + s * r * 0.72)}" cy="${f(y - r * 0.72)}" r="${f(r * 0.26)}" fill="#f2b552"/>`).join('') + head('#f2b552') +
+          `<ellipse cx="${x}" cy="${f(y + r * 0.38)}" rx="${f(r * 0.5)}" ry="${f(r * 0.32)}" fill="#fff3dc"/>` + face() + `<path d="M${f(x - r * 0.12)} ${f(y + r * 0.14)} h${f(r * 0.24)} l${f(-r * 0.12)} ${f(r * 0.12)} Z" fill="#7a4a22"/>`;
+      case 'meerkat':
+        return [-1, 1].map(s => `<circle cx="${f(x + s * r * 0.82)}" cy="${f(y - r * 0.2)}" r="${f(r * 0.2)}" fill="#6b4a2b"/>`).join('') + head('#dcb57e') +
+          [-1, 1].map(s => `<ellipse cx="${f(x + s * r * 0.38)}" cy="${f(y + r * 0.04)}" rx="${f(r * 0.24)}" ry="${f(r * 0.3)}" fill="#6b4a2b" transform="rotate(${s * -20} ${f(x + s * r * 0.38)} ${f(y)})"/>`).join('') +
+          `<ellipse cx="${x}" cy="${f(y + r * 0.42)}" rx="${f(r * 0.42)}" ry="${f(r * 0.3)}" fill="#f1dcbc"/>` + face() + `<ellipse cx="${x}" cy="${f(y + r * 0.28)}" rx="${f(r * 0.12)}" ry="${f(r * 0.08)}" fill="#2b2633"/>`;
+      case 'rooster':
+        return `<path d="M${f(x - r * 0.4)} ${f(y - r * 0.85)} q${f(r * 0.05)} ${f(-r * 0.55)} ${f(r * 0.3)} ${f(-r * 0.3)} q${f(r * 0.15)} ${f(-r * 0.55)} ${f(r * 0.32)} ${f(-r * 0.12)} q${f(r * 0.25)} ${f(-r * 0.45)} ${f(r * 0.32)} ${f(r * 0.08)} Z" fill="#e2412e"/>` + head('#fffaf0') + face(-r * 0.08) +
+          `<path d="M${f(x - r * 0.14)} ${f(y + r * 0.14)} L${f(x + r * 0.14)} ${f(y + r * 0.14)} L${x} ${f(y + r * 0.36)} Z" fill="#f5b21b"/><ellipse cx="${x}" cy="${f(y + r * 0.52)}" rx="${f(r * 0.1)}" ry="${f(r * 0.18)}" fill="#e2412e"/>`;
+      // 바다 동물: 바다표범, 바다사자, 독도 강치, 해달
+      case 'seal':
+      case 'sealion':
+      case 'kangchi':
+      case 'otter': {
+        const C = { seal: ['#aab5c3', '#e9edf2'], sealion: ['#9a7350', '#d9bf9f'], kangchi: ['#66615d', '#a8a29c'], otter: ['#8b6545', '#ead8c0'] }[kind];
+        const ears = kind === 'sealion' || kind === 'kangchi' ? [-1, 1].map(s => `<ellipse cx="${f(x + s * r * 0.82)}" cy="${f(y - r * 0.45)}" rx="${f(r * 0.12)}" ry="${f(r * 0.2)}" fill="${C[0]}"/>`).join('')
+          : kind === 'otter' ? [-1, 1].map(s => `<circle cx="${f(x + s * r * 0.78)}" cy="${f(y - r * 0.62)}" r="${f(r * 0.2)}" fill="${C[0]}"/>`).join('') : '';
+        const spots = kind === 'seal' ? `<circle cx="${f(x - r * 0.55)}" cy="${f(y - r * 0.5)}" r="${f(r * 0.08)}" fill="#7d8796"/><circle cx="${f(x + r * 0.5)}" cy="${f(y - r * 0.6)}" r="${f(r * 0.07)}" fill="#7d8796"/><circle cx="${f(x + r * 0.15)}" cy="${f(y - r * 0.78)}" r="${f(r * 0.06)}" fill="#7d8796"/>` : '';
+        return ears + head(C[0]) + spots + `<ellipse cx="${x}" cy="${f(y + r * 0.38)}" rx="${f(r * 0.52)}" ry="${f(r * 0.34)}" fill="${C[1]}"/>` + face() +
+          `<ellipse cx="${x}" cy="${f(y + r * 0.22)}" rx="${f(r * 0.14)}" ry="${f(r * 0.1)}" fill="#2b2633"/>` +
+          [-1, 1].map(s => `<path d="M${f(x + s * r * 0.3)} ${f(y + r * 0.32)} l${f(s * r * 0.45)} ${f(-r * 0.06)} M${f(x + s * r * 0.3)} ${f(y + r * 0.42)} l${f(s * r * 0.45)} ${f(r * 0.04)}" stroke="#2b2633" stroke-width="${f(r * 0.04)}" stroke-linecap="round" opacity=".55"/>`).join('');
+      }
       case 'swan':
         return head('#ffffff') + face(-r * 0.05) + `<path d="M${f(x - r * 0.15)} ${f(y + r * 0.18)} L${f(x + r * 0.15)} ${f(y + r * 0.18)} L${x} ${f(y + r * 0.46)} Z" fill="#ff8c1a"/><circle cx="${x}" cy="${f(y + r * 0.16)}" r="${f(r * 0.1)}" fill="#2b2633"/>`;
     }
@@ -292,7 +359,7 @@
     return g;
   }
 
-  // ---------- 따로 그리는 탈것 (역사 속 탈것, 전차·자주포, 경운기) ----------
+  // ---------- 따로 그리는 탈것 (전통 교통수단, 전차·자주포) ----------
   const f1 = n => (+n).toFixed(1);
   // 나무 바퀴(바큇살)
   function spokeWheel(cx, cy, r, rim, n) {
@@ -458,7 +525,7 @@
       ${camo(P, [[46, 18, 9, 3.5], [74, 28, 8, 3], [20, 41, 8, 2.6], [100, 41, 7, 2.6]])}`
   };
 
-  // ---------- 특별한 탈것·하늘·바다·새·동물 (각 10종) ----------
+  // ---------- 상상·항공·해상 교통수단, 조류·포유류 캐릭터 (각 10종) ----------
   const dk = (c, a) => shade(c, -(a || 0.3));
   const lt = (c, a) => shade(c, a || 0.4);
   // 바다 탈것 아래 물결
@@ -499,7 +566,7 @@
   }
 
   Object.assign(SPECIAL, {
-    // ===== 특별한 탈것 =====
+    // ===== 상상 교통수단 =====
     // 크리스마스: 빨간 썰매를 끄는 루돌프
     x_rudolph: P => `
       <path d="M66 40 L84 38" stroke="#7a4a22" stroke-width="1.6"/>
@@ -588,7 +655,7 @@
       <path d="M18 50 H102" stroke="${dk(P.c.body, 0.3)}" stroke-width="3" stroke-linecap="round"/>
       ${seated(P.c, 60, 6, 8, P.c.stripe)}`,
 
-    // ===== 하늘을 나는 탈것 =====
+    // ===== 항공 교통수단 =====
     p_airliner: P => `
       <path d="M50 38 L36 56 L48 56 L72 38 Z" fill="${dk(P.c.body, 0.15)}" stroke="#9aa0ae" stroke-width=".8"/>
       <ellipse cx="46" cy="47" rx="8" ry="3.6" fill="#c9ccd6" stroke="#9aa0ae" stroke-width=".8"/>
@@ -671,7 +738,7 @@
       ${bubble(P, 'M60 31 Q70 20 86 31 Z', driver(P.c.driver, 73, 29, 7))}
       ${prop(109)}`,
 
-    // ===== 바다의 탈것 =====
+    // ===== 해상 교통수단 =====
     // 거북선: 쇠못 박은 지붕과 용머리
     s_turtle: P => `
       ${driver(P.c.driver, 62, 22, 7)}
@@ -755,7 +822,7 @@
       <path d="M6 50 H114" stroke="${P.c.stripe}" stroke-width="1.6"/>
       ${water(58)}`,
 
-    // ===== 귀여운 새 =====
+    // ===== 조류 캐릭터 =====
     b_chick: P => bird(P, 'chick', { body: '#ffd84a', wing: '#f5c21f', belly: '#fff2a8' }),
     b_duck: P => bird(P, 'duck', { body: '#fffaf0', wing: '#e6e1d6', legs: '#ff9f1c' }),
     b_penguin: P => `
@@ -787,7 +854,7 @@
       ${driver('swan', 84, 10, 11.5)}
       ${water(54)}`,
 
-    // ===== 귀여운 동물 =====
+    // ===== 포유류 캐릭터 =====
     a_puppy: P => beast(P, 'puppy', { body: '#fffaf2', dark: '#c98b55', legs: '#e7c59f', tail: 'curl' }),
     a_cat: P => beast(P, 'cat', { body: '#f8c27e', dark: '#e08f3c', tail: 'long' }),
     a_rabbit: P => beast(P, 'rabbit', { body: '#ffffff', dark: '#d9d4d0', legs: '#f1ece8', tail: 'round', tip: '#fff' }),
@@ -798,6 +865,177 @@
     a_tiger: P => beast(P, 'tiger', { body: '#f6a13a', dark: '#d07d1c', tail: 'long', stripes: true, belly: '#fff8ef' }),
     a_pig: P => beast(P, 'pig', { body: '#f9bccb', dark: '#e58da3', tail: 'curl', belly: '#fde0e7' }),
     a_koala: P => beast(P, 'koala', { body: '#b4bac4', dark: '#8d939e', tail: 'round', belly: '#e8eaee' })
+  });
+
+  // ---------- 해양 동물·새 개·농기계·지하철·산업 장비 ----------
+  // 물에 누운 바다표범·바다사자·강치·해달: 긴 몸, 지느러미발 + 큰 얼굴
+  function flipper(P, kind, o) {
+    const B = o.body, D = dk(B, 0.25);
+    return `<path d="M22 50 L4 42 L9 52 L4 62 Z" fill="${D}"/>` +
+      (o.tail ? `<path d="M22 50 q-12 2 -18 -4" stroke="${B}" stroke-width="6" fill="none" stroke-linecap="round"/>` : '') +
+      `<ellipse cx="52" cy="48" rx="34" ry="12.5" fill="${B}" stroke="${D}" stroke-width="1.1"/><ellipse cx="58" cy="53" rx="22" ry="5.5" fill="${o.belly || lt(B, 0.45)}"/>` +
+      `<ellipse cx="70" cy="58" rx="9" ry="4" fill="${D}" transform="rotate(28 70 58)"/>` +
+      driver(kind, 88, 32, 15) + water(58);
+  }
+  // 옆모습으로 헤엄치는 돌고래·상어·고래: 몸통 path, 지느러미, 눈과 웃는 입
+  function swimmer(P, o) {
+    const B = o.body, D = dk(B, 0.25);
+    return (o.spout || '') +
+      `<path d="${o.tail}" fill="${D}"/>` +
+      `<path d="${o.d}" fill="${B}" stroke="${D}" stroke-width="1.1"/>` +
+      `<path d="${o.belly}" fill="${o.bellyColor || '#f4f8fb'}"/>` + (o.extra || '') +
+      `<path d="${o.fin}" fill="${D}"/>` +
+      `<circle cx="${o.eye[0]}" cy="${o.eye[1]}" r="2.6" fill="#2b2633"/><circle cx="${o.eye[0] + 0.9}" cy="${o.eye[1] - 0.9}" r=".9" fill="#fff"/>` +
+      `<ellipse cx="${o.eye[0] - 2}" cy="${o.eye[1] + 5}" rx="3" ry="1.8" fill="#ff8fa3" opacity=".6"/>` +
+      `<path d="${o.mouth}" stroke="#2b2633" stroke-width="1.3" fill="none" stroke-linecap="round"/>` + water(56);
+  }
+  // 바나나보트에 앉은 친구(구명조끼)
+  const rider = (kind, x, y) => `<rect x="${x - 7}" y="${y + 5}" width="14" height="11" rx="4" fill="#ff9f0a" stroke="#d97a00" stroke-width=".7"/>` + driver(kind, x, y, 7.5);
+  // 철길
+  const rails = () => `<rect x="0" y="63" width="120" height="3" fill="#7c8291"/>` + Array.from({ length: 10 }, (_, i) => `<rect x="${i * 12 + 2}" y="66" width="8" height="3" fill="#8a6a4a"/>`).join('');
+  // 큰 트럭 바퀴 3개
+  const truckWheels = (P, xs) => xs.map(x => wheel(x, P.id, dk(P.c.body, 0.5))).join('');
+
+  Object.assign(SPECIAL, {
+    // ===== 해양 동물 캐릭터 =====
+    m_sealion: P => flipper(P, 'sealion', { body: '#9a7350', belly: '#c8a67f' }),
+    m_kangchi: P => flipper(P, 'kangchi', { body: '#66615d', belly: '#8f8984' }),
+    m_seal: P => flipper(P, 'seal', { body: '#aab5c3', belly: '#dfe5ec' }),
+    m_otter: P => flipper(P, 'otter', { body: '#8b6545', belly: '#d9c1a2', tail: true }),
+    m_dolphin: P => swimmer(P, { body: '#7fb6e6', d: 'M12 40 Q30 22 68 23 Q96 25 106 33 L118 36 L106 40 Q96 44 84 45 Q60 52 34 48 Q20 46 12 40 Z',
+      belly: 'M36 46 Q60 50 84 44 Q96 42 106 40 L114 37 Q100 44 84 47 Q60 52 36 46 Z', tail: 'M16 40 L2 28 L8 40 L2 52 Z', fin: 'M56 24 Q62 10 72 23 Z M66 44 L58 56 L74 46 Z',
+      eye: [96, 31], mouth: 'M104 38 q-6 4 -12 2' }),
+    m_shark: P => swimmer(P, { body: '#8494a8', d: 'M10 40 Q28 24 64 24 Q98 25 116 38 Q100 46 84 46 Q60 52 32 48 Q18 46 10 40 Z',
+      belly: 'M40 47 Q64 50 84 45 Q100 44 112 40 Q100 48 84 48 Q60 53 40 47 Z', tail: 'M14 40 L0 20 L8 40 L2 56 Z', fin: 'M54 25 L62 4 L74 25 Z M68 44 L60 58 L78 46 Z',
+      eye: [98, 33], mouth: 'M108 40 l-3 2 l-3 -2 l-3 2 l-3 -2 l-3 2', extra: '<path d="M82 32 v8 M86 32 v8 M90 33 v7" stroke="#5d6b7e" stroke-width="1.1" stroke-linecap="round"/>' }),
+    m_whale: P => swimmer(P, { body: '#4a6fa5', d: 'M14 38 Q26 16 70 16 Q108 18 114 38 Q108 50 80 52 Q48 54 28 48 Q16 44 14 38 Z',
+      belly: 'M40 49 Q70 54 92 50 Q108 46 112 40 Q104 44 86 46 Q62 48 40 49 Z', tail: 'M18 36 L2 18 L8 32 L0 40 Z', fin: 'M62 46 Q56 58 46 62 Q58 60 70 48 Z',
+      eye: [100, 33], mouth: 'M112 40 q-10 5 -20 4', extra: '<path d="M60 49 h30 M58 51 h30" stroke="#33507e" stroke-width=".9"/>',
+      spout: '<path d="M78 16 q-2 -8 -8 -12 M78 16 q2 -9 8 -12 M78 16 v-12" stroke="#bfe6ff" stroke-width="2.4" stroke-linecap="round" fill="none"/>' }),
+    m_orca: P => swimmer(P, { body: '#26262e', d: 'M12 40 Q28 22 66 22 Q100 24 114 38 Q100 46 84 46 Q60 52 32 48 Q18 46 12 40 Z',
+      belly: 'M38 46 Q62 52 86 46 Q100 44 110 40 Q98 50 84 50 Q58 54 38 46 Z', tail: 'M16 40 L2 26 L8 40 L2 54 Z', fin: 'M54 23 L60 0 L70 23 Z M64 44 L56 56 L74 46 Z',
+      eye: [97, 32], mouth: 'M108 40 q-7 4 -14 2', extra: '<ellipse cx="88" cy="30" rx="6" ry="3" fill="#fff" transform="rotate(-10 88 30)"/>' }),
+
+    // ===== 포유류 캐릭터(추가) =====
+    a_husky: P => beast(P, 'husky', { body: '#8c96a5', dark: '#6a7482', legs: '#e9edf2', tail: 'curl', belly: '#fdfdfd' }),
+    a_jindo: P => beast(P, 'jindo', { body: '#e2b675', dark: '#c99a58', tail: 'curl', belly: '#fbf1de' }),
+    a_pungsan: P => beast(P, 'pungsan', { body: '#fbfaf6', dark: '#d8d3ca', legs: '#f3efe8', tail: 'curl', belly: '#fff' }),
+    a_sapsal: P => beast(P, 'sapsal', { body: '#a3988c', dark: '#7d7268', tail: 'bushy', tip: '#8e8378', belly: '#b8aea3' }),
+    a_lion: P => beast(P, 'lion', { body: '#f2b552', dark: '#c9752a', tail: 'long', belly: '#fff3dc' }) + `<circle cx="10" cy="28" r="3.6" fill="#c9752a"/>`,
+    a_meerkat: P => `
+      <path d="M52 62 q-22 2 -30 -10" stroke="#b88d5a" stroke-width="5" fill="none" stroke-linecap="round"/>
+      <rect x="54" y="52" width="8" height="12" rx="4" fill="#b88d5a"/><rect x="64" y="52" width="8" height="12" rx="4" fill="#b88d5a"/>
+      <ellipse cx="63" cy="44" rx="14" ry="19" fill="#dcb57e" stroke="#b88d5a" stroke-width="1.1"/><ellipse cx="63" cy="47" rx="8" ry="13" fill="#f1dcbc"/>
+      <ellipse cx="57" cy="38" rx="3.2" ry="6" fill="#c9a06a" transform="rotate(30 57 38)"/><ellipse cx="69" cy="38" rx="3.2" ry="6" fill="#c9a06a" transform="rotate(-30 69 38)"/>
+      ${driver('meerkat', 63, 18, 13)}`,
+
+    // ===== 조류 캐릭터(추가) =====
+    b_rooster: P => bird(P, 'rooster', { body: '#fffaf0', wing: '#efe4d2', tail: '#2f6b3a', legs: '#f2a33a', belly: '#ffffff' }),
+
+    // ===== 해상 교통수단(추가): 바나나보트 =====
+    s_banana: P => `
+      ${water(56)}
+      <path d="M8 42 Q60 62 112 38 Q116 46 108 52 Q60 68 10 52 Q4 48 8 42 Z" fill="${P.c.body}" stroke="${dk(P.c.body, 0.25)}" stroke-width="1.2"/>
+      <path d="M112 38 l4 -3 l1 4 Z M8 42 l-5 -1 l2 4 Z" fill="#6b4a2b"/>
+      <path d="M20 47 Q60 60 104 44" stroke="#fff" stroke-width="2" fill="none" opacity=".55"/>
+      ${rider(P.c.driver, 34, 30)}${rider('cat', 58, 34)}${rider('pig', 82, 31)}
+      <path d="M2 56 q4 -6 10 -2 M112 54 q4 -6 8 -1" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round"/>`,
+
+    // ===== 특수 차량(추가): 지하철·기차·산업 장비 =====
+    t_subway: P => `
+      ${rails()}
+      <rect x="4" y="12" width="112" height="46" rx="7" ${BODY(P)}/>
+      <rect x="4" y="42" width="112" height="5" fill="${P.c.stripe}"/>
+      ${[10, 46, 82].map(x => `<rect x="${x}" y="18" width="18" height="14" rx="2" fill="url(#${P.id}w)"/>`).join('')}
+      ${[30, 66].map(x => `<rect x="${x}" y="17" width="12" height="38" rx="1.5" fill="none" stroke="${P.dark}" stroke-width="1"/><path d="M${x + 6} 17 V55" stroke="${P.dark}" stroke-width=".8"/>`).join('')}
+      ${inWindow(P, 'k', [[100, 18, 12, 14]], driver(P.c.driver, 106, 26, 6))}
+      <circle cx="112" cy="51" r="2" fill="#fffbe6"/>
+      ${[22, 34, 86, 98].map(x => `<circle cx="${x}" cy="60" r="4.5" fill="#3a3a40"/>`).join('')}`,
+    t_train: P => `
+      ${rails()}
+      <path d="M4 14 H82 Q110 16 118 48 V56 H4 Z" ${BODY(P)}/>
+      <path d="M4 42 H116 L117 47 H4 Z" fill="${P.c.stripe}"/>
+      ${[10, 30, 50, 70].map(x => `<rect x="${x}" y="20" width="14" height="10" rx="2" fill="url(#${P.id}w)"/>`).join('')}
+      ${bubble(P, 'M90 20 Q104 22 110 36 H90 Z', driver(P.c.driver, 98, 29, 6.5))}
+      <circle cx="113" cy="50" r="2" fill="#fffbe6"/>
+      ${[18, 30, 84, 96].map(x => `<circle cx="${x}" cy="60" r="4.5" fill="#3a3a40"/>`).join('')}`,
+    t_excavator: P => `
+      ${treads(8, 74)}
+      <path d="M60 32 L86 6 L108 28" stroke="${P.c.body}" stroke-width="7" fill="none" stroke-linejoin="round"/>
+      <path d="M64 30 L84 12" stroke="#55565e" stroke-width="2"/><path d="M90 10 L104 24" stroke="#55565e" stroke-width="2"/>
+      <path d="M100 26 L118 30 L114 44 L98 38 Z" fill="#55565e"/><path d="M114 44 l-2 3 M110 43 l-2 3 M106 42 l-2 3" stroke="#3a3a40" stroke-width="1.6"/>
+      <rect x="10" y="30" width="16" height="16" rx="3" fill="${dk(P.c.body, 0.15)}"/>
+      <path d="M14 46 V32 Q14 26 20 26 H62 V46 Z" ${BODY(P)}/>
+      ${inWindow(P, 'k', [[40, 28, 18, 14]], driver(P.c.driver, 49, 37, 7))}`,
+    t_dump: P => `
+      <path d="M4 50 L8 18 L76 30 L74 50 Z" fill="${P.c.stripe}" stroke="${dk(P.c.stripe, 0.3)}" stroke-width="1.1" transform="rotate(-8 74 50)"/>
+      <path d="M10 22 Q30 10 54 24 Z" fill="#a0703f" transform="rotate(-8 74 50)"/>
+      <path d="M76 52 L76 22 L96 22 C100 22 102 24 103 27 L109 36 C114 37 117 40 117 44 L117 53 C117 55 115 57 113 57 L74 57 Z" ${BODY(P)}/>
+      ${inWindow(P, 'k', [[80, 26, 16, 9]], driver(P.c.driver, 88, 33, 6.5))}
+      <rect x="4" y="50" width="76" height="5" fill="#3a3a40"/>
+      ${truckWheels(P, [20, 46, 96])}`,
+    t_mixer: P => `
+      <rect x="4" y="50" width="76" height="5" fill="#3a3a40"/>
+      <g transform="rotate(-12 42 34)"><ellipse cx="42" cy="34" rx="34" ry="15" fill="#f4f5f7" stroke="#9aa0ae" stroke-width="1.2"/>
+      ${[20, 34, 48, 62].map(x => `<path d="M${x} 20 L${x + 10} 48" stroke="${P.c.stripe}" stroke-width="4"/>`).join('')}</g>
+      <path d="M72 30 L84 24" stroke="#55565e" stroke-width="3"/>
+      <path d="M80 52 L80 22 L96 22 C100 22 102 24 103 27 L109 36 C114 37 117 40 117 44 L117 53 C117 55 115 57 113 57 L78 57 Z" ${BODY(P)}/>
+      ${inWindow(P, 'k', [[84, 26, 13, 9]], driver(P.c.driver, 90.5, 33, 6))}
+      ${truckWheels(P, [20, 46, 98])}`,
+    t_forklift: P => `
+      <rect x="98" y="4" width="4" height="56" fill="#55565e"/><rect x="104" y="4" width="3" height="56" fill="#7c8291"/>
+      <path d="M100 40 H120" stroke="#3a3a40" stroke-width="3"/>
+      <rect x="104" y="22" width="16" height="17" fill="#b88a55" stroke="#7a5530" stroke-width="1"/><path d="M104 30 H120 M112 22 V39" stroke="#7a5530" stroke-width=".9"/>
+      <path d="M40 14 V36 M78 14 V36 M38 14 H82" stroke="#3a3a40" stroke-width="2.4" stroke-linecap="round"/>
+      ${seated(P.c, 62, 24, 8, P.c.stripe)}
+      <path d="M20 54 V40 Q20 34 26 34 H94 V54 Z" ${BODY(P)}/>
+      <rect x="14" y="36" width="10" height="18" rx="2" fill="${dk(P.c.body, 0.2)}"/>
+      ${wheel(36, P.id, '#3a3a40')}${wheel(84, P.id, '#3a3a40')}`,
+    t_crane: P => `
+      <path d="M44 34 L114 -10" stroke="${P.c.stripe}" stroke-width="6" stroke-linecap="round"/>
+      <path d="M46 34 L114 -8" stroke="${dk(P.c.stripe, 0.3)}" stroke-width="1" stroke-dasharray="4 4"/>
+      <path d="M113 -9 V22" stroke="#3a3a40" stroke-width="1.2"/><path d="M109 22 h8 l-2 6 q-2 3 -4 0" stroke="#3a3a40" stroke-width="2" fill="none"/>
+      <rect x="30" y="28" width="28" height="14" rx="3" fill="${dk(P.c.body, 0.1)}"/>
+      <path d="M6 50 L6 38 H74 V22 H96 C100 22 102 24 103 27 L109 36 C114 37 117 40 117 44 L117 53 C117 55 115 57 113 57 H6 Z" ${BODY(P)}/>
+      ${inWindow(P, 'k', [[80, 26, 16, 9]], driver(P.c.driver, 88, 33, 6.5))}
+      <path d="M8 58 V64 H16 M66 58 V64 H74" stroke="#3a3a40" stroke-width="2"/>
+      ${truckWheels(P, [24, 50, 96])}`,
+
+    // ===== 농기계 =====
+    f_tractor: P => `
+      <path d="M22 6 H58 M24 6 V32 M56 6 V32" stroke="#3a3a40" stroke-width="2.4" stroke-linecap="round"/><rect x="18" y="2" width="44" height="5" rx="2" fill="${P.c.stripe}"/>
+      ${seated(P.c, 42, 20, 8.5, P.c.stripe)}
+      <path d="M96 34 V16" stroke="#3a3a40" stroke-width="3" stroke-linecap="round"/>
+      <path d="M54 50 V36 Q54 32 58 32 H108 Q114 32 114 38 V50 Z" ${BODY(P)}/>
+      <path d="M106 36 V48 M110 36 V48" stroke="${P.dark}" stroke-width="1"/>
+      <circle cx="34" cy="48" r="17" fill="#2a2a30"/><circle cx="34" cy="48" r="9" fill="${P.c.stripe}" stroke="#1d1d22" stroke-width="1"/><circle cx="34" cy="48" r="3" fill="#1d1d22"/>
+      ${Array.from({ length: 12 }, (_, k) => { const t = k * Math.PI / 6; return `<path d="M${f1(34 + Math.cos(t) * 13.5)} ${f1(48 + Math.sin(t) * 13.5)} L${f1(34 + Math.cos(t) * 17.5)} ${f1(48 + Math.sin(t) * 17.5)}" stroke="#55565e" stroke-width="2.6"/>`; }).join('')}
+      <path d="M14 36 Q34 22 54 36" stroke="${P.c.body}" stroke-width="5" fill="none"/>
+      <circle cx="98" cy="58" r="8" fill="#2a2a30"/><circle cx="98" cy="58" r="4" fill="${P.c.stripe}"/>`,
+    f_combine: P => `
+      ${treads(8, 84)}
+      <path d="M40 18 L58 6 H66" stroke="#55565e" stroke-width="4" fill="none" stroke-linecap="round"/>
+      <rect x="12" y="18" width="70" height="28" rx="3" ${BODY(P)}/>
+      <path d="M16 28 H60" stroke="${P.c.stripe}" stroke-width="2.4"/>
+      <rect x="62" y="12" width="20" height="18" rx="2" fill="${lt(P.c.body, 0.15)}" stroke="${P.dark}" stroke-width="1"/>
+      ${inWindow(P, 'k', [[65, 15, 14, 11]], driver(P.c.driver, 72, 22, 6))}
+      <path d="M84 50 H118 L114 42 H88 Z" fill="#55565e"/>
+      <circle cx="102" cy="34" r="11" fill="none" stroke="${P.c.stripe}" stroke-width="2"/>${[0, 1, 2, 3].map(k => { const t = k * Math.PI / 4; return `<path d="M${f1(102 - Math.cos(t) * 11)} ${f1(34 - Math.sin(t) * 11)} L${f1(102 + Math.cos(t) * 11)} ${f1(34 + Math.sin(t) * 11)}" stroke="${P.c.stripe}" stroke-width="1.6"/>`; }).join('')}
+      <path d="M84 40 L92 34" stroke="#55565e" stroke-width="2"/>`,
+    f_transplanter: P => `
+      <path d="M4 22 L40 34 L40 46 L4 34 Z" fill="#7a5530"/>
+      ${[8, 16, 24, 32].map((x, i) => `<path d="M${x} ${24 + i * 2.6} q-1 -8 -4 -10 M${x} ${24 + i * 2.6} q1 -8 4 -9 M${x + 4} ${25 + i * 2.6} q0 -7 2 -9" stroke="#4caf50" stroke-width="1.6" fill="none" stroke-linecap="round"/>`).join('')}
+      ${seated(P.c, 62, 22, 8.5, P.c.stripe)}
+      <path d="M40 48 V38 Q40 34 44 34 H96 Q104 34 106 42 V48 Z" ${BODY(P)}/>
+      <path d="M96 34 L110 22 L114 24" stroke="#3a3a40" stroke-width="2.2" fill="none" stroke-linecap="round"/>
+      ${spokeWheel(50, 54, 11, '#3a3a40', 10)}${spokeWheel(94, 54, 11, '#3a3a40', 10)}`,
+    f_drone: P => `
+      <path d="M40 66 L46 52 M60 66 L60 52 M80 66 L74 52" stroke="#bfe6ff" stroke-width="2" stroke-dasharray="2 3" stroke-linecap="round"/>
+      <path d="M22 30 L98 30 M36 22 L84 38" stroke="#3a3a40" stroke-width="3" stroke-linecap="round"/>
+      ${[[22, 30], [98, 30], [36, 22], [84, 38]].map(([x, y]) => `<ellipse cx="${x}" cy="${y - 3}" rx="13" ry="2.4" fill="#55565e" opacity=".5"/><circle cx="${x}" cy="${y}" r="2.6" fill="#2b2b33"/>`).join('')}
+      <rect x="44" y="34" width="32" height="14" rx="5" ${BODY(P)}/>
+      <rect x="50" y="48" width="20" height="5" rx="2" fill="${P.c.stripe}"/>
+      ${driver(P.c.driver, 60, 24, 8)}`
   });
 
   // 그림마다 색 id를 따로 둡니다(숨겨진 화면의 그림을 참조하면 색이 사라지는 문제 방지)
@@ -1768,5 +2006,5 @@
   }
   function hasArt(eraId) { return !!SCENE_ART[eraId]; }
 
-  window.ART = { CARS, carSVG, sceneSVG, hasArt };
+  window.ART = { CARS, GROUPS, carSVG, sceneSVG, hasArt };
 })();

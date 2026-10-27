@@ -229,8 +229,7 @@ body.phone { background: var(--cheong-deep); }
 .race-screen .sa-hint { justify-self: center; background: rgba(0,0,0,.6); border-radius: 12px; padding: 6px 12px; }
 
 /* 탈것 고르기: 종류 탭 */
-.car-tabs { grid-column: 1 / -1; display: flex; gap: 6px; overflow-x: auto; padding: 2px 0 6px; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
-.car-tabs::-webkit-scrollbar { display: none; }
+.car-tabs { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 6px; padding: 2px 0 6px; } /* 8개 종류가 옆으로 숨지 않게 여러 줄로 */
 .car-tab { flex: none; border: 0; border-radius: 9999px; padding: 7px 12px; font: 600 13px var(--font-body); background: var(--parchment); color: var(--ink); white-space: nowrap; }
 .car-tab[aria-selected="true"] { background: var(--primary); color: #fff; }
 .car-opt[hidden] { display: none; }
