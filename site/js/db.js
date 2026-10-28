@@ -104,9 +104,14 @@
   window.addEventListener('storage', e => { if (e.key === KEY || e.key === null) notify(); });
 
   function newKey() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 8); }
+  // 가상 학생 시뮬레이션: play.html?as=bot3 처럼 열면 한 화면 안의 휴대폰마다 다른 학생이 돼요
+  // (입장하면 주소가 바뀌어서, 처음 열 때 정해 둬요)
+  const AS = new URLSearchParams(location.search).get('as');
+  const UID_KEY = 'hkr-demo-uid' + (AS ? '-' + AS.replace(/\W/g, '') : '');
   function demoUser() {
-    let id = sessionStorage.getItem('hkr-demo-uid');
-    if (!id) { id = 'u' + newKey(); sessionStorage.setItem('hkr-demo-uid', id); }
+    const key = UID_KEY;
+    let id = sessionStorage.getItem(key);
+    if (!id) { id = 'u' + newKey(); sessionStorage.setItem(key, id); }
     return { uid: id, isAnonymous: true };
   }
 

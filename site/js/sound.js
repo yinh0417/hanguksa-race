@@ -66,10 +66,9 @@
   };
 
   // ---------- 배경 음악 (대기실, 레이스) ----------
-  // 음원 파일 없이 브라우저가 그 자리에서 만드는 K-pop 풍 창작 음악이라 저작권 문제가 없습니다.
-  //  - 대기실: 100BPM, 부드러운 시티팝풍 화음(Dmaj7 - C#m7 - Bm7 - E7), 손가락 튕기는 소리, 종소리 멜로디
-  //  - 레이스: 128BPM 댄스팝, 쿵쿵 4박 킥, 손뼉, 오프비트 하이햇, 신스 화음(C#m - A - E - B), 따라 부르기 쉬운 후렴 멜로디
-  //  - 레이스 마지막 30초: 138BPM으로 빨라지고 하이햇이 촘촘해지며 마디 끝에 손뼉 연타
+  // 음원 파일 없이 브라우저가 그 자리에서 만드는 EDM·댄스 창작곡이라 저작권 문제가 없습니다.
+  //  - 대기실과 레이스 모두 신나는 EDM 10곡(118~130BPM): 쿵쿵 4박 킥, 빌드업 상승음과 스네어 연타, 드롭의 펌핑 화음과 후렴 멜로디
+  //  - 레이스는 6BPM 더 빠르게, 마지막 30초는 더 빨라지고 하이햇이 촘촘해지며 마디 끝에 손뼉 연타
   const m = n => 440 * Math.pow(2, (n - 69) / 12);
   let song = null, hot = 0, nextTime = 0, step = 0, noiseBuf = null, bus = null;
 
@@ -92,14 +91,17 @@
     o.connect(g); g.connect(bus);
     o.start(time); o.stop(time + 0.22);
   }
-  function noise(time, dur, vol, cutoff, type) {
+  function noiseBuffer() {
     if (!noiseBuf) {
       noiseBuf = ctx.createBuffer(1, ctx.sampleRate * 0.5, ctx.sampleRate);
       const d = noiseBuf.getChannelData(0);
       for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
     }
+    return noiseBuf;
+  }
+  function noise(time, dur, vol, cutoff, type) {
     const s = ctx.createBufferSource(), f = ctx.createBiquadFilter(), g = ctx.createGain();
-    s.buffer = noiseBuf;
+    s.buffer = noiseBuffer();
     f.type = type || 'highpass'; f.frequency.value = cutoff;
     g.gain.setValueAtTime(vol, time);
     g.gain.exponentialRampToValueAtTime(0.0001, time + dur);
@@ -108,23 +110,6 @@
   }
   function clap(time, vol) {
     [0, 0.012, 0.024].forEach(d => noise(time + d, 0.09, vol, 1200, 'bandpass'));
-  }
-  // 신스 화음: 톱니파 3개를 살짝 어긋나게 겹쳐 반짝이는 K-pop 신스 소리
-  function stab(notes, time, dur, vol, cutoff) {
-    const f = ctx.createBiquadFilter(), g = ctx.createGain();
-    f.type = 'lowpass'; f.frequency.setValueAtTime(cutoff || 2600, time); f.Q.value = 2;
-    g.gain.setValueAtTime(0.0001, time);
-    g.gain.exponentialRampToValueAtTime(vol, time + 0.01);
-    g.gain.exponentialRampToValueAtTime(0.0001, time + dur);
-    f.connect(g); g.connect(bus);
-    notes.forEach(n => [-9, 0, 9].forEach(det => {
-      const o = ctx.createOscillator();
-      o.type = 'sawtooth'; o.frequency.setValueAtTime(m(n), time); o.detune.value = det;
-      o.connect(f); o.start(time); o.stop(time + dur + 0.05);
-    }));
-  }
-  function pad(notes, time, dur, vol) {
-    notes.forEach(n => at(m(n), time, dur, 'triangle', vol, 0.08));
   }
   function bell(n, time, vol) {
     at(m(n), time, 0.5, 'sine', vol);
@@ -165,60 +150,112 @@
     bars.forEach((ns, b) => rhythm.forEach((st, k) => { hook[b * 16 + st] = ns[k]; }));
     return hook;
   }
-  const GROOVES = {
-    four:   { kick: [0, 4, 8, 12], clap: [4, 12], open: [2, 6, 10, 14], closed: [1, 3, 5, 7, 9, 11, 13, 15] },
-    dembow: { kick: [0, 4, 8, 12], clap: [3, 6, 11, 14], open: [], closed: [0, 2, 4, 6, 8, 10, 12, 14] },
-    half:   { kick: [0, 7, 10], clap: [8], open: [6, 14], closed: [0, 2, 4, 6, 8, 10, 12, 14] },
-    bounce: { kick: [0, 6, 10], clap: [4, 12], open: [14], closed: [2, 6, 10] },
-    chill:  { kick: [0, 10], clap: [4, 12], open: [], closed: [2, 6, 10, 14] }
+  // ---------- EDM 소리 재료 ----------
+  // 펌핑 화음: 박자마다 소리가 '훅' 빨려 들었다가 부풀어 오르는 EDM 특유의 출렁임(사이드체인 느낌)
+  function pumpChord(notes, time, sd, vol, cutoff) {
+    const f = ctx.createBiquadFilter(), g = ctx.createGain();
+    f.type = 'lowpass'; f.frequency.setValueAtTime(cutoff || 2400, time); f.Q.value = 1.2;
+    g.gain.setValueAtTime(0.0001, time);
+    g.gain.exponentialRampToValueAtTime(vol, time + sd * 1.3);
+    g.gain.exponentialRampToValueAtTime(vol * 0.5, time + sd * 3.2);
+    g.gain.exponentialRampToValueAtTime(0.0001, time + sd * 3.95);
+    f.connect(g); g.connect(bus);
+    notes.forEach(n => [-12, 0, 12].forEach(det => {
+      const o = ctx.createOscillator();
+      o.type = 'sawtooth'; o.frequency.setValueAtTime(m(n), time); o.detune.value = det;
+      o.connect(f); o.start(time); o.stop(time + sd * 4);
+    }));
+  }
+  // 톡톡 튀는 플럭(아르페지오용)
+  function pluck(n, time, vol, wave) {
+    const o = ctx.createOscillator(), f = ctx.createBiquadFilter(), g = ctx.createGain();
+    o.type = wave || 'square'; o.frequency.setValueAtTime(m(n), time);
+    f.type = 'lowpass'; f.frequency.setValueAtTime(4200, time); f.frequency.exponentialRampToValueAtTime(500, time + 0.16);
+    g.gain.setValueAtTime(vol, time); g.gain.exponentialRampToValueAtTime(0.0001, time + 0.18);
+    o.connect(f); f.connect(g); g.connect(bus);
+    o.start(time); o.stop(time + 0.2);
+  }
+  // 빌드업 상승음: 쉬익- 하고 점점 높아지는 소리
+  function riser(time, dur) {
+
+    const s = ctx.createBufferSource(), f = ctx.createBiquadFilter(), g = ctx.createGain();
+    s.buffer = noiseBuffer(); s.loop = true;
+    f.type = 'bandpass'; f.Q.value = 3;
+    f.frequency.setValueAtTime(400, time); f.frequency.exponentialRampToValueAtTime(9000, time + dur);
+    g.gain.setValueAtTime(0.0001, time); g.gain.exponentialRampToValueAtTime(0.09, time + dur * 0.95); g.gain.exponentialRampToValueAtTime(0.0001, time + dur);
+    s.connect(f); f.connect(g); g.connect(bus);
+    s.start(time); s.stop(time + dur + 0.02);
+  }
+  // 드롭 시작을 알리는 심벌
+  function crash(time) { noise(time, 1.4, 0.07, 4500); }
+
+  // ---------- EDM 곡 ----------
+  // 8마디 한 바퀴: 앞 4마디는 빌드업(아르페지오, 4마디째 스네어 연타와 상승음), 뒤 4마디는 드롭(펌핑 화음, 후렴 멜로디, 힘찬 베이스)
+  // style: house(오프비트 베이스), electro(16분 굴러가는 베이스), bigroom(묵직한 리드), future(통통 튀는 베이스), tropical(마림바 같은 플럭)
+  const BASS = {
+    house: [2, 6, 10, 14],
+    electro: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
+    bigroom: [0, 3, 6, 8, 11, 14],
+    future: [0, 3, 6, 10, 12],
+    tropical: [0, 3, 6, 8, 11, 14]
   };
   function makeSong(def) {
-    const chords = def.prog.map(chordOf), g = GROOVES[def.groove];
+    const chords = def.prog.map(chordOf), bassSteps = BASS[def.style];
     const hook = makeHook(chords, def.seed, def.rhythm);
+    const plk = def.style === 'tropical' ? 'triangle' : def.style === 'future' ? 'sine' : 'square';
     return {
-      name: def.name, bpm: def.bpm, bpmHot: def.hot || def.bpm,
+      name: def.name, bpm: def.bpm, bpmHot: def.hot || def.bpm + 10,
       step(s, t, sd) {
-        const barNo = Math.floor(s / 16) % 4, bar = chords[barNo], i = s % 16, h = hook[s % 64];
-        if (def.race) {
-          if (g.kick.includes(i)) kick(t);
-          if (g.clap.includes(i)) clap(t, 0.2);
-          if (hot && barNo === 3 && i >= 12) clap(t, 0.12);                 // 마지막 30초: 마디 끝 손뼉 연타
-          if (g.open.includes(i)) noise(t, 0.09, 0.065, 6000);
-          else if (hot || g.closed.includes(i)) noise(t, 0.025, 0.035, 8000);
-          if (def.bass.includes(i)) at(m(bar.bass + ((def.oct || []).includes(i) ? 12 : 0)), t, sd * 1.6, def.bassWave || 'square', 0.085);
-          if (def.stab.includes(i)) stab(bar.notes, t, i === 0 ? 0.3 : 0.13, 0.045, def.cutoff);
-          if (h) { at(m(h), t, sd * 1.8, def.lead || 'square', 0.03); at(m(h), t, sd * 1.8, 'sine', 0.055); }
-          else if (def.arp && i % 2 === 1) at(m(bar.notes[(i >> 1) % bar.notes.length] + 12), t, sd * 0.9, 'triangle', 0.025);
+        const bar8 = Math.floor(s / 16) % 8, i = s % 16, drop = bar8 >= 4, bar = chords[bar8 % 4], h = hook[s % 64];
+        const lastBuild = bar8 === 3;
+        // 북: 4박 킥(빌드업 마지막 반 마디는 킥을 빼고 스네어를 점점 촘촘하게)
+        if (i % 4 === 0 && !(lastBuild && i >= 8)) kick(t, drop ? 0.6 : 0.48);
+        if (drop || bar8 >= 1) { if (i === 4 || i === 12) clap(t, drop ? 0.22 : 0.15); }
+        if (lastBuild && i === 0) riser(t, sd * 16);
+        if (lastBuild && (i >= 8 || i % 2 === 0)) clap(t, 0.05 + (i / 16) * 0.12);
+        if (drop && bar8 === 4 && i === 0) crash(t);
+        // 하이햇: 오프비트 열린 소리 + 드롭에서는 16분 닫힌 소리
+        if (i % 4 === 2) noise(t, 0.08, drop ? 0.07 : 0.05, 6500);
+        else if (drop || hot) noise(t, 0.025, 0.03, 8500);
+        if (hot && bar8 % 4 === 3 && i >= 12) clap(t, 0.12);   // 마지막 30초: 마디 끝 손뼉 연타
+        // 베이스
+        if (bassSteps.includes(i) && (drop || def.style === 'house' || bar8 >= 2)) {
+          const up = def.style === 'electro' ? (i % 4 === 2 ? 12 : 0) : (i % 8 === 6 ? 12 : 0);
+          at(m(bar.bass + up), t, sd * (def.style === 'electro' ? 0.9 : 1.6), def.style === 'electro' || def.style === 'bigroom' ? 'sawtooth' : 'square', drop ? 0.09 : 0.06);
+        }
+        if (drop) {
+          // 펌핑 화음과 후렴 멜로디
+          if (i % 4 === 0) pumpChord(bar.notes, t, sd, def.style === 'bigroom' ? 0.05 : 0.04, def.cutoff);
+          if (h) {
+            const w = def.lead || (def.style === 'bigroom' ? 'sawtooth' : 'square');
+            at(m(h), t, sd * 1.7, w, def.style === 'bigroom' ? 0.04 : 0.032);
+            at(m(h + 12), t, sd * 1.2, 'sine', 0.028);
+          } else if (def.style === 'tropical' || def.style === 'future') pluck(bar.notes[(i >> 1) % bar.notes.length] + 12, t, 0.035, plk);
         } else {
-          if (g.kick.includes(i)) kick(t, 0.3);
-          if (g.clap.includes(i)) noise(t, 0.05, 0.11, 2500, 'bandpass');  // 손가락 튕기는 소리
-          if (g.closed.includes(i)) noise(t, 0.03, 0.03, 8000);
-          if (i === 0) pad(bar.notes, t, sd * 15, 0.028);
-          if (def.stab.includes(i)) stab(bar.notes, t, 0.16, 0.032, 1600);
-          if (def.bass.includes(i)) at(m(bar.bass + ((def.oct || []).includes(i) ? 12 : 0)), t, sd * 2.5, 'triangle', 0.14);
-          if (h) bell(h, t, 0.055);
+          // 빌드업: 화음을 타고 오르내리는 아르페지오, 2마디째부터 멜로디 살짝 미리 듣기
+          if (i % 2 === 0) pluck(bar.notes[(i >> 1) % bar.notes.length] + (i >= 8 ? 24 : 12), t, 0.04, plk);
+          if (bar8 === 2 && h) bell(h, t, 0.04);
         }
       }
     };
   }
 
-  // 대기실 5곡, 레이스 6곡. 게임마다 바로 전과 다른 곡이 무작위로 나옵니다.
+  // 신나는 EDM·댄스 창작곡 10곡. 대기실에서는 이 빠르기로, 레이스에서는 조금 더 빠르게(마지막 30초는 더더 빠르게) 틀어요.
+  const SONGS = [
+    { name: '네온 스타트',     style: 'house',    prog: ['Am', 'F', 'C', 'G'],     bpm: 124, seed: 101, rhythm: [0, 3, 6, 8, 10, 14] },
+    { name: '레이저 점프',     style: 'electro',  prog: ['Fm', 'Db', 'Ab', 'Eb'],  bpm: 128, seed: 113, rhythm: [0, 2, 6, 8, 12], lead: 'sawtooth' },
+    { name: '소다 팝',         style: 'future',   prog: ['D', 'A', 'Bm', 'G'],     bpm: 122, seed: 127, rhythm: [0, 3, 6, 10, 12, 14], lead: 'triangle' },
+    { name: '은하수 질주',     style: 'bigroom',  prog: ['Em', 'C', 'G', 'D'],     bpm: 128, seed: 131, rhythm: [0, 4, 6, 8, 12], cutoff: 3000 },
+    { name: '트로피컬 웨이브', style: 'tropical', prog: ['F', 'C', 'Dm', 'Bb'],    bpm: 118, seed: 149, rhythm: [0, 3, 6, 8, 11, 14], lead: 'triangle' },
+    { name: '하이파이브',      style: 'house',    prog: ['Bbm', 'Gb', 'Db', 'Ab'], bpm: 126, seed: 157, rhythm: [0, 2, 6, 8, 10, 14] },
+    { name: '펀치 라인',       style: 'electro',  prog: ['Gm', 'Eb', 'Bb', 'F'],   bpm: 130, seed: 163, rhythm: [0, 3, 6, 8, 11], lead: 'sawtooth' },
+    { name: '별빛 비트',       style: 'future',   prog: ['A', 'E', 'F#m', 'D'],    bpm: 124, seed: 173, rhythm: [0, 2, 4, 8, 10, 12] },
+    { name: '파워 업',         style: 'bigroom',  prog: ['Cm', 'Ab', 'Eb', 'Bb'],  bpm: 126, seed: 181, rhythm: [0, 3, 8, 11, 14], cutoff: 3200 },
+    { name: '무지개 댄스',     style: 'tropical', prog: ['C', 'Am', 'F', 'G'],     bpm: 120, seed: 191, rhythm: [0, 2, 6, 8, 12, 14] }
+  ];
   const PLAYLIST = {
-    lobby: [
-      { name: '대기실 산책', prog: ['Dmaj7', 'C#m7', 'Bm7', 'E7'], bpm: 100, groove: 'chill', bass: [0, 7, 10], oct: [7], stab: [3, 7, 11, 14], seed: 5, rhythm: [0, 6, 10] },
-      { name: '오후의 교실', prog: ['Fmaj7', 'Em7', 'Dm7', 'Cmaj7'], bpm: 96, groove: 'chill', bass: [0, 6, 10], oct: [6], stab: [2, 6, 10, 14], seed: 9, rhythm: [0, 4, 10] },
-      { name: '창가 햇살', prog: ['Cmaj7', 'Am7', 'Dm7', 'G7'], bpm: 104, groove: 'bounce', bass: [0, 3, 8, 11], oct: [3, 11], stab: [2, 6, 10, 14], seed: 15, rhythm: [0, 6, 8, 12] },
-      { name: '두근두근 출발 전', prog: ['Ebmaj7', 'Dm7', 'Cm7', 'Bb'], bpm: 108, groove: 'bounce', bass: [0, 6, 10, 14], oct: [6, 14], stab: [3, 7, 11, 15], seed: 19, rhythm: [0, 3, 8, 11] },
-      { name: '레트로 시티', prog: ['Amaj7', 'F#m7', 'Bm7', 'E'], bpm: 98, groove: 'chill', bass: [0, 3, 7, 10], oct: [7], stab: [2, 7, 10, 15], seed: 27, rhythm: [0, 6, 10, 14] }
-    ],
-    race: [
-      { name: '출발 신호', race: true, prog: ['C#m', 'A', 'E', 'B'], bpm: 128, hot: 138, groove: 'four', bass: [0, 3, 6, 8, 10, 11, 14], oct: [6, 11], stab: [0, 3, 6, 10, 12], seed: 11, rhythm: [0, 2, 4, 6, 8, 10, 12, 14] },
-      { name: '질주 본능', race: true, prog: ['Am', 'F', 'C', 'G'], bpm: 132, hot: 142, groove: 'four', bass: [0, 2, 4, 6, 8, 10, 12, 14], oct: [2, 6, 10, 14], stab: [0, 6, 12], seed: 23, rhythm: [0, 3, 6, 8, 11, 14], lead: 'sawtooth' },
-      { name: '시간 여행', race: true, prog: ['Dm', 'Bb', 'F', 'C'], bpm: 124, hot: 134, groove: 'dembow', bass: [0, 3, 7, 8, 11, 15], oct: [7, 15], stab: [2, 6, 10, 14], seed: 37, rhythm: [0, 4, 6, 10, 12] },
-      { name: '황금 레이스', race: true, prog: ['F#m', 'D', 'A', 'E'], bpm: 136, hot: 146, groove: 'four', bass: [0, 4, 8, 12], stab: [0, 8], seed: 41, rhythm: [0, 2, 6, 8, 10, 14], arp: true },
-      { name: '마지막 질주', race: true, prog: ['Gm', 'Eb', 'Bb', 'F'], bpm: 130, hot: 140, groove: 'half', bass: [0, 3, 6, 10, 13], oct: [6, 13], stab: [0, 7, 10], seed: 53, rhythm: [0, 3, 6, 8, 12], bassWave: 'sawtooth', cutoff: 2000 },
-      { name: '무지개 드라이브', race: true, prog: ['C', 'G', 'Am', 'F'], bpm: 128, hot: 138, groove: 'bounce', bass: [0, 6, 8, 14], oct: [6, 14], stab: [2, 6, 10, 14], seed: 67, rhythm: [0, 2, 6, 8, 12, 14], arp: true }
-    ]
+    lobby: SONGS,
+    race: SONGS.map(s => Object.assign({}, s, { bpm: s.bpm + 6, hot: s.bpm + 16 }))
   };
   // 선생님이 켜 둔 곡만 무작위 재생에 넣습니다 (노트북에 기억)
   function enabledList(kind) {
