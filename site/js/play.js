@@ -20,11 +20,19 @@
     $('#toasts').appendChild(el);
     setTimeout(() => el.remove(), ms || 2200);
   }
-  function msg(title, text) {
+  // retry: '다시 연결하기' 버튼을 눌렀을 때 할 일(없으면 버튼을 숨겨요)
+  let msgRetryFn = null;
+  function msg(title, text, retry) {
     $('#msgTitle').textContent = title;
     $('#msgText').textContent = text;
+    msgRetryFn = retry || null;
+    $('#msgRetry').classList.toggle('hidden', !retry);
     show('#sMsg');
   }
+  $('#msgRetry').addEventListener('click', () => { if (msgRetryFn) msgRetryFn(); });
+  // 와이파이가 약하면 대답 없이 멈춰 있을 수 있어서, 정해진 시간까지만 기다려요
+  function timed(p, ms) { return Promise.race([p, new Promise((_, no) => setTimeout(() => no(new Error('timeout')), ms))]); }
+  const pause = ms => new Promise(r => setTimeout(r, ms));
   function josa(word, withBatchim, without) {
     const c = word.charCodeAt(word.length - 1);
     if (c < 0xAC00 || c > 0xD7A3) return word + without;
@@ -61,8 +69,32 @@
   }
 
   // ---------- 입장 ----------
+  // ---------- 연결 지키기 ----------
+  // 휴대폰 화면이 꺼지거나 다른 앱에 다녀오면 연결이 끊긴 채 오래 머물러서:
+  //  - 레이스 동안 화면이 꺼지지 않게 붙잡고(지원하는 휴대폰만)
+  //  - 다시 돌아오면 연결을 새로 이어 붙이고
+  //  - 끊긴 채 8초가 지나도 돌아오지 않으면 다시 이어 붙여요
+  let online = true, lostAt = 0, hiddenAt = 0, wake = null;
+  function keepAwake() {
+    if (!navigator.wakeLock || wake || document.visibilityState !== 'visible') return;
+    navigator.wakeLock.request('screen').then(w => { wake = w; w.addEventListener('release', () => { wake = null; }); }).catch(() => { /* 지원하지 않으면 그냥 둬요 */ });
+  }
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') { hiddenAt = Date.now(); return; }
+    if (hiddenAt && Date.now() - hiddenAt > 3000) DB.reconnect();
+    hiddenAt = 0;
+    if (room) keepAwake();
+  });
+  setInterval(() => {
+    if (!online && document.visibilityState === 'visible' && Date.now() - lostAt > 8000) { lostAt = Date.now(); DB.reconnect(); }
+  }, 2000);
+
   async function init() {
-    DB.onConnection(ok => $('#offline').classList.toggle('hidden', ok));
+    DB.onConnection(ok => {
+      if (online && !ok) lostAt = Date.now();
+      online = ok;
+      $('#offline').classList.toggle('hidden', ok);
+    });
     const params = new URLSearchParams(location.search);
     const fromUrl = (params.get('room') || '').trim();
     const code = fromUrl || readLast();
@@ -78,16 +110,20 @@
     enterRoom(code, false);
   });
 
-  async function enterRoom(code, quiet) {
+  // 연결이 느리면 저절로 두 번 더 해 보고, 그래도 안 되면 '다시 연결하기' 버튼을 보여 줘요
+  let listening = false;
+  async function enterRoom(code, quiet, tries) {
+    tries = tries || 1;
+    if (tries === 1) msg('게임에 연결하는 중…', '잠시만 기다려 주세요.');
     try {
-      const u0 = await DB.authReady();
+      const u0 = await timed(DB.authReady(), 8000).catch(() => null);
       if (DB.mode === 'firebase' && u0 && !u0.isAnonymous) {
         msg('선생님 계정이 로그인된 브라우저예요', '학생 화면은 학생 휴대폰이나 다른 브라우저(시크릿 창)에서 열어 주세요.');
         return;
       }
-      const user = await DB.signInStudent();
+      const user = await timed(DB.signInStudent(), 12000);
       uid = user.uid;
-      const m = await DB.get(`rooms/${code}/meta`);
+      const m = await timed(DB.get(`rooms/${code}/meta`), 12000);
       if (!m) {
         forgetLast();
         show('#sCode');
@@ -97,17 +133,27 @@
       room = code;
       rememberLast(code);
       if (history.replaceState) history.replaceState(null, '', 'play.html?room=' + code);
-      questions = (await DB.get(`rooms/${code}/questions`)) || [];
-      DB.on(`rooms/${code}/meta`, v => { meta = v; metaLoaded = true; route(); });
-      DB.on(`rooms/${code}/players`, v => { players = v || {}; myP = players[uid] || null; playersLoaded = true; route(); });
-      DB.on(`rooms/${code}/state`, v => { states = v || {}; statesLoaded = true; route(); });
+      questions = (await timed(DB.get(`rooms/${code}/questions`), 12000)) || [];
+      if (!listening) {
+        listening = true;
+        DB.on(`rooms/${code}/meta`, v => { meta = v; metaLoaded = true; route(); });
+        DB.on(`rooms/${code}/players`, v => { players = v || {}; myP = players[uid] || null; playersLoaded = true; route(); });
+        DB.on(`rooms/${code}/state`, v => { states = v || {}; statesLoaded = true; route(); });
+      }
       if (!loop) loop = setInterval(tick, 100);
+      keepAwake();
+      route(); // 다시 연결한 경우에는 새 소식을 기다리지 않고 바로 알맞은 화면으로
     } catch (e) {
       console.warn(e);
-      const code = e && e.code || '';
-      msg('들어가지 못했어요', /admin-restricted|operation-not-allowed/.test(code)
-        ? '선생님께 알려 주세요: Firebase에서 익명 로그인이 꺼져 있어요.'
-        : '인터넷 연결을 확인하고 다시 해 주세요.');
+      const why = e && (e.code || e.message) || '';
+      if (/admin-restricted|operation-not-allowed/.test(why)) { msg('들어가지 못했어요', '선생님께 알려 주세요: Firebase에서 익명 로그인이 꺼져 있어요.'); return; }
+      if (tries < 3) {
+        DB.reconnect();
+        msg('연결이 느려요', `다시 연결하는 중이에요… (${tries + 1}/3)`);
+        setTimeout(() => enterRoom(code, quiet, tries + 1), 1500);
+        return;
+      }
+      msg('연결이 되지 않아요', '와이파이가 약한 것 같아요. 와이파이를 껐다 켜거나 데이터로 바꾼 뒤 아래 버튼을 눌러 주세요.', () => enterRoom(code, quiet));
     }
   }
 
@@ -262,39 +308,52 @@
     joining = true;
     btn.disabled = true;
     btn.textContent = '들어가는 중…';
+    keepAwake();
+    const entry = { nick, no: noChoice, car: carChoice, status: 'pending', joinedAt: DB.now() };
     // 와이파이가 약하면 저장이 끝나지 않고 멈춰 있을 수 있어서 10초까지만 기다려요
-    const save = () => Promise.race([
-      DB.set(`rooms/${room}/players/${uid}`, { nick, no: noChoice, car: carChoice, status: 'pending', joinedAt: DB.now() }),
-      new Promise((_, no) => setTimeout(() => no(new Error('timeout')), 10000))
-    ]);
+    const save = () => timed(DB.set(`rooms/${room}/players/${uid}`, entry), 10000);
     const denied = ex => /permission/i.test(ex && (ex.code || ex.message) || '');
-    try {
-      // 휴대폰이 잠깐 잠겼다 깨면 로그인이 바뀌거나 만료될 수 있어서, 지금 로그인으로 다시 맞춰요
-      uid = (await DB.signInStudent()).uid;
-      try { await save(); }
-      catch (ex) {
-        if (!denied(ex)) throw ex;
-        await DB.refreshAuth();
+    let done = false, lastErr = null;
+    // 느려서 실패하면 연결을 새로 이어 붙이고 저절로 두 번 더 해 봐요(같은 자리에 다시 쓰니 두 번 들어가지 않아요)
+    for (let k = 1; k <= 3 && !done; k++) {
+      if (k > 1) { btn.textContent = `연결이 느려서 다시 시도하는 중… (${k}/3)`; DB.reconnect(); await pause(1200); }
+      try {
+        // 휴대폰이 잠깐 잠겼다 깨면 로그인이 바뀌거나 만료될 수 있어서, 지금 로그인으로 다시 맞춰요
+        uid = (await timed(DB.signInStudent(), 10000)).uid;
         try { await save(); }
-        catch (ex2) {
-          // 그래도 거절되면 로그인이 망가진 것이라, 새 접속 번호로 다시 로그인해서 한 번 더 해 봐요
-          if (!denied(ex2)) throw ex2;
-          await DB.signOut();
-          uid = (await DB.signInStudent()).uid;
-          await save();
+        catch (ex) {
+          if (!denied(ex)) throw ex;
+          await timed(DB.refreshAuth(), 8000);
+          try { await save(); }
+          catch (ex2) {
+            // 그래도 거절되면 로그인이 망가진 것이라, 새 접속 번호로 다시 로그인해서 한 번 더 해 봐요
+            if (!denied(ex2)) throw ex2;
+            await timed(DB.signOut(), 5000);
+            uid = (await timed(DB.signInStudent(), 10000)).uid;
+            await save();
+          }
         }
+        done = true;
+      } catch (ex) {
+        console.warn(ex);
+        lastErr = ex;
+        if (!/timeout|network|disconnect/i.test(ex && (ex.code || ex.message) || '')) break;
       }
-    } catch (ex) {
-      console.warn(ex);
-      const why = ex && (ex.code || ex.message) || '';
-      joinError(why === 'timeout'
-        ? '인터넷 연결이 약해서 들어가지 못했어요. 와이파이를 확인하고 다시 눌러 주세요.'
-        : `입장하지 못했어요. 다시 눌러 주세요. 계속 안 되면 선생님께 알려 주세요. (${why || '알 수 없는 오류'})`);
-    } finally {
-      joining = false;
-      btn.disabled = !!G.bannedWordIn($('#nickInput').value);
-      btn.textContent = '입장하기';
     }
+    if (done) {
+      // 저장은 됐는데 목록 소식이 늦게 오면 멈춘 것처럼 보여서, 내 자리를 바로 반영해 기다리기 화면으로 넘어가요
+      players[uid] = entry;
+      myP = entry;
+      route();
+    } else {
+      const why = lastErr && (lastErr.code || lastErr.message) || '';
+      joinError(why === 'timeout'
+        ? '인터넷 연결이 약해서 들어가지 못했어요. 와이파이를 껐다 켜거나 데이터로 바꾼 뒤 다시 눌러 주세요.'
+        : `입장하지 못했어요. 다시 눌러 주세요. 계속 안 되면 선생님께 알려 주세요. (${why || '알 수 없는 오류'})`);
+    }
+    joining = false;
+    btn.disabled = !!G.bannedWordIn($('#nickInput').value);
+    btn.textContent = '입장하기';
   });
 
   function showWait(kind) {

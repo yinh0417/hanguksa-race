@@ -603,8 +603,26 @@
       if (!['#vResults', '#vReview'].includes(currentView())) showFinish();
     }
   }
+  // 이미 승인된 학생이 연결이 끊겨 다시 들어오면(같은 출석번호·닉네임) 기다리지 않게 바로 들여보내요.
+  // 예전 접속은 지우고, 달리던 위치와 정답 기록은 새 접속으로 옮겨요.
+  const reentered = new Set();
+  function autoApproveReentry() {
+    const t = DB.now(), upd = {}, names = [];
+    pendingList().forEach(p => {
+      if (reentered.has(p.uid) || G.bannedWordIn(p.nick)) return;
+      if (!twinsOf(p.uid).some(id => players[id].status === 'approved')) return;
+      reentered.add(p.uid);
+      Object.assign(upd, approveUpdates(p.uid, t));
+      names.push(p.nick);
+    });
+    if (!names.length) return false;
+    DB.update(`rooms/${room}`, upd).then(() => toast(`${names.join(', ')} 학생이 다시 접속해서 바로 들여보냈어요.`)).catch(denied);
+    return true;
+  }
+
   function onPlayers() {
     if (!meta) return;
+    if (autoApproveReentry()) return; // 바뀐 목록이 다시 들어오면 그때 화면을 그려요
     if (meta.status === 'lobby') renderLobby();
     if (meta.status === 'racing') { buildRace(); renderPendingPop(); }
     const p = pendingList().length;

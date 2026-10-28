@@ -39,6 +39,8 @@
         ? Promise.resolve(fauth.currentUser)
         : fauth.signInAnonymously().then(c => c.user),
       refreshAuth: () => fauth.currentUser ? fauth.currentUser.getIdToken(true) : Promise.resolve(),
+      // 휴대폰이 잠들었다 깨면 끊긴 연결을 오래 붙잡고 있어서, 새로 이어 붙여요
+      reconnect() { fdb.goOffline(); fdb.goOnline(); },
       signInTeacher: (email, pw) => fauth.signInWithEmailAndPassword(email, pw).then(c => c.user),
       signOut: () => fauth.signOut(),
       isTeacher: () => !!(fauth.currentUser && !fauth.currentUser.isAnonymous)
@@ -143,6 +145,7 @@
     user: () => demoUser(),
     signInStudent: () => Promise.resolve(demoUser()),
     refreshAuth: () => Promise.resolve(),
+    reconnect() {},
     signInTeacher: () => Promise.resolve({ uid: 'teacher', email: 'demo' }),
     signOut: () => Promise.resolve(),
     isTeacher: () => true,
