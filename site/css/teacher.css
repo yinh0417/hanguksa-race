@@ -765,3 +765,13 @@
   .countdown.final-cd { animation-duration: .9s !important; }
   #vRace.final .timer { animation-duration: 1s !important; animation-iteration-count: infinite !important; }
 }
+
+/* 게임 열기: 화면 아래에 붙어 늘 보이고, 반·세트를 안 골랐으면 무엇이 빠졌는지 알려 줘요 */
+.open-bar { position: sticky; bottom: 0; z-index: 5; align-items: center; justify-content: space-between; gap: 16px;
+  margin: 28px -12px 0; padding: 12px; border-radius: 18px;
+  background: rgba(245,245,247,.86); -webkit-backdrop-filter: saturate(180%) blur(16px); backdrop-filter: saturate(180%) blur(16px); }
+.open-hint { margin: 0; font-weight: 600; color: #1d1d1f; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.open-hint.warn { color: #d70015; animation: open-shake .4s ease; }
+.btn.is-off { opacity: .45; }
+@keyframes open-shake { 25% { transform: translateX(-6px); } 75% { transform: translateX(6px); } }
+@media (prefers-reduced-motion: reduce) { .open-hint.warn { animation-duration: .4s !important; } }

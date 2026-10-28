@@ -119,7 +119,14 @@
     renderClassChips($('#classPick'), n => { pickClass = n; renderClassChips($('#classPick'), null, pickClass); updateOpenBtn(); }, pickClass);
     renderClassChips($('#recClassPick'), n => loadRecords(n), null);
     DB.on('sets', v => { sets = v || {}; renderSetPick(); renderSetList(); }, denied);
-    $('#btnOpenRoom').addEventListener('click', () => { SOUND.unlock(); createRoom(); });
+    $('#btnOpenRoom').addEventListener('click', () => {
+      SOUND.unlock();
+      const miss = openMissing();
+      if (!miss) { createRoom(); return; }
+      const hint = $('#openHint');
+      hint.classList.remove('warn'); void hint.offsetWidth; hint.classList.add('warn');
+      (pickClass ? $('#setPick') : $('#classPick')).scrollIntoView({ behavior: 'smooth', block: 'center' });
+    });
     $('#btnNewSet').addEventListener('click', () => openEditor(null));
     const demoLink = $('#demoPlayLink');
     if (demoLink) demoLink.href = 'play.html';
@@ -200,7 +207,21 @@
     $$('#setPick .set-card').forEach(b => b.addEventListener('click', () => { pickSet = b.dataset.id; renderSetPick(); updateOpenBtn(); }));
     updateOpenBtn();
   }
-  function updateOpenBtn() { $('#btnOpenRoom').disabled = !(pickClass && pickSet && sets[pickSet]); }
+  // 게임 열기 버튼은 화면 아래에 늘 보이고, 반이나 세트를 안 골랐으면 무엇이 빠졌는지 알려 줘요
+  function openMissing() {
+    if (!pickClass) return '반을 먼저 골라 주세요.';
+    if (!(pickSet && sets[pickSet])) return '문제 세트를 골라 주세요.';
+    return '';
+  }
+  function updateOpenBtn() {
+    const btn = $('#btnOpenRoom'), miss = openMissing();
+    btn.disabled = false;
+    btn.classList.toggle('is-off', !!miss);
+    btn.setAttribute('aria-disabled', String(!!miss));
+    const hint = $('#openHint');
+    hint.classList.remove('warn');
+    hint.textContent = miss || `${pickClass}반 · ${sets[pickSet].title}`;
+  }
 
   function renderSetList() {
     const el = $('#setList');
