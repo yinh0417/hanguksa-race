@@ -437,10 +437,11 @@
         ${miss >= 2 ? `<p class="sa-hint reveal">정답은 <b>${escapeHtml(q.answer)}</b> <span>그대로 써 봐요</span></p>`
           : me.peek ? `<p class="sa-hint">${C.items.mapae.icon} 힌트 <b>${escapeHtml(String(q.answer).charAt(0) + G.choHint(String(q.answer).slice(1)))}</b> <span>${len}글자</span></p>`
           : C.saHint !== false ? `<p class="sa-hint">힌트 <b>${escapeHtml(G.choHint(q.answer))}</b> <span>${len}글자</span></p>` : ''}
-        <input class="sa-input" type="text" maxlength="30" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="정답을 써요" aria-label="정답 입력">
+        <input class="sa-input" type="text" maxlength="30" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="정답을 써요" aria-label="정답 입력">
         <button class="ans sa-submit" type="submit">제출</button>
       </form>`;
       const input = box.querySelector('.sa-input');
+      typeOnly(input);
       box.querySelector('.sa-form').addEventListener('submit', e => {
         e.preventDefault();
         if (!input.value.trim()) { input.focus(); return; }
@@ -459,6 +460,23 @@
     }
     box.querySelectorAll('.ans').forEach(b => b.addEventListener('click', () => answer(b.dataset.v, b)));
     updateStatus(true);
+  }
+  // 단답형은 직접 쳐서 낱말을 익히도록 붙여넣기·끌어다 놓기를 막아요.
+  // 키보드의 클립보드 추천처럼 여러 글자가 한꺼번에 들어오는 것도 되돌려요(한글 조합 입력은 그대로).
+  function typeOnly(input) {
+    let prev = input.value;
+    const block = e => { e.preventDefault(); toast('단답형은 직접 입력해 주세요. 붙여넣기는 할 수 없어요.'); };
+    input.addEventListener('paste', block);
+    input.addEventListener('drop', block);
+    input.addEventListener('beforeinput', e => { if (/^insertFrom(Paste|Drop|Yank)/.test(e.inputType || '')) block(e); });
+    input.addEventListener('input', e => {
+      if (!e.isComposing && e.inputType === 'insertText' && input.value.length - prev.length >= 4) {
+        input.value = prev;
+        toast('단답형은 직접 입력해 주세요. 붙여넣기는 할 수 없어요.');
+        return;
+      }
+      prev = input.value;
+    });
   }
   function escapeHtml(s) { return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
 
