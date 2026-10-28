@@ -716,7 +716,15 @@
     SOUND.unlock();
     SOUND.stopBgm();
     const startAt = DB.now() + 3600;
-    await DB.update(`rooms/${room}/meta`, { status: 'racing', startAt, endAt: startAt + C.raceSeconds * 1000 });
+    const run = C.raceSeconds * 1000, cb = C.coolBreak || {};
+    const upd = { status: 'racing', startAt, endAt: startAt + run };
+    // 쿨링 타임: 남은 시간이 cb.left초일 때 cb.seconds초 멈추고, 멈춘 만큼 경기를 늘려요
+    if (cb.seconds > 0 && cb.left > 0 && cb.left * 1000 < run) {
+      upd.coolAt = startAt + run - cb.left * 1000;
+      upd.coolUntil = upd.coolAt + cb.seconds * 1000;
+      upd.endAt += cb.seconds * 1000;
+    }
+    await DB.update(`rooms/${room}/meta`, upd);
   });
 
   // ---------- 레이스 (큰 화면) ----------
@@ -886,6 +894,25 @@
   // 새 아이템은 비슷한 소리를 빌려 써요
   const FX_SOUND = { yut: 'boost2', warp: 'turbo', ginseng: 'shield', mapae: 'star', smoke: 'ink', combo: 'turbo' };
 
+  // 쿨링 타임: 큰 화면에 멈춤 안내와 핵심 개념 카드를 띄우고, 음악은 잠시 껐다가 끝나면 다시 틀어요
+  let coolOn = false;
+  function showCoolBoard(clock) {
+    if (clock.paused !== coolOn) {
+      coolOn = clock.paused;
+      $('#coolBoard').classList.toggle('hidden', !coolOn);
+      if (coolOn) {
+        $('#cbCards').innerHTML = G.conceptCards(questions).map((c, k) => `<li><b>${k + 1}</b><p>${esc(c.q)}</p><strong>${esc(c.a)}</strong></li>`).join('');
+        $('#cbFoot').textContent = `쉬고 나면 남은 ${fmtTime(clock.left)}!${C.finalSeconds ? ` 마지막 ${C.finalSeconds}초는 ⚡ 역전 구간이에요` : ''}`;
+        SOUND.stopBgm();
+        SOUND.play('star');
+      } else {
+        SOUND.play('go');
+        SOUND.startBgm();
+      }
+    }
+    if (coolOn) $('#cbCount').textContent = Math.ceil(clock.coolLeft / 1000);
+  }
+
   function updateRace(initial) {
     if (!meta) return;
     const now = DB.now();
@@ -955,7 +982,8 @@
           cd.classList.add('hidden');
           SOUND.startBgm();
         }
-        const left = meta.endAt - now;
+        const clock = G.raceClock(meta, now), left = clock.left;
+        showCoolBoard(clock);
         $('#rcTimer').textContent = fmtTime(left);
         $('#rcTimer').classList.toggle('hurry', left < 30000);
         SOUND.setIntensity(left < 30000);
@@ -1091,6 +1119,8 @@
 
   // ---------- 결과 ----------
   function showFinish() {
+    coolOn = false;
+    $('#coolBoard').classList.add('hidden');
     show('#vRace');
     const cd = $('#countdown');
     cd.className = 'countdown';

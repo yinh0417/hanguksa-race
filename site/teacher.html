@@ -152,6 +152,12 @@
     </aside>
   </div>
   <div id="countdown" class="countdown hidden" aria-live="assertive"></div>
+  <!-- 쿨링 타임: 잠시 멈추고 핵심 개념 정리 -->
+  <div id="coolBoard" class="cool-board hidden" aria-live="polite">
+    <div class="cb-head"><span class="cb-icon" aria-hidden="true">🧊</span><div><h2>쿨링 타임</h2><p>잠시 멈춤! 지금까지 푼 핵심 개념을 머릿속으로 정리해요</p></div><div class="cb-count" id="cbCount"></div></div>
+    <ol class="cb-cards" id="cbCards"></ol>
+    <p class="cb-foot" id="cbFoot"></p>
+  </div>
   <div id="pendingPop" class="pending-pop hidden">
     <div class="row-between"><h3>승인 기다리는 친구</h3><button class="btn small" id="ppClose">닫기</button></div>
     <ul id="ppList" class="pending-list"></ul>

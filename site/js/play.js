@@ -465,11 +465,18 @@
   function stat(i) { return me.q[i] || (me.q[i] = { c: 0, w: 0, t: 0 }); }
 
   // 막판 역전 구간: 끝나기 finalSeconds초 전부터
-  function inFinal(now) { return !!(C.finalSeconds && meta && meta.endAt && now >= meta.endAt - C.finalSeconds * 1000 && now < meta.endAt); }
-  // 선두 맞바람: 시간이 흐른 만큼의 칸 + leadCells까지만 갈 수 있어요(1등이 너무 일찍 골인해 기다리지 않게)
+  function inFinal(now) {
+    if (!C.finalSeconds || !meta || !meta.endAt) return false;
+    const left = G.raceClock(meta, now).left;
+    return left > 0 && left <= C.finalSeconds * 1000;
+  }
+  // 쿨링 타임 중인지
+  function paused(now) { return !!(meta && meta.startAt && G.raceClock(meta, now).paused); }
+  // 선두 맞바람: 시간이 흐른 만큼의 칸 + leadCells까지만 갈 수 있어요(1등이 너무 일찍 골인해 기다리지 않게, 쉬는 시간은 빼고 셈)
   function paceCap(now) {
     if (!C.leadCells || !meta || !meta.startAt || !meta.endAt) return C.finishCells;
-    const f = Math.max(0, Math.min(1, (now - meta.startAt) / (meta.endAt - meta.startAt)));
+    const clock = G.raceClock(meta, now);
+    const f = Math.max(0, Math.min(1, clock.elapsed / clock.total));
     return Math.floor(C.finishCells * f) + C.leadCells;
   }
   // 실제로 간 칸 수를 돌려줘요
@@ -548,7 +555,7 @@
   function answer(v, btn) {
     if (phase !== 'question' || !cur) return;
     const now = DB.now();
-    if (now < blockedUntil()) return;
+    if (now < blockedUntil() || paused(now)) return;
     const q = cur.q;
     const ok = q.type === 'ox' ? v === q.answer : q.type === 'sa' ? G.checkShort(q, v) : Number(v) === q.answer;
     if (q.type === 'sa') btn.readOnly = true;
@@ -676,7 +683,7 @@
   // 들고 있는 아이템 쓰기. auto = 시간이 지나 저절로 쓰는 경우(쓸 수 없으면 조용히 조금 뒤 다시 해 봐요)
   // 쓰지 못하면 false를 돌려줘요
   function useItem(auto) {
-    if (!me || !me.hold || phase === 'over' || phase === 'done' || phase === 'idle') return false;
+    if (!me || !me.hold || phase === 'over' || phase === 'done' || phase === 'idle' || paused(DB.now())) return false;
     const type = me.hold, now = DB.now();
     const done = () => { me.hold = null; me.holdAt = null; save(); renderItem(); };
     if (type === 'turbo') {
@@ -921,6 +928,7 @@
     if (phase === 'over') return;
     phase = 'over';
     hideOverlay();
+    $('#coolPop').classList.add('hidden');
     const r = me ? myRank() : null;
     $('#doneCar').innerHTML = A.carSVG((myP && myP.car) || 0);
     $('#doneTitle').textContent = '레이스 끝!';
@@ -936,6 +944,33 @@
     phase = 'over';
   }
 
+  // ---------- 쿨링 타임 ----------
+  let lastTickAt = 0, coolShown = false;
+  // 쉬는 동안 흐른 시간(span)만큼 문제 시간·벌칙·부적·부스터·아이템 자동 사용 시계를 뒤로 미뤄요
+  function holdTimers(span, now) {
+    if (!me) return;
+    const from = now - span;
+    ['frozenUntil', 'blindUntil', 'guardUntil', 'turboNext', 'turboUntil'].forEach(k => { if (me[k] > from) me[k] += span; });
+    if (me.hold && me.holdAt) me.holdAt += span;
+    if (cur) cur.deadline += span;
+    if (phaseUntil > from) phaseUntil += span;
+  }
+  function showCool(clock) {
+    if (!coolShown) {
+      coolShown = true;
+      $('#coolCards').innerHTML = G.conceptCards(questions).map(c => `<li><p>${escapeHtml(c.q)}</p><strong>${escapeHtml(c.a)}</strong></li>`).join('');
+      $('#coolPop').classList.remove('hidden');
+      $('#coolPop').scrollTop = 0;
+      if (navigator.vibrate && (!navigator.userActivation || navigator.userActivation.hasBeenActive)) navigator.vibrate(80);
+    }
+    $('#coolCount').textContent = Math.ceil(clock.coolLeft / 1000);
+  }
+  function hideCool() {
+    coolShown = false;
+    $('#coolPop').classList.add('hidden');
+    if (me) save();
+  }
+
   function tick() {
     if (!meta || !myP) return;
     const now = DB.now();
@@ -949,7 +984,14 @@
     if (meta.status === 'racing' && phase === 'idle' && myP.status === 'approved' && statesLoaded) startRace();
     if (phase === 'idle' || phase === 'over') return;
     if (meta.status === 'finished' || (meta.endAt && now >= meta.endAt)) { endRace(); return; }
-    $('#stTime').textContent = fmt(meta.endAt - now);
+    const clock = G.raceClock(meta, now);
+    $('#stTime').textContent = fmt(clock.left);
+    // 쿨링 타임: 게임을 멈추고(문제 시간·벌칙·부스터·아이템 시계도 함께 멈춤) 핵심 개념을 다시 봐요
+    const span = meta.coolAt && lastTickAt ? Math.max(0, Math.min(now, meta.coolUntil) - Math.max(lastTickAt, meta.coolAt)) : 0;
+    lastTickAt = now;
+    if (span) holdTimers(span, now);
+    if (clock.paused) { showCool(clock); return; }
+    if (coolShown) hideCool();
     // 막판 역전 구간이 시작되면 크게 알리고, 시간을 빨갛게
     const fin = inFinal(now);
     if (fin !== lastFinal) {

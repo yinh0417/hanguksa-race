@@ -113,6 +113,30 @@
     return alive.find(r => r.rank > myRank) || null;
   }
 
+  // 레이스 시계: 쿨링 타임(meta.coolAt~coolUntil) 동안은 멈춘 것으로 셈해요
+  //  paused: 지금 쉬는 중, coolLeft: 쉬는 시간이 얼마나 남았는지,
+  //  left: 실제로 달릴 수 있는 남은 시간, elapsed·total: 달린 시간과 전체 달리는 시간(쉬는 시간 빼고)
+  function raceClock(meta, now) {
+    const cs = meta.coolAt || 0, ce = meta.coolUntil || 0;
+    const breakLeft = cs ? Math.max(0, ce - Math.max(now, cs)) : 0;
+    const breakPassed = cs ? Math.max(0, Math.min(now, ce) - cs) : 0;
+    const paused = !!cs && now >= cs && now < ce;
+    return {
+      paused,
+      coolLeft: paused ? ce - now : 0,
+      left: meta.endAt - now - breakLeft,
+      elapsed: now - meta.startAt - breakPassed,
+      total: meta.endAt - meta.startAt - (cs ? ce - cs : 0)
+    };
+  }
+  // 쿨링 타임에 다시 보는 핵심 개념: 문제마다 '문제 → 정답' 한 줄
+  function conceptCards(questions) {
+    return (questions || []).map(q => ({
+      q: q.q,
+      a: q.type === 'ox' ? (q.answer === 'O' ? '맞아요 (O)' : '틀려요 (X)') : q.type === 'sa' ? q.answer : q.choices[q.answer]
+    }));
+  }
+
   function sceneIndex(pos) { return Math.min(4, Math.floor((pos || 0) / C.cellsPerScene)); }
 
   // 문제별 정답률: 정답 / (정답 + 오답 + 시간 초과)
@@ -261,7 +285,7 @@
   window.GAME = {
     bannedWordIn, normalizeNick,
     ITEMS, ERAS, era, shuffle, nextOrder, rollGoodItem, rollBadItem, rollYut, comboBonus, ranking, attackTarget,
-    accuracy, sceneIndex, questionStats, answerText, TEMPLATE, parseSheet, validateRow,
+    accuracy, sceneIndex, raceClock, conceptCards, questionStats, answerText, TEMPLATE, parseSheet, validateRow,
     cleanQuestion, SAMPLE_7B, checkShort, choHint,
     timeLimit: q => (q.type === 'ox' ? C.timeLimit.ox : q.type === 'sa' ? (C.timeLimit.sa || 40) : C.timeLimit.mc) * 1000
   };
