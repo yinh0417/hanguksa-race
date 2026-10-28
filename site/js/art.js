@@ -429,15 +429,7 @@
       <path d="M8 38 H70" stroke="${P.c.stripe}" stroke-width="1.8"/>
       ${spokeWheel(22, 54, 12, WOOD)}${spokeWheel(58, 56, 10, WOOD)}
       <path d="M68 42 L94 39" stroke="#6b4423" stroke-width="2.2" stroke-linecap="round"/>
-      <path d="M81 34 q-9 2 -10 14" stroke="#3b2414" stroke-width="3" fill="none" stroke-linecap="round"/>
-      <path d="M87 44 L85 64 M93 45 L93 64 M102 45 L104 64 M108 43 L110 64" stroke="#7a4a22" stroke-width="3.2" stroke-linecap="round"/>
-      <path d="M83.5 65 h3.5 M91.5 65 h3.5 M102.5 65 h3.5 M108.5 65 h3.5" stroke="#2b2633" stroke-width="2.2" stroke-linecap="round"/>
-      <ellipse cx="96" cy="38" rx="16" ry="9" fill="#9a6331" stroke="#6b4423" stroke-width="1"/>
-      <path d="M104 34 L109 19 L117 21 L114 30 L109 38 Z" fill="#9a6331" stroke="#6b4423" stroke-width="1" stroke-linejoin="round"/>
-      <ellipse cx="115" cy="23" rx="5.5" ry="3.8" fill="#9a6331" stroke="#6b4423" stroke-width="1" transform="rotate(30 115 23)"/>
-      <path d="M109 18 l1.5 -5 l2.5 5" fill="#9a6331" stroke="#6b4423" stroke-width=".8"/>
-      <path d="M107 18 Q102 25 104 34" stroke="#3b2414" stroke-width="2.6" fill="none" stroke-linecap="round"/>
-      <circle cx="113.5" cy="21" r="1.1" fill="#2b2633"/>
+      ${filmHoofed({ body: '#b5773f', dark: '#8a5428', light: '#f0d2ad', mane: '#4a2c18', lash: true })}
       <path d="M94 33.5 L104 33" stroke="${P.c.stripe}" stroke-width="1.6"/>`,
     // 조선 신기전 화차: 바퀴 수레에 로켓 화살 발사틀
     hwacha: P => {
@@ -570,12 +562,7 @@
     // 크리스마스: 빨간 썰매를 끄는 루돌프
     x_rudolph: P => `
       <path d="M66 40 L84 38" stroke="#7a4a22" stroke-width="1.6"/>
-      <path d="M88 46 L86 63 M93 47 L93 63 M102 47 L104 63 M107 45 L109 63" stroke="#8a5a32" stroke-width="3" stroke-linecap="round"/>
-      <ellipse cx="96" cy="40" rx="14" ry="8" fill="#a7743f" stroke="#7a4a22" stroke-width="1"/>
-      <path d="M104 37 L108 26 L114 27 L111 38 Z" fill="#a7743f" stroke="#7a4a22" stroke-width="1" stroke-linejoin="round"/>
-      <path d="M108 20 l-4 -8 M108 20 l-1 -9 M106 15 l-4 -2 M112 20 l3 -8 M113 16 l4 -2" stroke="#6b4423" stroke-width="1.6" stroke-linecap="round"/>
-      <circle cx="111" cy="24" r="6.5" fill="#b9854f" stroke="#7a4a22" stroke-width="1"/><circle cx="113" cy="22.5" r="1.1" fill="#2b2633"/>
-      <circle cx="118" cy="25" r="2.8" fill="#ff3b30"/><circle cx="118" cy="25" r="5" fill="#ff3b30" opacity=".25"/>
+      ${filmHoofed({ body: '#a7743f', dark: '#7a4f28', light: '#f3e2c8', antler: '#6b4423', redNose: true, iris: '#5a3a1e' })}
       <path d="M93 34.5 L104 33" stroke="${P.c.stripe}" stroke-width="2"/>
       <ellipse cx="18" cy="26" rx="9" ry="8" fill="#8b5a2b"/><path d="M14 19 q4 -4 8 0" stroke="#5a3a1e" stroke-width="1.6" fill="none"/>
       ${seated(P.c, 38, 22, 8.5, '#d7261e')}
@@ -597,7 +584,7 @@
     // 알라딘처럼 하늘을 나는 마법 양탄자(창작)
     x_carpet: P => `
       ${sparkle(14, 20, 4)}${sparkle(104, 14, 3.5, '#fff')}${sparkle(96, 58, 3)}
-      ${seated(P.c, 60, 26, 9, '#3a7bd5')}
+      ${lampGenie(60)}
       <path d="M8 46 Q24 40 40 46 T72 46 T104 46 L112 52 Q96 58 80 52 T48 52 T16 52 Z" ${BODY(P)}/>
       <path d="M14 49 Q26 45 40 49 T72 49 T104 49" stroke="${P.c.stripe}" stroke-width="1.6" fill="none" stroke-dasharray="4 3"/>
       <path d="M8 46 l-4 2 M9 49 l-4 3 M10 52 l-4 3 M112 52 l4 2 M110 55 l4 3" stroke="${P.c.stripe}" stroke-width="1.4" stroke-linecap="round"/>`,
@@ -606,8 +593,7 @@
       ${sparkle(8, 24, 3)}${sparkle(16, 60, 2.5, '#fff')}${sparkle(30, 14, 2)}
       <path d="M20 44 L114 36" stroke="#8a5a2b" stroke-width="3.6" stroke-linecap="round"/>
       <path d="M26 41 L2 30 L4 56 L26 47 Z" fill="#e8c26a" stroke="#b8902e" stroke-width="1"/><path d="M24 43 L6 36 M24 44 L5 44 M24 45 L6 52" stroke="#b8902e" stroke-width=".9"/>
-      ${seated(P.c, 66, 22, 9, P.c.stripe)}
-      <path d="M54 15 H78" stroke="#4a2a6b" stroke-width="3" stroke-linecap="round"/><path d="M58 15 L67 -5 L75 15 Z" fill="${P.c.stripe}"/>`,
+      ${littleWizard(66, 22)}`,
     // 둥실 구름
     x_cloud: P => `
       <circle cx="44" cy="34" r="15" fill="#e2f0fc" stroke="#bcd7ef" stroke-width="1.2"/><circle cx="74" cy="32" r="16" fill="#e2f0fc" stroke="#bcd7ef" stroke-width="1.2"/>
@@ -649,7 +635,7 @@
     x_turtle: P => `
       ${[30, 46, 74, 90].map(x => `<ellipse cx="${x}" cy="58" rx="7" ry="6" fill="#5fae5f" stroke="#3e7a3a" stroke-width="1"/>`).join('')}
       <path d="M18 48 l-8 4" stroke="#5fae5f" stroke-width="4" stroke-linecap="round"/>
-      <circle cx="106" cy="40" r="10" fill="#6fbe6a" stroke="#3e7a3a" stroke-width="1"/><circle cx="109" cy="37" r="1.8" fill="#2b2633"/><path d="M106 44 q3 2 6 0" stroke="#2b2633" stroke-width="1.2" fill="none" stroke-linecap="round"/><ellipse cx="103" cy="43" rx="2" ry="1.2" fill="#ff8fa3" opacity=".7"/>
+      ${filmTurtleHead()}
       <path d="M20 50 Q60 0 100 50 Z" ${BODY(P)}/>
       <path d="M44 30 l8 -6 h16 l8 6 l-8 8 h-16 Z M30 46 l8 -8 M90 46 l-8 -8 M44 38 l-8 10 M76 38 l8 10" stroke="${lt(P.c.body, 0.35)}" stroke-width="1.6" fill="none"/>
       <path d="M18 50 H102" stroke="${dk(P.c.body, 0.3)}" stroke-width="3" stroke-linecap="round"/>
@@ -1249,10 +1235,10 @@
   }
 
   // 따로 그린 탈것의 얼굴 자리: [눈 가운데 x, y, 크기]. 몸통 앞쪽(오른쪽)에 눈과 웃는 입을 그려요.
-  // (말마차·루돌프 썰매처럼 동물이 끄는 것, 얼굴이 이미 있는 거북이 등, 창이 꽉 찬 가마, 마법 빗자루는 얼굴을 넣지 않아요)
+  // (말마차·루돌프 썰매처럼 동물이 끄는 것, 얼굴이 이미 있는 거북이 등, 램프 요정이 탄 양탄자, 창이 꽉 찬 가마, 마법 빗자루는 얼굴을 넣지 않아요)
   const FACES = {
     stonecart: [73, 34, 4.6], hwacha: [79, 28, 6.7], rickshaw: [36, 41, 4], tram: [92, 40, 5.5], steam: [88, 33, 6],
-    tiller: [100, 32, 3.8], tank: [82, 26, 4.5], spg: [75, 21, 8], x_carpet: [85, 48, 4.1], x_rocket: [91, 37, 5.4], x_ufo: [85, 40, 6.8],
+    tiller: [100, 32, 3.8], tank: [82, 26, 4.5], spg: [75, 21, 8], x_rocket: [91, 37, 5.4], x_ufo: [85, 40, 6.8],
     x_cloud: [80, 42, 5.5], p_balloon: [60, 16, 8], s_banana: [98, 47, 4.5], x_paperplane: [75, 38, 4.5],
     x_sled: [75, 45, 3.5], p_airliner: [76, 33, 5.4], p_fighter: [89, 35, 4.1], p_light: [95, 37, 5],
     p_biplane: [92, 36, 4.8], p_heli: [88, 43, 4.5], p_blimp: [87, 19, 8], p_seaplane: [93, 38, 5], p_glider: [85, 36, 3.5],
@@ -1269,6 +1255,113 @@
     return toonEyes(x, y, r, id + 'o') +
       `<ellipse cx="${f1(x - r * 1.35)}" cy="${f1(my - r * 0.1)}" rx="${f1(r * 0.42)}" ry="${f1(r * 0.24)}" fill="#ff7f99" opacity=".5"/><ellipse cx="${f1(x + r * 1.35)}" cy="${f1(my - r * 0.1)}" rx="${f1(r * 0.42)}" ry="${f1(r * 0.24)}" fill="#ff7f99" opacity=".5"/>` +
       `<path d="M${f1(mx - w)} ${f1(my)} Q${f1(mx)} ${f1(my + w * 1.1)} ${f1(mx + w)} ${f1(my)} Q${f1(mx)} ${f1(my + w * 0.35)} ${f1(mx - w)} ${f1(my)} Z" fill="#5a1d2c" stroke="#2a2430" stroke-width=".7" stroke-linejoin="round"/>`;
+  }
+
+  // ===== 애니메이션 영화처럼 표정이 풍부한 캐릭터 (모두 직접 그린 캐릭터예요) =====
+  // 큰 눈: 흰자, 색이 있는 눈동자, 반짝임 두 개, 속눈썹(lash)
+  function filmEye(x, y, r, iris, lash) {
+    return `<ellipse cx="${f1(x)}" cy="${f1(y)}" rx="${f1(r * 0.82)}" ry="${f1(r)}" fill="#fff" stroke="#3a2a22" stroke-width=".55"/>` +
+      `<circle cx="${f1(x + r * 0.14)}" cy="${f1(y + r * 0.12)}" r="${f1(r * 0.6)}" fill="${iris}"/>` +
+      `<circle cx="${f1(x + r * 0.18)}" cy="${f1(y + r * 0.16)}" r="${f1(r * 0.32)}" fill="#140c08"/>` +
+      `<circle cx="${f1(x - r * 0.06)}" cy="${f1(y - r * 0.18)}" r="${f1(r * 0.22)}" fill="#fff"/><circle cx="${f1(x + r * 0.36)}" cy="${f1(y + r * 0.4)}" r="${f1(r * 0.1)}" fill="#fff"/>` +
+      (lash ? `<path d="M${f1(x + r * 0.3)} ${f1(y - r * 0.92)} l${f1(r * 0.35)} ${f1(-r * 0.45)} M${f1(x + r * 0.62)} ${f1(y - r * 0.7)} l${f1(r * 0.45)} ${f1(-r * 0.3)} M${f1(x + r * 0.78)} ${f1(y - r * 0.38)} l${f1(r * 0.45)} ${f1(-r * 0.08)}" stroke="#2a1c16" stroke-width=".7" stroke-linecap="round"/>` : '');
+  }
+
+  // 말·순록: 오른쪽을 보는 통통한 몸, 큰 머리, 웃는 주둥이 (o.mane: 갈기 색, o.antler: 뿔, o.redNose: 빨간 코)
+  function filmHoofed(o) {
+    const B = o.body, D = o.dark, L = o.light;
+    let g = o.mane
+      ? `<path d="M85 34 Q71 33 73 51 Q78 44 87 40 Z" fill="${o.mane}"/><path d="M80 37 Q75 41 76 48" stroke="${shade(o.mane, 0.25)}" stroke-width=".8" fill="none"/>`
+      : `<ellipse cx="83" cy="34" rx="3.2" ry="2.6" fill="#fff8ee"/>`;
+    // 뒤쪽 다리는 진하게, 앞쪽 다리는 밝게
+    [[86, D], [100, D], [91, B], [106, B]].forEach(([x, c]) => {
+      g += `<rect x="${x}" y="43" width="5" height="17" rx="2.5" fill="${c}"/><rect x="${x - 0.4}" y="58.5" width="5.8" height="4.2" rx="1.4" fill="#3b2a22"/>`;
+    });
+    g += `<ellipse cx="95" cy="39" rx="14.5" ry="10.5" fill="${B}"/><ellipse cx="96" cy="44" rx="9" ry="4.5" fill="${L}" opacity=".75"/>` +
+      `<ellipse cx="91" cy="35" rx="7" ry="3" fill="#fff" opacity=".18"/>`;
+    // 목과 머리
+    g += `<path d="M100 37 Q101 24 106 17 L115 20 Q111 28 110 41 Z" fill="${B}"/>`;
+    if (o.mane) g += `<path d="M106 10 Q101 12 103 16 Q98 18 101 22 Q96 25 100 28 Q96 32 100 36 L104 34 Q104 24 108 15 Z" fill="${o.mane}"/>`;
+    // 귀
+    g += `<path d="M105.5 12.5 L102.5 4.5 L109 9 Z" fill="${B}"/><path d="M110 10.5 L111 3 L114.6 9.5 Z" fill="${B}"/><path d="M111.2 9 L111.6 5.2 L113.4 8.8 Z" fill="#f4a7a0"/>`;
+    if (o.antler) g += `<path d="M106 9 Q103 3 98 0 M101.5 2 L100 -2.5 M104 5 L100.5 5.5 M112 8 Q114 1 119 -1 M116 0 L117 -4 M113.5 4 L117 4.5" stroke="${o.antler}" stroke-width="1.7" fill="none" stroke-linecap="round"/>`;
+    g += `<ellipse cx="111" cy="18" rx="8" ry="7.4" fill="${B}" transform="rotate(10 111 18)"/>`;
+    if (o.mane) g += `<path d="M106.5 11 Q109 7 112 10.5 Q110 10 109.5 13 Q108 11 106.5 13 Z" fill="${o.mane}"/>`; // 앞머리
+    // 주둥이, 콧구멍, 웃는 입
+    g += `<ellipse cx="115.5" cy="23.5" rx="4.8" ry="4" fill="${L}"/><ellipse cx="117.6" cy="22.4" rx=".7" ry=".5" fill="${D}"/>` +
+      `<path d="M112.6 25.4 Q115 27.8 117.6 25.2" stroke="#3a2a22" stroke-width=".8" fill="none" stroke-linecap="round"/>`;
+    if (o.redNose) g += `<circle cx="119" cy="22.2" r="5" fill="#ff3b30" opacity=".22"/><circle cx="119" cy="22.2" r="2.7" fill="#ff3b30"/><circle cx="118.2" cy="21.4" r=".8" fill="#fff" opacity=".8"/>`;
+    // 큰 눈과 눈썹, 볼
+    g += filmEye(109.6, 16.4, 2.6, o.iris || '#7a4a22', o.lash) + filmEye(114.6, 16, 2.3, o.iris || '#7a4a22', o.lash) +
+      `<path d="M107.6 12.2 q2 -1.2 3.8 -.2 M113.2 11.9 q1.7 -.9 3.2 .1" stroke="${D}" stroke-width=".8" fill="none" stroke-linecap="round"/>` +
+      `<ellipse cx="110" cy="21.3" rx="2" ry="1.1" fill="#ff7f99" opacity=".55"/>`;
+    return `<g transform="translate(-3 0)">${g}</g>`; // 주둥이가 그림 밖으로 잘리지 않게 조금 왼쪽으로
+  }
+
+  // 거북이 등: 표정이 살아 있는 거북이 머리
+  function filmTurtleHead() {
+    return `<path d="M96 46 Q102 44 104 37" stroke="#6fbe6a" stroke-width="8" fill="none" stroke-linecap="round"/>` +
+      `<ellipse cx="108" cy="33" rx="10" ry="9" fill="#7cc874"/><ellipse cx="110" cy="38" rx="6.5" ry="4" fill="#bfe8b4"/>` +
+      `<path d="M101 26 q2 -1 3 0 M107 24.5 q2 -1 3 0" stroke="#4f9a4a" stroke-width=".7" fill="none"/>` +
+      filmEye(105.2, 31, 2.9, '#5a7a2a') + filmEye(111.6, 30.6, 2.7, '#5a7a2a') +
+      `<path d="M102.6 26.6 q2.2 -1.3 4.2 -.2 M109.4 26.2 q2 -1.1 3.8 .1" stroke="#3e7a3a" stroke-width=".9" fill="none" stroke-linecap="round"/>` +
+      `<path d="M105.6 36.4 Q109.5 41.6 114 36" fill="#6a2234" stroke="#3a2a22" stroke-width=".7"/><path d="M107.6 38.6 Q109.5 40.6 111.8 38.4" fill="#ff8fa0"/>` +
+      `<ellipse cx="103.4" cy="35.4" rx="2" ry="1.1" fill="#ff7f99" opacity=".55"/><ellipse cx="115.4" cy="34.8" rx="1.6" ry="1" fill="#ff7f99" opacity=".55"/>`;
+  }
+
+  // 양탄자: 황금 램프에서 연기를 타고 나온 보라색 램프 요정(직접 그린 캐릭터)
+  function lampGenie(x) {
+    const S = '#b99af5', SD = '#8f6fd6';
+    return `<path d="M${x - 3} 37 C${x - 11} 30 ${x + 6} 28 ${x - 4} 21 L${x + 4} 21 C${x + 10} 28 ${x - 2} 31 ${x + 3} 37 Z" fill="${S}" opacity=".92"/>` +
+      // 몸통과 조끼
+      `<ellipse cx="${x}" cy="15" rx="9" ry="7.5" fill="${S}"/><path d="M${x - 8} 12 Q${x - 6} 21 ${x - 2} 22 L${x - 3} 9 Z M${x + 8} 12 Q${x + 6} 21 ${x + 2} 22 L${x + 3} 9 Z" fill="#e2412e"/>` +
+      `<path d="M${x - 8} 19 H${x + 8}" stroke="#f2c14e" stroke-width="2.2" stroke-linecap="round"/>` +
+      // 팔: 왼손은 허리, 오른손은 번쩍
+      `<path d="M${x - 8} 11 Q${x - 14} 14 ${x - 10} 19" stroke="${S}" stroke-width="3.6" fill="none" stroke-linecap="round"/>` +
+      `<path d="M${x + 8} 10 Q${x + 14} 6 ${x + 14} 0" stroke="${S}" stroke-width="3.6" fill="none" stroke-linecap="round"/><circle cx="${x + 14}" cy="-1" r="2.6" fill="${S}"/>` +
+      `<path d="M${x + 13} 5 h3 M${x - 13} 15 h3" stroke="#f2c14e" stroke-width="1.6" stroke-linecap="round"/>` +
+      // 머리, 뾰족한 귀, 터번
+      `<path d="M${x - 7} 0 L${x - 10} -3 L${x - 7} 2 Z M${x + 7} 0 L${x + 10} -3 L${x + 7} 2 Z" fill="${SD}"/>` +
+      `<circle cx="${x}" cy="1" r="7.5" fill="${S}"/>` +
+      `<path d="M${x - 8} -3 Q${x - 8} -12 ${x} -12.5 Q${x + 8} -12 ${x + 8} -3 Q${x} -5.5 ${x - 8} -3 Z" fill="#f6a623"/><path d="M${x - 6} -7 Q${x} -9 ${x + 6} -7 M${x - 7} -4.6 Q${x} -7 ${x + 7} -4.6" stroke="#d4861a" stroke-width=".7" fill="none"/>` +
+      `<circle cx="${x}" cy="-5.6" r="1.8" fill="#e2412e"/><circle cx="${x - .5}" cy="-6.1" r=".6" fill="#fff" opacity=".8"/>` +
+      // 얼굴: 큰 눈, 굵은 눈썹, 활짝 웃는 입
+      filmEye(x - 2.9, 0.6, 2.3, '#3a2a6b') + filmEye(x + 2.9, 0.6, 2.3, '#3a2a6b') +
+      `<path d="M${x - 5.4} -2.6 q2.2 -1.4 4.2 -.3 M${x + 1.2} -2.9 q2 -1.1 4.2 .3" stroke="#3a2470" stroke-width="1" fill="none" stroke-linecap="round"/>` +
+      `<path d="M${x - 3.6} 4.2 Q${x} 8.6 ${x + 3.6} 4.2 Z" fill="#5a1d2c"/><path d="M${x - 3.2} 4.5 H${x + 3.2}" stroke="#fff" stroke-width="1" stroke-linecap="round"/>` +
+      `<ellipse cx="${x - 5}" cy="3.6" rx="1.5" ry=".9" fill="#ff7f99" opacity=".6"/><ellipse cx="${x + 5}" cy="3.6" rx="1.5" ry=".9" fill="#ff7f99" opacity=".6"/>` +
+      // 황금 램프
+      `<path d="M${x + 7} 41 Q${x + 15} 40 ${x + 19} 35 Q${x + 15} 42 ${x + 8} 45 Z" fill="#e0a83a"/>` +
+      `<path d="M${x - 8} 40 Q${x - 14} 39 ${x - 13} 43 Q${x - 12} 46 ${x - 8} 44" stroke="#c48a2a" stroke-width="1.6" fill="none"/>` +
+      `<ellipse cx="${x}" cy="42" rx="9" ry="4.6" fill="#f2c14e" stroke="#b8862a" stroke-width=".8"/><ellipse cx="${x - 2}" cy="40.6" rx="4" ry="1.4" fill="#fff" opacity=".45"/>` +
+      `<ellipse cx="${x}" cy="37.8" rx="4" ry="1.6" fill="#e0a83a"/><circle cx="${x}" cy="36.3" r="1.2" fill="#e0a83a"/>`;
+  }
+
+  // 빗자루: 별 모자와 줄무늬 목도리를 한 꼬마 마법사(직접 그린 캐릭터), 마법 지팡이 끝에 별
+  function littleWizard(x, y) {
+    const skin = '#ffdcbf';
+    return `<path d="M${x - 8} ${y} Q${x - 17} ${y + 12} ${x - 13} ${y + 19} L${x + 11} ${y + 16} Q${x + 13} ${y + 8} ${x + 8} ${y} Z" fill="#3a2470"/>` + // 망토
+      `<path d="M${x - 3} ${y + 12} L${x - 6} ${y + 24} M${x + 3} ${y + 12} L${x + 4} ${y + 24}" stroke="#2c2a3a" stroke-width="3.2" stroke-linecap="round"/>` +
+      `<ellipse cx="${x - 6.5}" cy="${y + 25}" rx="2.8" ry="1.6" fill="#6b3a1e"/><ellipse cx="${x + 4.5}" cy="${y + 25}" rx="2.8" ry="1.6" fill="#6b3a1e"/>` +
+      `<path d="M${x - 6} ${y} Q${x - 8} ${y + 12} ${x - 5} ${y + 15} H${x + 5} Q${x + 8} ${y + 12} ${x + 6} ${y} Z" fill="#5b3a8c"/>` + // 옷
+      // 목도리(주황·보라 줄무늬)가 뒤로 휘날려요
+      `<path d="M${x - 5} ${y} Q${x - 15} ${y + 1} ${x - 22} ${y - 4} L${x - 21} ${y + 1} Q${x - 13} ${y + 5} ${x - 4} ${y + 3} Z" fill="#f39a1c"/>` +
+      `<path d="M${x - 10} ${y + 0.5} l-1 3.6 M${x - 15} ${y - 0.6} l-1 3.6 M${x - 19.5} ${y - 2.6} l-.6 3.6" stroke="#6b3fa0" stroke-width="1.6"/>` +
+      `<rect x="${x - 6.5}" y="${y - 1.6}" width="13" height="3.6" rx="1.8" fill="#f39a1c"/><path d="M${x - 2} ${y - 1.6} v3.6 M${x + 2.5} ${y - 1.6} v3.6" stroke="#6b3fa0" stroke-width="1.6"/>` +
+      // 지팡이를 든 팔과 별
+      `<path d="M${x + 6} ${y + 3} Q${x + 11} ${y + 3} ${x + 13} ${y - 1}" stroke="#5b3a8c" stroke-width="3.2" fill="none" stroke-linecap="round"/><circle cx="${x + 13.5}" cy="${y - 1.6}" r="1.9" fill="${skin}"/>` +
+      `<path d="M${x + 13.5} ${y - 1.6} L${x + 22} ${y - 9}" stroke="#6b4423" stroke-width="1.4" stroke-linecap="round"/>` + sparkle(x + 23, y - 10, 3.6, '#ffe066') +
+      // 얼굴
+      `<circle cx="${x}" cy="${y - 9}" r="7.5" fill="${skin}"/><ellipse cx="${x - 7.3}" cy="${y - 8.5}" rx="1.4" ry="2" fill="${skin}"/>` +
+      `<path d="M${x - 7} ${y - 11} Q${x - 6} ${y - 16.5} ${x} ${y - 16.5} Q${x + 6.5} ${y - 16.5} ${x + 7} ${y - 11} L${x + 4} ${y - 13} L${x + 2.5} ${y - 11.5} L${x} ${y - 13.5} L${x - 2.5} ${y - 11.5} L${x - 4.5} ${y - 13.5} Z" fill="#7a4a2a"/>` + // 앞머리
+      filmEye(x - 2.6, y - 8.6, 2.2, '#6b4a2a') + filmEye(x + 2.8, y - 8.6, 2.1, '#6b4a2a') +
+      `<path d="M${x - 5} ${y - 11.6} q2 -1 3.6 0 M${x + 1.2} ${y - 11.6} q2 -1 3.6 0" stroke="#5a3a22" stroke-width=".8" fill="none" stroke-linecap="round"/>` +
+      `<path d="M${x - 2.2} ${y - 4.6} Q${x} ${y - 2.4} ${x + 2.4} ${y - 4.6}" stroke="#6a2234" stroke-width=".9" fill="none" stroke-linecap="round"/>` +
+      `<ellipse cx="${x - 4.8}" cy="${y - 5.6}" rx="1.5" ry=".9" fill="#ff7f99" opacity=".6"/><ellipse cx="${x + 5}" cy="${y - 5.6}" rx="1.5" ry=".9" fill="#ff7f99" opacity=".6"/>` +
+      // 별 모자
+      `<path d="M${x - 9} ${y - 14} Q${x - 2} ${y - 22} ${x - 1} ${y - 35} Q${x + 3} ${y - 22} ${x + 9} ${y - 14} Z" fill="#4a2a6b"/>` +
+      `<path d="M${x - 12} ${y - 14} H${x + 12}" stroke="#3a1f5c" stroke-width="3" stroke-linecap="round"/><path d="M${x - 7.5} ${y - 16} Q${x} ${y - 18} ${x + 7.5} ${y - 16}" stroke="#f2c14e" stroke-width="1.6" fill="none"/>` +
+      `<path d="M${x + 1} ${y - 25} l.9 1.9 l2 .2 l-1.5 1.3 l.5 2 l-1.9 -1.1 l-1.9 1.1 l.5 -2 l-1.5 -1.3 l2 -.2 Z" fill="#ffe066"/>`;
   }
 
   function carSVG(i) {
