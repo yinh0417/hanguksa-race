@@ -836,7 +836,7 @@
     }
   }
 
-  // 순위가 오르거나 떨어지면 가운데에 잠깐 크게 보여 줘요. 잇달아 바뀌면 처음 순위와 비교해 합쳐서 보여 줘요
+  // 순위가 오르거나 떨어지면 위쪽에 얇은 띠로 잠깐 보여 줘요(문제를 가리지 않게). 잇달아 바뀌면 처음 순위와 비교해 합쳐서 보여 줘요
   let lastRank = 0, lastFinal = false, popTimer = null, popBase = 0, popRank = 0, popWaiting = false;
   function rankPop(from, to) {
     const el = $('#rankPop');
@@ -851,13 +851,13 @@
       if (!d) return;
       $('#rankPopTag').textContent = d > 0 ? '순위 상승!' : '순위 하락';
       $('#rankPopNo').textContent = `${popRank}등${d > 0 ? '!' : ''}`;
-      $('#rankPopUp').textContent = d > 0 ? `▲ ${d}계단 올라섰어요` : `▼ ${-d}계단 밀렸어요. 힘내요!`;
+      $('#rankPopUp').textContent = d > 0 ? `▲ ${d}계단 올라섰어요` : `▼ ${-d}계단 밀렸어요`;
       el.dataset.rank = d > 0 && popRank <= 3 ? popRank : '';
       el.className = 'rank-pop' + (d < 0 ? ' down' : '');
       void el.offsetWidth;
       el.classList.add('go');
       clearTimeout(popTimer);
-      popTimer = setTimeout(() => el.classList.add('hidden'), 1500);
+      popTimer = setTimeout(() => el.classList.add('hidden'), 1800);
     }, $('#fxPop').classList.contains('hidden') ? 0 : 1000);
   }
 

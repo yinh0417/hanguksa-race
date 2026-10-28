@@ -59,23 +59,30 @@
 
   // ---------- 새 버전 알림 ----------
   // 오래 켜 둔 선생님 화면이 옛 버전으로 게임을 열지 않게, 1분마다 새 배포가 나왔는지 봐요.
-  // 게임을 열기 전(첫 화면)이면 바로 새로 불러오고, 게임 중이면 레이스가 끝난 뒤 새로고침하라고 알려요.
+  // 첫 화면(게임 열기 탭)이나 대기실이면 바로 새로 불러오고(대기실은 새로고침해도 방과 학생이 그대로예요),
+  // 레이스 중이면 끝난 뒤 새로고침하라고 알려요.
   const MY_VERSION = document.documentElement.dataset.version || 'dev';
+  function newerVersion() {
+    if (MY_VERSION === 'dev') return Promise.resolve('');
+    return fetch('version.txt?t=' + Date.now(), { cache: 'no-store' }).then(r => (r.ok ? r.text() : ''))
+      .then(v => { v = v.trim(); return v && v !== MY_VERSION ? v : ''; }).catch(() => '');
+  }
+  function reloadFor(v, note) {
+    let tried = '';
+    try { tried = sessionStorage.getItem('hkr-reloaded-for') || ''; } catch (e) { /* 무시 */ }
+    if (tried === v) return false; // 한 번 새로 불러왔는데도 그대로면 되풀이하지 않아요
+    try { sessionStorage.setItem('hkr-reloaded-for', v); if (note) sessionStorage.setItem('hkr-note', note); } catch (e) { /* 무시 */ }
+    location.reload();
+    return true;
+  }
   function checkVersion() {
-    if (MY_VERSION === 'dev') return;
-    fetch('version.txt?t=' + Date.now(), { cache: 'no-store' }).then(r => (r.ok ? r.text() : '')).then(v => {
-      v = v.trim();
-      if (!v || v === MY_VERSION) return;
-      // 첫 화면(게임 열기 탭)에 있을 때만 바로 새로 불러와요. 문제 세트를 고치는 중이면 지우지 않게 알림만
-      let tried = '';
-      try { tried = sessionStorage.getItem('hkr-reloaded-for') || ''; } catch (e) { /* 무시 */ }
-      if (!room && tried !== v && currentView() === '#vHome' && !$('#tab-open').classList.contains('hidden')) {
-        try { sessionStorage.setItem('hkr-reloaded-for', v); } catch (e) { /* 무시 */ }
-        location.reload();
-        return;
-      }
+    newerVersion().then(v => {
+      if (!v) return;
+      const atHome = !room && currentView() === '#vHome' && !$('#tab-open').classList.contains('hidden');
+      const inLobby = room && meta && meta.status === 'lobby';
+      if ((atHome || inLobby) && reloadFor(v)) return;
       $('#updateBar').classList.remove('hidden');
-    }).catch(() => { /* 인터넷이 잠깐 끊겨도 괜찮아요 */ });
+    });
   }
   setInterval(checkVersion, 60000);
   window.addEventListener('focus', checkVersion);
@@ -738,6 +745,9 @@
   });
   $('#lbStart').addEventListener('click', async () => {
     SOUND.unlock();
+    // 출발 직전에 한 번 더: 옛 버전 화면이면 새로 불러온 뒤 출발을 다시 누르게 해요
+    const v = await Promise.race([newerVersion(), new Promise(r => setTimeout(() => r(''), 2000))]);
+    if (v && reloadFor(v, '새 버전으로 바꿨어요. 출발을 한 번 더 눌러 주세요.')) return;
     SOUND.stopBgm();
     const startAt = DB.now() + 3600;
     const run = C.raceSeconds * 1000, cb = C.coolBreak || {};
@@ -1287,5 +1297,9 @@
   // 새로고침 뒤에는 첫 클릭 때 소리를 켭니다(브라우저 자동 재생 제한)
   document.addEventListener('pointerdown', () => { SOUND.unlock(); if (meta && meta.status === 'lobby' && Object.keys(players).length) SOUND.startBgm('lobby'); }, { once: true });
 
+  try {
+    const note = sessionStorage.getItem('hkr-note');
+    if (note) { sessionStorage.removeItem('hkr-note'); setTimeout(() => toast(note, 5000), 1500); }
+  } catch (e) { /* 무시 */ }
   boot();
 })();
