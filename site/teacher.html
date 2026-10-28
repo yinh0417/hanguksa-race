@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="ko">
+<html lang="ko" data-version="dev">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -7,8 +7,8 @@
 <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" rel="stylesheet">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/common.css">
-<link rel="stylesheet" href="css/teacher.css">
+<link rel="stylesheet" href="css/common.css?v=dev">
+<link rel="stylesheet" href="css/teacher.css?v=dev">
 </head>
 <body class="teacher">
 <div id="demoBanner" class="demo-banner hidden">체험 모드예요. 이 노트북 안의 탭끼리만 연결돼요. <a id="demoPlayLink" href="play.html" target="_blank">학생 화면 새 탭으로 열기</a></div>
@@ -154,6 +154,7 @@
     </aside>
   </div>
   <div id="countdown" class="countdown hidden" aria-live="assertive"></div>
+  <div id="updateBar" class="update-bar hidden" role="status">새 버전이 나왔어요. 하던 일을 마치고 새로고침해 주세요. <button id="updateNow" class="btn small primary" type="button">새로고침</button></div>
   <!-- 쿨링 타임: 잠시 멈추고 핵심 개념 정리 -->
   <div id="coolBoard" class="cool-board hidden" aria-live="polite">
     <div class="cb-head"><span class="cb-icon" aria-hidden="true">🧊</span><div><h2>쿨링 타임</h2><p>잠시 멈춤! 지금까지 푼 핵심 개념을 머릿속으로 정리해요</p></div><div class="cb-count" id="cbCount"></div></div>
@@ -202,12 +203,12 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
-<script src="js/config.js"></script>
-<script src="js/db.js"></script>
-<script src="js/rules.js"></script>
-<script src="js/art.js"></script>
-<script src="js/tracks.js"></script>
-<script src="js/sound.js"></script>
-<script src="js/teacher.js"></script>
+<script src="js/config.js?v=dev"></script>
+<script src="js/db.js?v=dev"></script>
+<script src="js/rules.js?v=dev"></script>
+<script src="js/art.js?v=dev"></script>
+<script src="js/tracks.js?v=dev"></script>
+<script src="js/sound.js?v=dev"></script>
+<script src="js/teacher.js?v=dev"></script>
 </body>
 </html>

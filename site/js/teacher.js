@@ -57,6 +57,30 @@
   }
   function pct(r) { return r == null ? '기록 없음' : Math.round(r * 100) + '%'; }
 
+  // ---------- 새 버전 알림 ----------
+  // 오래 켜 둔 선생님 화면이 옛 버전으로 게임을 열지 않게, 1분마다 새 배포가 나왔는지 봐요.
+  // 게임을 열기 전(첫 화면)이면 바로 새로 불러오고, 게임 중이면 레이스가 끝난 뒤 새로고침하라고 알려요.
+  const MY_VERSION = document.documentElement.dataset.version || 'dev';
+  function checkVersion() {
+    if (MY_VERSION === 'dev') return;
+    fetch('version.txt?t=' + Date.now(), { cache: 'no-store' }).then(r => (r.ok ? r.text() : '')).then(v => {
+      v = v.trim();
+      if (!v || v === MY_VERSION) return;
+      // 첫 화면(게임 열기 탭)에 있을 때만 바로 새로 불러와요. 문제 세트를 고치는 중이면 지우지 않게 알림만
+      let tried = '';
+      try { tried = sessionStorage.getItem('hkr-reloaded-for') || ''; } catch (e) { /* 무시 */ }
+      if (!room && tried !== v && currentView() === '#vHome' && !$('#tab-open').classList.contains('hidden')) {
+        try { sessionStorage.setItem('hkr-reloaded-for', v); } catch (e) { /* 무시 */ }
+        location.reload();
+        return;
+      }
+      $('#updateBar').classList.remove('hidden');
+    }).catch(() => { /* 인터넷이 잠깐 끊겨도 괜찮아요 */ });
+  }
+  setInterval(checkVersion, 60000);
+  window.addEventListener('focus', checkVersion);
+  $('#updateNow').addEventListener('click', () => location.reload());
+
   // ---------- 시작과 로그인 ----------
   async function boot() {
     if (DB.mode === 'demo') {

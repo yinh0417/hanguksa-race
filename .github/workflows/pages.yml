@@ -26,6 +26,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/configure-pages@v5
+      # 배포할 때마다 번호를 붙여요: 브라우저가 옛 js·css를 붙잡고 있지 않고 새 파일을 바로 받아 가고,
+      # 오래 켜 둔 선생님 화면은 version.txt를 보고 새 버전이 나왔는지 알아요
+      - name: 배포 번호 붙이기
+        run: |
+          V=$(echo "$GITHUB_SHA" | cut -c1-8)
+          sed -i "s/?v=dev/?v=$V/g; s/data-version=\"dev\"/data-version=\"$V\"/" site/*.html
+          echo "$V" > site/version.txt
       - uses: actions/upload-pages-artifact@v3
         with:
           path: site
