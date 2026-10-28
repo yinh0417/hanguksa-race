@@ -797,3 +797,28 @@
 .cb-foot { margin: 0; text-align: center; font: 700 3vh var(--font-body); color: #fff; }
 @keyframes cb-in { from { opacity: 0; transform: scale(1.03); } to { opacity: 1; transform: scale(1); } }
 @media (prefers-reduced-motion: reduce) { .cool-board { animation-duration: .5s !important; } }
+
+/* ===== 큰 화면 레이스: 코스는 크게, 실시간 순위는 좁게, 역사 장면은 더 잘 보이게 ===== */
+.live-rank { width: clamp(118px, 10.5vw, 196px); padding: 1vh .6vw; }
+.live-rank h2 { font-size: clamp(13px, 1.9vh, 18px); margin-bottom: .6vh; }
+.live-rank ol { gap: .35vh; }
+.live-rank li { grid-template-columns: 1.3em 1.9em 1fr; gap: 4px; font-size: clamp(.75rem, 1.75vh, 1.05rem); }
+.live-rank .lr-pos { display: none; }
+/* 장면을 가리던 어두운 막을 걷고, 길은 살짝 비치게 */
+.bg-shade { background: radial-gradient(ellipse at 50% 50%, rgba(0,0,0,0) 60%, rgba(0,0,0,.18) 100%); }
+.circuit[data-track="snake"] .bg-shade { background: linear-gradient(to top, rgba(76,140,60,.28), rgba(76,140,60,0) 35%); }
+.circuit[data-track="coast"] .bg-shade { background: linear-gradient(to top, rgba(79,179,224,.25), rgba(79,179,224,0) 25%); }
+.circuit[data-track="rally"] .bg-shade { background: linear-gradient(to top, rgba(236,190,110,.3), rgba(236,190,110,0) 35%); }
+.circuit[data-track="dirt"] .bg-shade { background: radial-gradient(ellipse at 50% 45%, rgba(0,0,0,0) 55%, rgba(70,45,20,.3) 100%); }
+.circuit[data-track="oval"] .bg-layer .scene-svg { filter: blur(5px) brightness(.7) saturate(1.2); }
+.circuit:not([data-track="oval"]) #circuitSvg { opacity: .9; }
+/* 장면 이름: 더 크고 예쁜 글씨(고운바탕) */
+.bg-caption { font: 700 clamp(22px, 4.2vh, 46px)/1.2 var(--font-history); letter-spacing: -0.01em; padding: 10px 22px 10px 12px; border-radius: 18px;
+  background: rgba(20,20,26,.62); box-shadow: 0 6px 20px rgba(0,0,0,.25); max-width: 70%; }
+.bg-caption b { font-family: var(--font-body); }
+.cb-cards p { font-family: var(--font-history); }
+/* 경기장 서킷: 장면 이름은 가운데 전광판 위쪽에(코스를 가리지 않게) */
+.circuit[data-track="oval"] .bg-caption { display: none; }
+.circuit[data-track="oval"] .bg-screen::before { content: attr(data-caption); position: absolute; left: 50%; top: 10px; transform: translateX(-50%); z-index: 1;
+  font: 700 clamp(18px, 3.4vh, 36px)/1.2 var(--font-history); color: #fff; white-space: nowrap;
+  background: rgba(20,20,26,.66); padding: 6px 18px; border-radius: 14px; box-shadow: 0 4px 14px rgba(0,0,0,.3); }

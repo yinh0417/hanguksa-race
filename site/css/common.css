@@ -38,6 +38,7 @@
 
   --font-display: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, system-ui, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
   --font-body: var(--font-display);
+  --font-history: 'Gowun Batang', 'Noto Serif KR', 'Apple SD Gothic Neo', serif; /* 역사 장면 이름 */
 }
 
 * { box-sizing: border-box; }

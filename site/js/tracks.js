@@ -139,7 +139,7 @@
       Object.assign(g, { TW, R, L, cx, cy, path: polyline(pts, true) });
     } else {
       const sh = SHAPES[type];
-      const TW = Math.max(42, Math.min(rect.h * (sh.tw || 0.17), rect.w * 0.09, 130));
+      const TW = Math.max(42, Math.min(rect.h * (sh.tw || 0.17) * 1.15, rect.w * 0.105, 150));
       const pad = TW * 0.75 + 16;
       const iw = rect.w - pad * 2, ih = rect.h - pad * 2;
       const raw = sh.pts.map(([u, v]) => [rect.x + pad + u * iw, rect.y + pad + v * ih]);

@@ -785,6 +785,7 @@
     scr.classList.add('flip');
     const cap = $('#bgCaption');
     cap.innerHTML = `<b>${'①②③④⑤'[k]}</b>${esc(e.scenes[k])}`;
+    scr.dataset.caption = '①②③④⑤'[k] + ' ' + e.scenes[k]; // 경기장 서킷은 가운데 전광판 위에 장면 이름을
     cap.classList.remove('pop');
     void cap.offsetWidth;
     cap.classList.add('pop');
@@ -820,13 +821,13 @@
     if (!circ || currentView() !== '#vRace') return;
     const Wd = circ.clientWidth, Ht = circ.clientHeight;
     if (!Wd || !Ht) return;
-    const n = Math.max(approvedList().length, 1), k = Math.min(n, 3);
+    const n = Math.max(approvedList().length, 1), k = Math.min(n, 2); // 2줄로 달려서 탈것을 크게
     const type = trackType();
     const rect = { x: 0, y: 0, w: Wd, h: Ht };
     geo = TRACKS.build(type, Wd, Ht, rect);
     geo.k = k;
     const laneW = geo.TW * 0.86 / k;
-    const carH = Math.max(18, Math.min(laneW * 1.05, geo.TW * 0.5, 92));
+    const carH = Math.max(18, Math.min(laneW * 1.15, geo.TW * 0.56, 112));
     geo.carW = carH * 120 / 86;
     // 한 줄로 끝까지 가는 코스는 출발선 뒤에 출발 대기 줄을 만들 자리를 둡니다
     const groups = Math.ceil(n / k);
@@ -837,7 +838,7 @@
     placeScreen(type === 'oval' ? geo : null);
     circ.dataset.track = type;
     circ.style.setProperty('--car-w', geo.carW + 'px');
-    circ.style.setProperty('--tag-size', Math.max(10, Math.min(carH * 0.3, 18)) + 'px');
+    circ.style.setProperty('--tag-size', Math.max(12, Math.min(carH * 0.32, 22)) + 'px');
   }
   window.addEventListener('resize', () => { if (currentView() === '#vRace') layoutRace(); });
 

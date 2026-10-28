@@ -1503,7 +1503,7 @@
       <rect x="-200" y="-200" width="700" height="600" fill="url(#${P}vig)"/>`;
   }
   function label(x, y, text, size, fill, extra) {
-    return `<text x="${x}" y="${y}" font-family="Jua, 'Malgun Gothic', sans-serif" font-size="${size}" fill="${fill}" text-anchor="middle" ${extra || ''}>${text}</text>`;
+    return `<text x="${x}" y="${y}" font-family="'Gowun Batang', 'Noto Serif KR', serif" font-weight="700" font-size="${size}" fill="${fill}" text-anchor="middle" ${extra || ''}>${text}</text>`;
   }
 
   // ---------- 7-B 대중 운동과 민족 문화 수호 ----------
