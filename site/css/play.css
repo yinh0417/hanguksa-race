@@ -528,3 +528,17 @@ body.phone { background: var(--cheong-deep); }
 .cp-cards strong { font: 800 18px/1.3 var(--font-body); color: #ffd84a; word-break: keep-all; }
 @keyframes cp-in { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
 @media (prefers-reduced-motion: reduce) { .cool-pop { animation-duration: .4s !important; } }
+
+/* 작은 코스 화면: 내 위치만 — 깜빡이는 빨간 점 + 내 탈것이 미끄러지듯 이동하며 통통 */
+.mini-me { transition: transform 1s cubic-bezier(.3, .8, .3, 1); }
+.mini-me-dot { fill: #ff3b30; stroke: #fff; stroke-width: 4; animation: mini-blink .9s ease-in-out infinite; }
+.mini-me-flip { transition: transform .3s; }
+.mini-bob { animation: mini-bob .5s ease-in-out infinite alternate; }
+.mini-car { overflow: visible; }
+@keyframes mini-blink { 50% { opacity: .25; } }
+@keyframes mini-bob { to { transform: translateY(-5px); } }
+@media (prefers-reduced-motion: reduce) {
+  .mini-me-dot { animation-duration: .9s !important; animation-iteration-count: infinite !important; }
+  .mini-bob { animation-duration: .5s !important; animation-iteration-count: infinite !important; }
+  .mini-me { transition-duration: 1s !important; }
+}

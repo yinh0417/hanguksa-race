@@ -806,7 +806,7 @@
   function updateStatus(force) {
     if (!me) return;
     const r = myRank();
-    renderMini(r.ranked);
+    renderMini();
     const e = G.era(meta && meta.era);
     const s = `${me.pos}|${r.rank}|${r.n}|${G.sceneIndex(me.pos)}`;
     if (!force && s === lastStatus) return;
@@ -868,28 +868,21 @@
     if (!window.TRACKS) return;
     miniGeo = TRACKS.build((meta && meta.track) || 'oval', MINI_W, MINI_H, { x: 0, y: 0, w: MINI_W, h: MINI_H });
     miniSig = '';
-    $('#mini').innerHTML = `<svg viewBox="0 0 ${MINI_W} ${MINI_H}" preserveAspectRatio="xMidYMid slice">${miniGeo.svg(1)}<g class="mini-dots"></g></svg><span class="mini-live">전체 코스</span>`;
+    // 친구들까지 다 보이면 정신없어서 내 위치만: 깜빡이는 빨간 점 위에 내가 고른 탈것이 통통 달려요
+    const car = A.carSVG((myP && myP.car) || 0).replace('<svg class="car-svg"', '<svg class="mini-car" x="-56" y="-70" width="112" height="80"');
+    $('#mini').innerHTML = `<svg viewBox="0 0 ${MINI_W} ${MINI_H}" preserveAspectRatio="xMidYMid slice">${miniGeo.svg(1)}` +
+      `<g class="mini-me" id="miniMe"><circle r="24" class="mini-me-ring"/><circle r="15" class="mini-me-dot"/><g class="mini-me-flip"><g class="mini-bob">${car}</g></g></g></svg><span class="mini-live">내 위치</span>`;
   }
-  function renderMini(ranked) {
-    if (!miniGeo) return;
-    const sig = ranked.map(x => x.uid + ':' + (x.finishedAt ? 'f' : x.pos)).join('|');
-    if (sig === miniSig) return;
-    miniSig = sig;
-    const spot = (pos, i) => {
-      const p = Math.min(pos, C.finishCells) / C.finishCells;
-      return miniGeo.at(miniGeo.sAt(p), ((i % 3) - 1) * miniGeo.TW * 0.26);
-    };
-    let others = '', mine = '';
-    ranked.forEach((x, i) => {
-      const pt = spot(x.finishedAt ? C.finishCells : x.pos, i);
-      if (x.uid === uid) {
-        mine = `<circle cx="${pt.x.toFixed(1)}" cy="${pt.y.toFixed(1)}" r="22" class="mini-me-ring"/><circle cx="${pt.x.toFixed(1)}" cy="${pt.y.toFixed(1)}" r="15" fill="#ff3b30" stroke="#fff" stroke-width="5"/><text x="${pt.x.toFixed(1)}" y="${(pt.y + 6).toFixed(1)}" text-anchor="middle" font-size="17" font-weight="800" fill="#fff" font-family="Pretendard Variable, sans-serif">나</text>`;
-      } else {
-        const car = A.CARS[x.car] || {};
-        others += `<circle cx="${pt.x.toFixed(1)}" cy="${pt.y.toFixed(1)}" r="10" fill="${car.body || '#ccc'}" stroke="#fff" stroke-width="3"/>`;
-      }
-    });
-    document.querySelector('#mini .mini-dots').innerHTML = others + mine; // 내 점은 맨 위에
+  function renderMini() {
+    if (!miniGeo || !me) return;
+    const pos = me.finishedAt ? C.finishCells : Math.min(me.pos || 0, C.finishCells);
+    if (pos === miniSig) return;
+    miniSig = pos;
+    const pt = miniGeo.at(miniGeo.sAt(pos / C.finishCells), 0);
+    const el = document.getElementById('miniMe');
+    el.style.transform = `translate(${pt.x.toFixed(1)}px, ${pt.y.toFixed(1)}px)`;
+    // 길이 왼쪽으로 가는 곳에서는 탈것도 왼쪽을 보게 뒤집어요
+    el.querySelector('.mini-me-flip').style.transform = Math.cos(pt.t) < -0.2 ? 'scaleX(-1)' : '';
   }
 
   let flashTimer = null;
