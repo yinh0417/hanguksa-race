@@ -1184,6 +1184,25 @@
     fwRaf = requestAnimationFrame(loop);
   }
 
+  // 시상대 왕관: 1등 금, 2등 은, 3등 동 (그림으로 그려서 색을 바꿔요)
+  const CROWN = {
+    1: { hi: '#fff3b0', mid: '#ffd23f', lo: '#d99a00', line: '#9a6a00' },
+    2: { hi: '#ffffff', mid: '#d9dee6', lo: '#9aa4b2', line: '#6b7480' },
+    3: { hi: '#ffd9b3', mid: '#e09656', lo: '#a85a24', line: '#6e3a14' }
+  };
+  function crownSVG(rank) {
+    const c = CROWN[rank], id = 'crown' + rank;
+    return `<svg viewBox="0 0 120 92" aria-hidden="true"><defs>
+        <linearGradient id="${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${c.hi}"/><stop offset=".45" stop-color="${c.mid}"/><stop offset="1" stop-color="${c.lo}"/></linearGradient>
+      </defs>
+      <path d="M12 70 L18 24 L40 50 L60 12 L80 50 L102 24 L108 70 Z" fill="url(#${id})" stroke="${c.line}" stroke-width="3" stroke-linejoin="round"/>
+      <rect x="10" y="66" width="100" height="18" rx="6" fill="url(#${id})" stroke="${c.line}" stroke-width="3"/>
+      ${[[18, 24], [60, 12], [102, 24]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="7" fill="url(#${id})" stroke="${c.line}" stroke-width="3"/>`).join('')}
+      <circle cx="60" cy="75" r="5.5" fill="#e2412e" stroke="${c.line}" stroke-width="2"/><circle cx="36" cy="75" r="4" fill="#2f7fd1" stroke="${c.line}" stroke-width="2"/><circle cx="84" cy="75" r="4" fill="#2f9e5b" stroke="${c.line}" stroke-width="2"/>
+      <path d="M24 60 L28 36 M56 56 L60 30" stroke="#fff" stroke-width="4" stroke-linecap="round" opacity=".55"/>
+    </svg>`;
+  }
+
   function renderResults() {
     $('#rsClass').textContent = meta.classNo + '반';
     const ranked = G.ranking(approvedList(), states);
@@ -1192,7 +1211,7 @@
       const r = ranked[i];
       if (!r) return '<div class="podium-col empty"></div>';
       return `<div class="podium-col p${r.rank}" style="--d:${[0, 1.1, 0.6, 0.2][r.rank]}s">
-        ${r.rank === 1 ? '<div class="podium-crown">👑</div>' : ''}
+        ${r.rank <= 3 ? `<div class="podium-crown">${crownSVG(r.rank)}</div>` : ''}
         <div class="podium-car">${A.carSVG(r.car)}</div>
         <div class="podium-nick${Array.from(r.nick).length > 6 ? ' long' : ''}">${esc(r.nick)}</div>
         <div class="podium-block"><span>${r.rank}</span><small>${['', '🥇', '🥈', '🥉'][r.rank]}</small></div>

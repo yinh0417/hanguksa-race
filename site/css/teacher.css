@@ -597,7 +597,9 @@
 .p1 .podium-block { height: 32vh; }
 .p2 .podium-block { height: 24vh; }
 .p3 .podium-block { height: 17vh; }
-.podium-crown { font-size: clamp(2.2rem, 7vh, 4.6rem); line-height: 1; animation: crown 1.2s ease-in-out infinite alternate, fade-up .5s ease-out both; animation-delay: 0s, 1.7s; }
+.podium-crown { width: clamp(5.5rem, 15vh, 9.5rem); line-height: 0; filter: drop-shadow(0 .6vh 1.2vh rgba(0,0,0,.35)); animation: crown 1.2s ease-in-out infinite alternate, fade-up .5s ease-out both; animation-delay: 0s, calc(var(--d) + .9s); }
+.podium-crown svg { display: block; width: 100%; height: auto; }
+.p2 .podium-crown, .p3 .podium-crown { width: clamp(4.6rem, 12.5vh, 8rem); }
 @keyframes rise { from { transform: scaleY(0); } }
 @keyframes car-drop { from { transform: translateY(-60vh); opacity: 0; } }
 @keyframes fade-up { from { transform: translateY(12px); opacity: 0; } }
