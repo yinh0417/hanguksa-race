@@ -507,9 +507,22 @@
     if (me.pos >= C.finishCells) { me.finishedAt = now; me.fx = { type: 'finish', at: now }; }
     return me.pos - before;
   }
+  // 아이템·부스터로 받은 n칸: 지금 갈 수 있는 만큼 가고, 맞바람에 막힌 나머지는 버리지 않고
+  // 맞바람이 그치면 1초에 1칸씩 저절로 가요. 화면에 보여 줄 말을 돌려줘요
+  function gain(n, now) {
+    const went = move(n, now), rest = me.finishedAt ? 0 : n - went;
+    if (rest > 0) {
+      me.turboLeft = (me.turboLeft || 0) + rest;
+      if (!(me.turboNext > now)) me.turboNext = now + 1000;
+    }
+    if (!rest) return `앞으로 ${went}칸 더 가요`;
+    return `${went ? went + '칸 가고, 나머지 ' : '🌬️ '}${rest}칸은 맞바람이 그치면 저절로 가요`;
+  }
 
   // 아이템을 쓰면 1초 동안 화면 가득 큰 글자와 내 탈것이 달려 나가는 장면을 보여 줘요
-  let fxTimer = null;
+  // 장면이 떠 있는 동안과 닫힌 뒤 잠깐(FX_GRACE)은 답 버튼을 누른 것으로 치지 않아요(가려진 채 잘못 눌러 오답 벌칙을 받지 않게)
+  const FX_SHOW = 1100, FX_GRACE = 400;
+  let fxTimer = null, fxBusyUntil = 0;
   // opt.kind 'block': 방패·부적이 친구 공격을 막아 내는 장면(opt.incoming: 날아온 아이템 아이콘)
   function itemFx(type, sub, opt) {
     opt = opt || {};
@@ -525,7 +538,8 @@
     void pop.offsetWidth; // 애니메이션을 처음부터 다시
     pop.classList.add('go');
     clearTimeout(fxTimer);
-    fxTimer = setTimeout(() => pop.classList.add('hidden'), 1100);
+    fxTimer = setTimeout(() => pop.classList.add('hidden'), FX_SHOW);
+    fxBusyUntil = Date.now() + FX_SHOW + FX_GRACE;
     // 휴대폰 진동(화면을 한 번이라도 누른 뒤에만 브라우저가 허락해요)
     if (navigator.vibrate && (!navigator.userActivation || navigator.userActivation.hasBeenActive)) navigator.vibrate(kind === 'throw' ? [40, 30, 40] : 60);
   }
@@ -544,19 +558,18 @@
     return `<span class="wb"></span>`;
   }
 
+  let lastGain = ''; // 방금 아이템으로 간 칸을 알려 주는 말(아이템 장면 아래 글씨)
   function applyItem(item, now) {
     const it = C.items[item];
     me.fx = { type: item, at: now };
-    const WIND = '🌬️ 맞바람 때문에 더 못 갔어요';
-    if (item === 'boost1') return move(1, now) ? `${it.icon} ${it.name}! 1칸 더 가요` : WIND;
-    if (item === 'boost2') { const w = move(2, now); return w ? `${it.icon} ${it.name}! ${w}칸 더 가요` : WIND; }
+    if (item === 'boost1' || item === 'boost2') { lastGain = gain(item === 'boost1' ? 1 : 2, now); return `${it.icon} ${it.name}! ${lastGain}`; }
     if (item === 'shield') { me.shield = true; return `${it.icon} ${josa(it.name, '을', '를')} 얻었어요`; }
     if (item === 'ginseng') { me.ginseng = true; return `${it.icon} ${josa(it.name, '을', '를')} 먹었어요. 다음 오답 벌칙이 없어요`; }
     if (item === 'yut') {
       const [name, n] = G.rollYut();
-      const w = move(n, now);
+      lastGain = `${josa(name, '이', '가')} 나왔어요! ${gain(n, now)}`;
       me.fx = { type: item, at: now, n };
-      return `${it.icon} ${josa(name, '이', '가')} 나왔어요! ${w ? w + '칸 더 가요' : '그런데 맞바람 때문에 제자리예요'}`;
+      return `${it.icon} ${lastGain}`;
     }
     me.hold = item;
     me.holdAt = now;
@@ -573,7 +586,7 @@
   function answer(v, btn) {
     if (phase !== 'question' || !cur) return;
     const now = DB.now();
-    if (now < blockedUntil() || paused(now)) return;
+    if (now < blockedUntil() || paused(now) || Date.now() < fxBusyUntil) return;
     const q = cur.q;
     const ok = q.type === 'ox' ? v === q.answer : q.type === 'sa' ? G.checkShort(q, v) : Number(v) === q.answer;
     if (q.type === 'sa') btn.readOnly = true;
@@ -595,18 +608,17 @@
       if (!me.finishedAt) {
         const got = G.rollGoodItem(r.rank, r.n, { holding: !!me.hold, hasShield: !!me.shield, hasGinseng: !!me.ginseng });
         sub = applyItem(got, now);
-        if (windy) { if (!went) sub = '친구들이 따라올 때까지 제자리예요 · ' + sub; }
+        if (windy) { if (!went && !sub.includes('그치면')) sub = '친구들이 따라올 때까지 제자리예요 · ' + sub; }
         else if (bonus) {
           startRun(bonus, now);
           me.fx = { type: 'combo', at: now, n: me.streak };
           itemFx('turbo', `부스터로 ${bonus}칸 더 달려요`, { kind: 'boost', title: `🔥 ${me.streak}연속 정답!` });
         }
         // 바로 효과가 나는 아이템은 쓰는 장면을 보여 줘요(연속 정답 장면이 먼저)
-        else if (got === 'boost1') itemFx(got, '앞으로 1칸 더 가요');
-        else if (got === 'boost2') itemFx(got, '앞으로 2칸 더 가요');
+        else if (got === 'boost1' || got === 'boost2') itemFx(got, lastGain);
         else if (got === 'shield') itemFx(got, '친구의 공격을 1번 막아요');
         else if (got === 'ginseng') itemFx(got, '다음 오답 벌칙을 1번 막아요');
-        else if (got === 'yut') itemFx(got, sub.replace(/^\S+ /, ''), { title: `${C.items.yut.icon} 윷 던지기!` });
+        else if (got === 'yut') itemFx(got, lastGain, { title: `${C.items.yut.icon} 윷 던지기!` });
       }
       save();
       btn.classList.add('right');
@@ -726,10 +738,10 @@
       if (!ahead.length && !auto) { toast('지금은 앞에 친구가 없어요. 조금 뒤에 다시 눌러 보세요.'); return false; }
       const t = ahead.length ? ahead.reduce((a, b) => (b.pos < a.pos ? b : a)) : null;
       const gap = t ? Math.min(6, t.pos - (me.pos || 0)) : 2;
-      move(gap, now);
+      const g = gain(gap, now);
       me.fx = { type: 'warp', at: now };
       done();
-      itemFx('warp', t ? `${t.nick} 옆으로 ${gap}칸 순간 이동!` : `앞에 아무도 없어서 ${gap}칸 앞으로 갔어요`);
+      itemFx('warp', t ? `${t.nick} 쪽으로 순간 이동! ${g}` : `앞에 아무도 없어요. ${g}`);
       updateStatus(true);
       if (me.finishedAt) finished();
       return true;
@@ -755,10 +767,10 @@
     if (!targets.length && !auto) { toast(type === 'caltrop' ? '지금은 뒤에 친구가 없어요. 조금 뒤에 다시 눌러 보세요.' : '지금은 맞힐 친구가 없어요. 조금 뒤에 다시 눌러 보세요.'); return false; }
     if (!targets.length) {
       // 저절로 쓸 때 맞힐 친구가 없으면 버리지 않고 1칸 앞으로 가요
-      move(1, now);
+      const g = gain(1, now);
       me.fx = { type: 'boost1', at: now };
       done();
-      itemFx(type, '맞힐 친구가 없어서 1칸 앞으로 갔어요', { kind: 'boost' });
+      itemFx(type, `맞힐 친구가 없어요. ${g}`, { kind: 'boost' });
       updateStatus(true);
       if (me.finishedAt) finished();
       return true;
@@ -1015,6 +1027,7 @@
     // 천리마 부스터: 문제를 푸는 동안에도 차가 저절로 달려요(맞아서 멈추면 그동안은 쉬어요)
     if (me.turboLeft > 0 && now >= (me.turboNext || 0) && !me.finishedAt) {
       if (now < (me.frozenUntil || 0)) me.turboNext = me.frozenUntil;
+      else if ((me.pos || 0) >= paceCap(now)) me.turboNext = now + 1000; // 맞바람: 남은 칸은 그대로 두고 1초 뒤에 다시
       else {
         me.turboLeft--;
         me.turboNext = now + 1000;
