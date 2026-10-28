@@ -66,8 +66,8 @@
   };
 
   // ---------- 배경 음악 (대기실, 레이스) ----------
-  // 음원 파일 없이 브라우저가 그 자리에서 만드는 EDM·댄스 창작곡이라 저작권 문제가 없습니다.
-  //  - 대기실과 레이스 모두 신나는 EDM 10곡(118~130BPM): 쿵쿵 4박 킥, 빌드업 상승음과 스네어 연타, 드롭의 펌핑 화음과 후렴 멜로디
+  // 음원 파일 없이 브라우저가 그 자리에서 만드는 K-pop 걸그룹 댄스풍 창작곡이라 저작권 문제가 없습니다.
+  //  - 대기실과 레이스 모두 10곡(118~130BPM): 묵직한 베이스, 탁 튀는 스네어, 금관 신스 후렴, "헤이!" 함성, 댄스 브레이크
   //  - 레이스는 6BPM 더 빠르게, 마지막 30초는 더 빨라지고 하이햇이 촘촘해지며 마디 끝에 손뼉 연타
   const m = n => 440 * Math.pow(2, (n - 69) / 12);
   let song = null, hot = 0, nextTime = 0, step = 0, noiseBuf = null, bus = null;
@@ -150,8 +150,8 @@
     bars.forEach((ns, b) => rhythm.forEach((st, k) => { hook[b * 16 + st] = ns[k]; }));
     return hook;
   }
-  // ---------- EDM 소리 재료 ----------
-  // 펌핑 화음: 박자마다 소리가 '훅' 빨려 들었다가 부풀어 오르는 EDM 특유의 출렁임(사이드체인 느낌)
+  // ---------- K-pop 댄스 소리 재료 ----------
+  // 펌핑 화음: 박자마다 소리가 '훅' 빨려 들었다가 부풀어 오르는 출렁임(사이드체인 느낌)
   function pumpChord(notes, time, sd, vol, cutoff) {
     const f = ctx.createBiquadFilter(), g = ctx.createGain();
     f.type = 'lowpass'; f.frequency.setValueAtTime(cutoff || 2400, time); f.Q.value = 1.2;
@@ -177,7 +177,6 @@
   }
   // 빌드업 상승음: 쉬익- 하고 점점 높아지는 소리
   function riser(time, dur) {
-
     const s = ctx.createBufferSource(), f = ctx.createBiquadFilter(), g = ctx.createGain();
     s.buffer = noiseBuffer(); s.loop = true;
     f.type = 'bandpass'; f.Q.value = 3;
@@ -186,72 +185,127 @@
     s.connect(f); f.connect(g); g.connect(bus);
     s.start(time); s.stop(time + dur + 0.02);
   }
-  // 드롭 시작을 알리는 심벌
   function crash(time) { noise(time, 1.4, 0.07, 4500); }
+  // 묵직한 베이스: 아래를 받치는 사인파 + 살짝 거친(찌그러뜨린) 톱니파. glide: 808처럼 음이 미끄러져 내려가요
+  let grit = null;
+  function gritBus() {
+    if (!grit) {
+      grit = ctx.createWaveShaper();
+      const c = new Float32Array(1024);
+      for (let k = 0; k < c.length; k++) c[k] = Math.tanh((k / 511.5 - 1) * 3);
+      grit.curve = c;
+      const g = ctx.createGain(); g.gain.value = 0.55;
+      grit.connect(g); g.connect(bus);
+    }
+    return grit;
+  }
+  function heavyBass(n, time, dur, vol, glide) {
+    const sub = ctx.createOscillator(), sg = ctx.createGain();
+    sub.type = 'sine'; sub.frequency.setValueAtTime(m(n), time);
+    if (glide) sub.frequency.exponentialRampToValueAtTime(m(n - 5), time + dur);
+    sg.gain.setValueAtTime(vol * 1.6, time); sg.gain.exponentialRampToValueAtTime(0.0001, time + dur);
+    sub.connect(sg); sg.connect(bus); sub.start(time); sub.stop(time + dur + 0.05);
+    const saw = ctx.createOscillator(), f = ctx.createBiquadFilter(), g = ctx.createGain();
+    saw.type = 'sawtooth'; saw.frequency.setValueAtTime(m(n + 12), time);
+    f.type = 'lowpass'; f.frequency.setValueAtTime(1400, time); f.frequency.exponentialRampToValueAtTime(260, time + dur);
+    g.gain.setValueAtTime(vol, time); g.gain.exponentialRampToValueAtTime(0.0001, time + dur);
+    saw.connect(f); f.connect(g); g.connect(gritBus()); saw.start(time); saw.stop(time + dur + 0.05);
+  }
+  // 탁 튀는 스네어: 몸통(짧은 톤) + 쉭 소리
+  function snare(time, vol) {
+    noise(time, 0.17, vol, 1800, 'bandpass');
+    noise(time, 0.06, vol * 0.6, 5000);
+    at(190, time, 0.08, 'triangle', vol * 0.9);
+  }
+  // 금관처럼 빵! 하고 터지는 신스 훅
+  function brass(n, time, dur, vol, wave) {
+    const f = ctx.createBiquadFilter(), g = ctx.createGain();
+    f.type = 'lowpass'; f.Q.value = 4;
+    f.frequency.setValueAtTime(700, time); f.frequency.exponentialRampToValueAtTime(3800, time + 0.04); f.frequency.exponentialRampToValueAtTime(1300, time + dur);
+    g.gain.setValueAtTime(0.0001, time); g.gain.exponentialRampToValueAtTime(vol, time + 0.012); g.gain.exponentialRampToValueAtTime(0.0001, time + dur);
+    f.connect(g); g.connect(bus);
+    [[wave || 'sawtooth', -7], ['square', 7]].forEach(([w, det]) => {
+      const o = ctx.createOscillator();
+      o.type = w; o.frequency.setValueAtTime(m(n), time); o.detune.value = det;
+      o.connect(f); o.start(time); o.stop(time + dur + 0.05);
+    });
+  }
+  // "헤이!" 하고 외치는 듯한 짧은 함성
+  function hey(time, vol) {
+    noise(time, 0.13, vol, 950, 'bandpass');
+    noise(time + 0.005, 0.11, vol * 0.7, 2300, 'bandpass');
+    at(330, time, 0.1, 'sawtooth', vol * 0.25);
+  }
 
-  // ---------- EDM 곡 ----------
-  // 8마디 한 바퀴: 앞 4마디는 빌드업(아르페지오, 4마디째 스네어 연타와 상승음), 뒤 4마디는 드롭(펌핑 화음, 후렴 멜로디, 힘찬 베이스)
-  // style: house(오프비트 베이스), electro(16분 굴러가는 베이스), bigroom(묵직한 리드), future(통통 튀는 베이스), tropical(마림바 같은 플럭)
+  // ---------- 곡 짜임(16마디) ----------
+  // 1~4 벌스: 킥·스네어·묵직한 베이스로 그루브, 플럭이 살짝
+  // 5~6 프리코러스: 4박 킥, 아르페지오, 상승음, 6마디째 스네어 연타
+  // 7~14 코러스: 심벌과 함께 터지는 베이스, 펌핑 화음, 금관 신스 후렴, "헤이!" 함성
+  // 15~16 댄스 브레이크: 반으로 느려진 북, 촘촘히 구르는 하이햇, 808처럼 미끄러지는 베이스, 신스 끊어 치기
+  // groove(베이스 리듬): bounce, drive, swing, tropical
   const BASS = {
-    house: [2, 6, 10, 14],
-    electro: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
-    bigroom: [0, 3, 6, 8, 11, 14],
-    future: [0, 3, 6, 10, 12],
+    bounce: [0, 3, 6, 10, 12],
+    drive: [0, 2, 3, 6, 8, 10, 11, 14],
+    swing: [0, 3, 7, 8, 11, 14],
     tropical: [0, 3, 6, 8, 11, 14]
   };
   function makeSong(def) {
-    const chords = def.prog.map(chordOf), bassSteps = BASS[def.style];
+    const chords = def.prog.map(chordOf), bassSteps = BASS[def.groove];
     const hook = makeHook(chords, def.seed, def.rhythm);
-    const plk = def.style === 'tropical' ? 'triangle' : def.style === 'future' ? 'sine' : 'square';
+    const plk = def.groove === 'tropical' ? 'triangle' : 'square';
     return {
       name: def.name, bpm: def.bpm, bpmHot: def.hot || def.bpm + 10,
       step(s, t, sd) {
-        const bar8 = Math.floor(s / 16) % 8, i = s % 16, drop = bar8 >= 4, bar = chords[bar8 % 4], h = hook[s % 64];
-        const lastBuild = bar8 === 3;
-        // 북: 4박 킥(빌드업 마지막 반 마디는 킥을 빼고 스네어를 점점 촘촘하게)
-        if (i % 4 === 0 && !(lastBuild && i >= 8)) kick(t, drop ? 0.6 : 0.48);
-        if (drop || bar8 >= 1) { if (i === 4 || i === 12) clap(t, drop ? 0.22 : 0.15); }
-        if (lastBuild && i === 0) riser(t, sd * 16);
-        if (lastBuild && (i >= 8 || i % 2 === 0)) clap(t, 0.05 + (i / 16) * 0.12);
-        if (drop && bar8 === 4 && i === 0) crash(t);
-        // 하이햇: 오프비트 열린 소리 + 드롭에서는 16분 닫힌 소리
-        if (i % 4 === 2) noise(t, 0.08, drop ? 0.07 : 0.05, 6500);
-        else if (drop || hot) noise(t, 0.025, 0.03, 8500);
-        if (hot && bar8 % 4 === 3 && i >= 12) clap(t, 0.12);   // 마지막 30초: 마디 끝 손뼉 연타
+        const bar = Math.floor(s / 16) % 16, i = s % 16, ch = chords[bar % 4], h = hook[s % 64];
+        const part = bar < 4 ? 'verse' : bar < 6 ? 'pre' : bar < 14 ? 'chorus' : 'break';
+        if (part === 'break') {
+          // 댄스 브레이크(반으로 느려진 느낌)
+          if (i === 0 || i === 3 || i === 10) kick(t, 0.62);
+          if (i === 8) { snare(t, 0.26); hey(t, 0.1); }
+          noise(t, 0.025, 0.035, 8500);
+          if (i >= 12 || (bar === 15 && i >= 8)) noise(t + sd / 2, 0.02, 0.03, 9000);   // 하이햇 구르기
+          if (i === 0 || i === 10) heavyBass(ch.bass, t, sd * (i === 0 ? 9 : 6), 0.1, true);
+          if (i === 0 || i === 6 || i === 11) ch.notes.forEach(n => brass(n + 12, t, 0.16, 0.022, def.lead));
+          if (bar === 15 && i === 8) riser(t, sd * 8);
+          return;
+        }
+        // 북
+        const lastPre = bar === 5;
+        if (part === 'verse') { if (i === 0 || i === 8 || i === def.kickExtra) kick(t, 0.55); }
+        else if (i % 4 === 0 && !(lastPre && i >= 12)) kick(t, part === 'chorus' ? 0.62 : 0.5);
+        if (i === 4 || i === 12) { snare(t, part === 'chorus' ? 0.24 : 0.18); if (part === 'chorus') clap(t, 0.16); }
+        if (lastPre && i >= 8) snare(t, 0.05 + (i - 8) * 0.025);
+        if (bar === 4 && i === 0) riser(t, sd * 32);
+        if (bar === 6 && i === 0) crash(t);
+        // 하이햇
+        if (part === 'chorus') { if (i % 4 === 2) noise(t, 0.08, 0.07, 6500); else noise(t, 0.025, 0.03, 8500); }
+        else if (i % 2 === 0) noise(t, 0.025, 0.035, 8500);
+        if (hot && i >= 12 && bar % 2 === 1) clap(t, 0.12);   // 마지막 30초: 마디 끝 손뼉 연타
         // 베이스
-        if (bassSteps.includes(i) && (drop || def.style === 'house' || bar8 >= 2)) {
-          const up = def.style === 'electro' ? (i % 4 === 2 ? 12 : 0) : (i % 8 === 6 ? 12 : 0);
-          at(m(bar.bass + up), t, sd * (def.style === 'electro' ? 0.9 : 1.6), def.style === 'electro' || def.style === 'bigroom' ? 'sawtooth' : 'square', drop ? 0.09 : 0.06);
-        }
-        if (drop) {
-          // 펌핑 화음과 후렴 멜로디
-          if (i % 4 === 0) pumpChord(bar.notes, t, sd, def.style === 'bigroom' ? 0.05 : 0.04, def.cutoff);
-          if (h) {
-            const w = def.lead || (def.style === 'bigroom' ? 'sawtooth' : 'square');
-            at(m(h), t, sd * 1.7, w, def.style === 'bigroom' ? 0.04 : 0.032);
-            at(m(h + 12), t, sd * 1.2, 'sine', 0.028);
-          } else if (def.style === 'tropical' || def.style === 'future') pluck(bar.notes[(i >> 1) % bar.notes.length] + 12, t, 0.035, plk);
-        } else {
-          // 빌드업: 화음을 타고 오르내리는 아르페지오, 2마디째부터 멜로디 살짝 미리 듣기
-          if (i % 2 === 0) pluck(bar.notes[(i >> 1) % bar.notes.length] + (i >= 8 ? 24 : 12), t, 0.04, plk);
-          if (bar8 === 2 && h) bell(h, t, 0.04);
-        }
+        if (bassSteps.includes(i) && !(lastPre && i >= 8)) heavyBass(ch.bass + (i % 8 === 6 ? 12 : 0), t, sd * 1.7, part === 'chorus' ? 0.1 : 0.075);
+        if (part === 'chorus') {
+          if (i % 4 === 0) pumpChord(ch.notes, t, sd, 0.032, def.cutoff);
+          if (h) { brass(h, t, sd * 1.6, 0.045, def.lead); at(m(h + 12), t, sd * 1.2, 'sine', 0.025); }
+          if (def.chant && i === 14 && bar % 2 === 1) hey(t, 0.12);
+        } else if (part === 'pre') {
+          pluck(ch.notes[i % ch.notes.length] + (i >= 8 ? 24 : 12), t, 0.04, plk);
+        } else if (i % 4 === 3) pluck(ch.notes[(i >> 2) % ch.notes.length] + 12, t, 0.035, plk);
       }
     };
   }
 
-  // 신나는 EDM·댄스 창작곡 10곡. 대기실에서는 이 빠르기로, 레이스에서는 조금 더 빠르게(마지막 30초는 더더 빠르게) 틀어요.
+  // K-pop 걸그룹 댄스풍 창작곡 10곡. 대기실에서는 이 빠르기로, 레이스에서는 조금 더 빠르게(마지막 30초는 더더 빠르게) 틀어요.
   const SONGS = [
-    { name: '네온 스타트',     style: 'house',    prog: ['Am', 'F', 'C', 'G'],     bpm: 124, seed: 101, rhythm: [0, 3, 6, 8, 10, 14] },
-    { name: '레이저 점프',     style: 'electro',  prog: ['Fm', 'Db', 'Ab', 'Eb'],  bpm: 128, seed: 113, rhythm: [0, 2, 6, 8, 12], lead: 'sawtooth' },
-    { name: '소다 팝',         style: 'future',   prog: ['D', 'A', 'Bm', 'G'],     bpm: 122, seed: 127, rhythm: [0, 3, 6, 10, 12, 14], lead: 'triangle' },
-    { name: '은하수 질주',     style: 'bigroom',  prog: ['Em', 'C', 'G', 'D'],     bpm: 128, seed: 131, rhythm: [0, 4, 6, 8, 12], cutoff: 3000 },
-    { name: '트로피컬 웨이브', style: 'tropical', prog: ['F', 'C', 'Dm', 'Bb'],    bpm: 118, seed: 149, rhythm: [0, 3, 6, 8, 11, 14], lead: 'triangle' },
-    { name: '하이파이브',      style: 'house',    prog: ['Bbm', 'Gb', 'Db', 'Ab'], bpm: 126, seed: 157, rhythm: [0, 2, 6, 8, 10, 14] },
-    { name: '펀치 라인',       style: 'electro',  prog: ['Gm', 'Eb', 'Bb', 'F'],   bpm: 130, seed: 163, rhythm: [0, 3, 6, 8, 11], lead: 'sawtooth' },
-    { name: '별빛 비트',       style: 'future',   prog: ['A', 'E', 'F#m', 'D'],    bpm: 124, seed: 173, rhythm: [0, 2, 4, 8, 10, 12] },
-    { name: '파워 업',         style: 'bigroom',  prog: ['Cm', 'Ab', 'Eb', 'Bb'],  bpm: 126, seed: 181, rhythm: [0, 3, 8, 11, 14], cutoff: 3200 },
-    { name: '무지개 댄스',     style: 'tropical', prog: ['C', 'Am', 'F', 'G'],     bpm: 120, seed: 191, rhythm: [0, 2, 6, 8, 12, 14] }
+    { name: '네온 스타트',     groove: 'bounce',   prog: ['Am', 'F', 'C', 'G'],     bpm: 124, seed: 101, rhythm: [0, 3, 6, 8, 10, 14], chant: true, kickExtra: 10 },
+    { name: '레이저 점프',     groove: 'drive',    prog: ['Fm', 'Db', 'Ab', 'Eb'],  bpm: 128, seed: 113, rhythm: [0, 2, 6, 8, 12], chant: true, kickExtra: 6 },
+    { name: '소다 팝',         groove: 'swing',    prog: ['D', 'A', 'Bm', 'G'],     bpm: 122, seed: 127, rhythm: [0, 3, 6, 10, 12, 14], lead: 'square', kickExtra: 10 },
+    { name: '은하수 질주',     groove: 'drive',    prog: ['Em', 'C', 'G', 'D'],     bpm: 128, seed: 131, rhythm: [0, 4, 6, 8, 12], chant: true, cutoff: 3000, kickExtra: 6 },
+    { name: '트로피컬 웨이브', groove: 'tropical', prog: ['F', 'C', 'Dm', 'Bb'],    bpm: 118, seed: 149, rhythm: [0, 3, 6, 8, 11, 14], lead: 'square', kickExtra: 11 },
+    { name: '하이파이브',      groove: 'bounce',   prog: ['Bbm', 'Gb', 'Db', 'Ab'], bpm: 126, seed: 157, rhythm: [0, 2, 6, 8, 10, 14], chant: true, kickExtra: 10 },
+    { name: '펀치 라인',       groove: 'drive',    prog: ['Gm', 'Eb', 'Bb', 'F'],   bpm: 130, seed: 163, rhythm: [0, 3, 6, 8, 11], chant: true, kickExtra: 6 },
+    { name: '별빛 비트',       groove: 'swing',    prog: ['A', 'E', 'F#m', 'D'],    bpm: 124, seed: 173, rhythm: [0, 2, 4, 8, 10, 12], kickExtra: 10 },
+    { name: '파워 업',         groove: 'drive',    prog: ['Cm', 'Ab', 'Eb', 'Bb'],  bpm: 126, seed: 181, rhythm: [0, 3, 8, 11, 14], chant: true, cutoff: 3200, kickExtra: 6 },
+    { name: '무지개 댄스',     groove: 'tropical', prog: ['C', 'Am', 'F', 'G'],     bpm: 120, seed: 191, rhythm: [0, 2, 6, 8, 12, 14], lead: 'square', kickExtra: 11 }
   ];
   const PLAYLIST = {
     lobby: SONGS,
