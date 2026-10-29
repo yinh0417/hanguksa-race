@@ -833,3 +833,22 @@
 .cb-cards.many li { padding: 1.2vh 1vw; }
 .cb-cards.many p { font-size: 1.8vh; }
 .cb-cards.many strong { font-size: 2.3vh; }
+
+/* ===== 끝나기 30초 전: 큰 화면 순위 숨기기 ===== */
+.live-rank ol.secret { height: 100%; }
+.lr-secret { display: flex !important; flex-direction: column; align-items: center; justify-content: center; gap: 1vh; text-align: center; min-height: 40vh; }
+.lr-secret b { font-size: clamp(3rem, 12vh, 7rem); line-height: 1; color: var(--primary-on-dark, #ffd84a); animation: secret-q 1.2s ease-in-out infinite alternate; }
+.lr-secret span { font-size: clamp(.85rem, 2vh, 1.2rem); line-height: 1.4; opacity: .9; }
+@keyframes secret-q { to { transform: scale(1.15) rotate(6deg); } }
+
+/* ===== 시상대: 3등 → 2등 → 1등 차례로 공개 ===== */
+.podium-call { margin: 1.5vh 0 0; text-align: center; font: 700 clamp(1.4rem, 5vh, 3.2rem) var(--font-body); letter-spacing: -0.02em; color: #ffd84a; min-height: 1.3em; }
+.podium-call.go { animation: count-pop .6s ease-out; }
+.podium { min-height: 52vh; padding-top: 2vh; }
+.podium-col .podium-car { animation-delay: calc(var(--d) + .45s); } /* 예전 .p1·.p2 지연 규칙보다 앞서게 */
+.all-title, .all-rank { animation: fade-up .6s ease-out both; animation-delay: var(--all, 0s); }
+@media (prefers-reduced-motion: reduce) {
+  .lr-secret b { animation-duration: 1.2s !important; animation-iteration-count: infinite !important; }
+  .podium-call.go { animation-duration: .6s !important; }
+  .all-title, .all-rank { animation-duration: .6s !important; }
+}

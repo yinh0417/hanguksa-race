@@ -958,6 +958,7 @@
     const ranked = G.ranking(ap, states);
     const rankOf = {};
     ranked.forEach(r => { rankOf[r.uid] = r.rank; });
+    const secret = rankSecret(now);
     ap.forEach(p => {
       const racer = document.querySelector(`.racer[data-uid="${p.uid}"]`);
       if (!racer) return;
@@ -978,7 +979,7 @@
       racer.classList.toggle('done', !!s.finishedAt);
       const r = rankOf[p.uid];
       const badge = racer.querySelector('.rank-badge');
-      badge.textContent = r <= 3 && (s.pos || s.finishedAt) ? r : '';
+      badge.textContent = !secret && r <= 3 && (s.pos || s.finishedAt) ? r : '';
       badge.dataset.rank = r;
       if (fx.at && seenFx[p.uid] !== fx.at) {
         const fresh = seenFx[p.uid] !== undefined || !initial;
@@ -993,14 +994,22 @@
         }
       }
     });
-    const sig = ranked.slice(0, 10).map(r => r.uid + r.pos + (r.finishedAt ? 'f' : '')).join('|');
+    const sig = secret ? 'secret' : ranked.slice(0, 10).map(r => r.uid + r.pos + (r.finishedAt ? 'f' : '')).join('|');
     if (sig === lastRankSig) return;
     lastRankSig = sig;
+    $('#liveRank').classList.toggle('secret', secret);
+    if (secret) { $('#liveRank').innerHTML = '<li class="lr-secret"><b>?</b><span>순위는 비밀!<br>시상대에서 공개해요</span></li>'; return; }
     $('#liveRank').innerHTML = ranked.slice(0, 10).map(r => `
       <li data-rank="${r.rank}"><span class="lr-rank">${r.rank}</span><span class="lr-car">${A.carSVG(r.car)}</span><span class="lr-nick">${esc(r.nick)}</span><span class="lr-pos">${r.finishedAt ? '🏁' : r.pos + '칸'}</span></li>`).join('');
   }
 
-  let lastCountShown = null, lastTickSec = null, finalOn = false, lastSongName = null, trackToastFor = null;
+  // 끝나기 몇 초 전부터는 큰 화면에 순위를 숨겨요(시상대에서 3등, 2등, 1등 순으로 공개)
+  function rankSecret(now) {
+    if (!C.hideRankSeconds || !meta || meta.status !== 'racing' || now < meta.startAt) return false;
+    return G.raceClock(meta, now).left <= C.hideRankSeconds * 1000;
+  }
+
+  let lastCountShown = null, lastTickSec = null, finalOn = false, secretOn = false, lastSongName = null, trackToastFor = null;
   function tick() {
     if (!meta || !room) return;
     const now = DB.now();
@@ -1011,12 +1020,12 @@
       const cd = $('#countdown');
       if (now < meta.startAt) {
         const n = Math.ceil((meta.startAt - now) / 1000);
-        if (n !== lastCountShown) { lastCountShown = n; cd.textContent = n; cd.classList.remove('hidden', 'go'); SOUND.play('count'); }
+        if (n !== lastCountShown) { lastCountShown = n; cd.textContent = n; cd.className = 'countdown'; SOUND.play('count'); }
         $('#rcTimer').textContent = fmtTime(C.raceSeconds * 1000);
       } else {
         if (now - meta.startAt < 900) {
           if (lastCountShown !== 0) { lastCountShown = 0; cd.textContent = '출발!'; cd.classList.remove('hidden'); cd.classList.add('go'); SOUND.play('go'); SOUND.startBgm(); }
-        } else if (!cd.classList.contains('hidden')) {
+        } else if (!cd.classList.contains('hidden') && !cd.classList.contains('final-cd')) { // 큰 알림 글자(역전 구간·순위 비밀)는 제 시간만큼 둬요
           cd.classList.add('hidden');
           SOUND.startBgm();
         }
@@ -1038,6 +1047,19 @@
             cd.className = 'countdown final-cd';
             setTimeout(() => cd.classList.add('hidden'), 2200);
             SOUND.play('go');
+          }
+        }
+        // 순위 숨기기가 시작될 때 크게 알려요
+        const sec2 = rankSecret(now);
+        if (sec2 !== secretOn) {
+          secretOn = sec2;
+          $('#vRace').classList.toggle('secret', sec2);
+          if (sec2) {
+            const cd = $('#countdown');
+            cd.innerHTML = `🤫 순위는 이제 비밀!<small>남은 ${C.hideRankSeconds}초, 시상대에서 공개해요</small>`;
+            cd.className = 'countdown final-cd';
+            setTimeout(() => cd.classList.add('hidden'), 2200);
+            SOUND.play('count');
           }
         }
       }
@@ -1167,8 +1189,29 @@
     cd.classList.add('go');
     setTimeout(() => {
       cd.classList.add('hidden');
-      if (meta && meta.status === 'finished') { renderResults(); show('#vResults'); startFireworks(); }
+      if (meta && meta.status === 'finished') { renderResults(); show('#vResults'); }
     }, 1600);
+  }
+
+  // 시상대: 3등 → 2등 → 1등 순서로 한 명씩 올라와요(초). 1등이 올라오면 폭죽이 터지고 전체 순위가 나와요
+  const REVEAL_AT = { 3: 0.6, 2: 3.2, 1: 6.4 };
+  let revealTimers = [];
+  function revealPodium(ranked) {
+    revealTimers.forEach(clearTimeout);
+    const call = $('#podiumCall');
+    const at = (sec, fn) => revealTimers.push(setTimeout(fn, sec * 1000));
+    const say = (text, sound) => { call.textContent = text; call.classList.remove('go'); void call.offsetWidth; call.classList.add('go'); SOUND.play(sound); };
+    say(ranked[2] ? '3등은…' : ranked[1] ? '2등은…' : '1등은…', 'count');
+    if (ranked[2]) at(REVEAL_AT[3] + 0.6, () => SOUND.play('finish'));
+    if (ranked[1]) {
+      at(REVEAL_AT[2] - 0.8, () => say('2등은…', 'count'));
+      at(REVEAL_AT[2] + 0.6, () => SOUND.play('finish'));
+    }
+    at(REVEAL_AT[1] - 1.4, () => say('두구두구… 대망의 1등은?', 'tick'));
+    at(REVEAL_AT[1] + 0.5, () => {
+      say(ranked[0] ? `🏆 ${ranked[0].nick} 축하해요!` : '수고했어요!', 'end');
+      if (currentView() === '#vResults') startFireworks();
+    });
   }
 
   // 결과 화면 축하: 폭죽과 꽃가루 (약 8초)
@@ -1248,7 +1291,7 @@
     $('#podium').innerHTML = order.map(i => {
       const r = ranked[i];
       if (!r) return '<div class="podium-col empty"></div>';
-      return `<div class="podium-col p${r.rank}" style="--d:${[0, 1.1, 0.6, 0.2][r.rank]}s">
+      return `<div class="podium-col p${r.rank}" style="--d:${REVEAL_AT[r.rank]}s">
         ${r.rank <= 3 ? `<div class="podium-crown">${crownSVG(r.rank)}</div>` : ''}
         <div class="podium-car">${A.carSVG(r.car)}</div>
         <div class="podium-nick${Array.from(r.nick).length > 6 ? ' long' : ''}">${esc(r.nick)}</div>
@@ -1262,6 +1305,9 @@
         <span class="ar-nick">${esc(r.nick)}</span>
         <span class="ar-pos">${r.finishedAt ? '완주' : r.pos + '칸'}</span>
       </li>`).join('') || '<li>참여한 학생이 없어요.</li>';
+    $('#resultsScroll').style.setProperty('--all', REVEAL_AT[1] + 1.6 + 's');
+    $('#resultsScroll').scrollTop = 0;
+    revealPodium(ranked);
   }
   $('#rsReview').addEventListener('click', () => { renderReview(); show('#vReview'); });
 
