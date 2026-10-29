@@ -631,25 +631,36 @@
       return;
     }
     if (meta.status === 'lobby') { renderLobby(); if (currentView() !== '#vLobby') show('#vLobby'); }
-    else if (meta.status === 'racing') { if (currentView() !== '#vRace') { show('#vRace'); buildRace(); } }
+    else if (meta.status === 'racing') { if (currentView() !== '#vRace') { show('#vRace'); buildRace(); } autoApproveReentry(); }
     else if (meta.status === 'finished') {
       if (!['#vResults', '#vReview'].includes(currentView())) showFinish();
     }
   }
   // 이미 승인된 학생이 연결이 끊겨 다시 들어오면(같은 출석번호·닉네임) 기다리지 않게 바로 들여보내요.
+  // 레이스 중에는 '재접속 QR'로 들어온 학생을 모두 승인 없이 바로 들여보내요(금칙어 닉네임만 선생님이 확인).
   // 예전 접속은 지우고, 달리던 위치와 정답 기록은 새 접속으로 옮겨요.
   const reentered = new Set();
+  // 레이스 중에는 닉네임을 조금 다르게 적어도, 같은 번호에 같은 탈것이면 같은 학생으로 보고 자리를 이어받아요
+  function racingTwinsOf(uid) {
+    const p = players[uid], exact = twinsOf(uid);
+    if (exact.length || !p || !p.no) return exact;
+    return Object.keys(players).filter(id => id !== uid && players[id].status === 'approved' && players[id].no === p.no && (players[id].car || 0) === (p.car || 0));
+  }
   function autoApproveReentry() {
-    const t = DB.now(), upd = {}, names = [];
+    const t = DB.now(), upd = {}, back = [], fresh = [];
+    const racing = meta && meta.status === 'racing';
     pendingList().forEach(p => {
       if (reentered.has(p.uid) || G.bannedWordIn(p.nick)) return;
-      if (!twinsOf(p.uid).some(id => players[id].status === 'approved')) return;
+      const old = racing ? racingTwinsOf(p.uid) : twinsOf(p.uid);
+      const again = old.some(id => players[id].status === 'approved');
+      if (!again && !racing) return;
       reentered.add(p.uid);
-      Object.assign(upd, approveUpdates(p.uid, t));
-      names.push(p.nick);
+      Object.assign(upd, approveUpdates(p.uid, t, old));
+      (again ? back : fresh).push(p.nick);
     });
-    if (!names.length) return false;
-    DB.update(`rooms/${room}`, upd).then(() => toast(`${names.join(', ')} 학생이 다시 접속해서 바로 들여보냈어요.`)).catch(denied);
+    if (!back.length && !fresh.length) return false;
+    const note = [back.length ? `${back.join(', ')} 학생이 다시 접속해서` : '', fresh.length ? `${fresh.join(', ')} 학생이 레이스 중에 들어와서` : ''].filter(Boolean).join(', ');
+    DB.update(`rooms/${room}`, upd).then(() => toast(`${note} 바로 들여보냈어요.`)).catch(denied);
     return true;
   }
 
@@ -714,9 +725,8 @@
     else renderPendingPop();
   }
   // 승인할 때 같은 학생의 예전 접속 기록은 지워요. 이미 달리고 있었으면 그 기록(위치·정답)을 새 접속으로 옮겨요.
-  function approveUpdates(uid, at) {
+  function approveUpdates(uid, at, old = twinsOf(uid)) {
     const upd = { [`players/${uid}/status`]: 'approved', [`players/${uid}/approvedAt`]: at };
-    const old = twinsOf(uid);
     const carry = old.filter(id => players[id].status === 'approved' && states && states[id])
       .sort((a, b) => (states[b].pos || 0) - (states[a].pos || 0))[0];
     if (carry && !(states && states[uid])) upd[`state/${uid}`] = states[carry];
