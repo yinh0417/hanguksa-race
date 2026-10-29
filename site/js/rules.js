@@ -42,8 +42,8 @@
   }
 
   // 정답을 맞혔을 때 받는 좋은 아이템. 뒤쪽 절반일수록 강한 아이템이 잘 나옵니다(마리오카트처럼).
-  // self = 바로 효과, use·attack = 손에 들고 있다가 버튼을 눌러 씀(한 번에 하나만, 안 누르면 몇 초 뒤 저절로)
-  const AHEAD_ATTACKS = ['balloon', 'lightning', 'thunder', 'smoke', 'warp']; // 1위에게는 쓸모없는 아이템
+  // self = 바로 효과, use·attack = 손에 들고 있다가 버튼을 눌러 씀(한 번에 하나만, 공격은 맞힐 친구를 직접 골라요)
+  const AHEAD_ATTACKS = ['thunder', 'warp']; // 1위에게는 쓸모없는 아이템(앞에 친구가 있어야 써요)
   function rollGoodItem(rank, n, opts) {
     const lower = n > 1 && (rank - 1) / (n - 1) >= 0.5;
     let table = lower
@@ -99,7 +99,8 @@
     return list;
   }
 
-  // 공격 대상: 물풍선은 바로 앞 친구(내가 1위면 바로 뒤 친구), 신기전은 아직 달리는 친구 중 1위
+  // 공격 대상(비격진천뢰, 또는 저절로 쓸 때): 물풍선은 바로 앞 친구(내가 1위면 바로 뒤 친구), 신기전은 아직 달리는 친구 중 1위
+  // 학생이 크게 보기에서 친구를 고르면 그 친구에게 날아가요(play.js)
   function attackTarget(type, myUid, ranked) {
     const alive = ranked.filter(r => !r.finishedAt && r.uid !== myUid);
     if (!alive.length) return null;

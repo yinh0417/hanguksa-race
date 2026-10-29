@@ -204,7 +204,7 @@ body.phone { background: var(--cheong-deep); }
 .stu-bg::after { content: ''; position: absolute; inset: 0; background: linear-gradient(to bottom, rgba(16,16,20,.62), rgba(16,16,20,.5) 40%, rgba(16,16,20,.78)); }
 .stu-bg.in .scene-svg { animation: stu-bg-in 1s ease-out; }
 @keyframes stu-bg-in { from { opacity: 0; transform: scale(1.05); } }
-.race-screen > :not(.stu-bg):not(.overlay):not(.flash):not(.fx-pop):not(.rank-pop):not(.cool-pop) { position: relative; z-index: 1; }
+.race-screen > :not(.stu-bg):not(.overlay):not(.flash):not(.fx-pop):not(.rank-pop):not(.cool-pop):not(.item-view) { position: relative; z-index: 1; }
 @media (prefers-reduced-motion: reduce) { .stu-bg.in .scene-svg { animation-duration: 1s !important; } }
 .race-screen .qcard { background: rgba(255,255,255,.9); backdrop-filter: blur(6px); }
 .race-screen .ans:not(.right):not(.wrong):not(.sa-submit) { background: rgba(255,255,255,.8); backdrop-filter: blur(6px); }
@@ -539,4 +539,35 @@ body.phone { background: var(--cheong-deep); }
   .mini-me-dot { animation-duration: .9s !important; animation-iteration-count: infinite !important; }
   .mini-bob { animation-duration: .5s !important; animation-iteration-count: infinite !important; }
   .mini-me { transition-duration: 1s !important; }
+}
+
+/* ===== 아이템 크게 보기: 아래 아이템 버튼을 누르면 잠깐 떠요. 공격 아이템은 맞힐 친구를 골라요 ===== */
+.item-btn { padding: 10px 16px; font-size: 17px; }
+.item-btn .ib-icon { font-size: 1.9rem; }
+.item-view { position: fixed; inset: 0; z-index: 38; display: grid; place-items: center; padding: 16px;
+  background: rgba(10,10,20,.6); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); }
+.iv-card { position: relative; overflow: hidden; width: min(420px, 100%); max-height: calc(100dvh - 32px); display: flex; flex-direction: column;
+  background: #fff; border-radius: 26px; padding: 20px 16px 16px; text-align: center; color: #1d1d1f;
+  box-shadow: 0 20px 50px rgba(0,0,0,.35); animation: cv-in .25s cubic-bezier(.2,1.4,.4,1) both; }
+.iv-timer { position: absolute; left: 0; top: 0; height: 5px; width: 100%; background: var(--primary); transform-origin: left; }
+.iv-timer.go { animation: ib-auto var(--d, 12s) linear forwards; }
+.iv-icon { font-size: 76px; line-height: 1.1; animation: cv-bob 1.6s ease-in-out infinite; }
+.iv-card h2 { margin: 4px 0 2px; font: 700 26px var(--font-body); letter-spacing: -0.02em; color: #1d1d1f; }
+.iv-desc { margin: 0; font: 500 16px/1.4 var(--font-body); color: #3a3a3c; }
+.iv-hint { margin: 10px 0 0; font: 700 15px var(--font-body); color: var(--primary); }
+.iv-hint:empty { display: none; }
+.iv-list { margin: 10px 0 2px; min-height: 0; overflow-y: auto; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 2px; }
+.iv-friend { display: grid; grid-template-columns: auto 44px 1fr; align-items: center; gap: 6px; min-height: 52px; padding: 6px 10px;
+  border: 0; border-radius: 14px; background: #f2f4f8; color: #1d1d1f; font: 600 15px var(--font-body); text-align: left; cursor: pointer; }
+.iv-friend:active { transform: scale(.96); background: #e3e9f5; }
+.iv-friend b { font-size: 13px; color: #6e6e73; }
+.iv-car .car-svg { width: 44px; display: block; }
+.iv-nick { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.iv-btns { margin-top: 12px; display: grid; grid-template-columns: 1fr 1.4fr; gap: 8px; }
+.iv-btns:has(#ivUse.hidden) { grid-template-columns: 1fr; }
+.iv-btns .btn { min-height: 52px; font-size: 17px; padding: 0 10px; white-space: nowrap; }
+@media (prefers-reduced-motion: reduce) {
+  .iv-card { animation-duration: .25s !important; }
+  .iv-icon { animation-duration: 1.6s !important; animation-iteration-count: infinite !important; }
+  .iv-timer.go { animation-duration: var(--d, 12s) !important; }
 }

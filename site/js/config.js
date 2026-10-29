@@ -36,7 +36,7 @@ window.APP_CONFIG = {
   finalSeconds: 60,      // 막판 역전 구간: 남은 시간이 이만큼일 때부터 정답 하나에 2칸씩 (0이면 끔)
   leadCells: 6,           // 선두 맞바람: 시간에 맞춘 속도보다 이 칸 수 넘게 앞서면 더 못 가요 → 1등이 너무 일찍 골인하지 않아요
   comboBonus: [0, 0, 2, 3], // 한 번에 맞힌 연속 정답 보너스 칸: 2연속 +2칸, 3연속부터 매번 +3칸 (부스터로 달려요)
-  autoItemSeconds: 6,     // 받은 아이템을 누르지 않으면 이 시간(초) 뒤 저절로 써요. 0이면 저절로 쓰지 않아요
+  autoItemSeconds: 0,     // 받은 아이템을 누르지 않으면 이 시간(초) 뒤 저절로 써요. 0이면 저절로 쓰지 않아요(학생이 골라서 써요)
   maxNick: 10,           // 닉네임 최대 글자 수(바꾸면 firebase-rules.json의 닉네임 길이 규칙도 함께)
 
   // ⑤ 닉네임 금칙어: 기본 목록에 더해 막고 싶은 말을 여기에 따옴표로 적어 넣으세요. 예: ["바보", "멍청이"]
@@ -57,17 +57,17 @@ window.APP_CONFIG = {
     boost1:    { kind: "self",   icon: "🐎", name: "파발마",      desc: "앞으로 1칸 더" },
     boost2:    { kind: "self",   icon: "🗺️", name: "지름길 지도", desc: "앞으로 2칸 더" },
     shield:    { kind: "self",   icon: "🛡️", name: "거북선 방패", desc: "친구의 공격을 1번 막아요" },
-    balloon:   { kind: "attack", icon: "💦", name: "물풍선",      desc: "바로 앞 친구를 3초 멈춰요" },
-    lightning: { kind: "attack", icon: "🚀", name: "신기전",      desc: "1위를 3초 멈춰요" },
+    balloon:   { kind: "attack", icon: "💦", name: "물풍선",      desc: "고른 친구를 3초 동안 물방울에 가둬요" },
+    lightning: { kind: "attack", icon: "🚀", name: "신기전",      desc: "고른 친구를 3초 멈춰요" },
     turbo:     { kind: "use",    icon: "🔥", name: "천리마 부스터", desc: "3초 동안 저절로 3칸 질주" },
     star:      { kind: "use",    icon: "✨", name: "도깨비 부적", desc: "8초 동안 공격도 벌칙도 안 받아요" },
-    caltrop:   { kind: "attack", icon: "✳️", name: "마름쇠",      desc: "바로 뒤 친구를 3초 멈춰요" },
+    caltrop:   { kind: "attack", icon: "✳️", name: "마름쇠",      desc: "고른 친구의 바퀴를 3초 멈춰요" },
     thunder:   { kind: "attack", icon: "💥", name: "비격진천뢰", desc: "나보다 앞선 친구 모두 2초 멈춰요" },
     yut:       { kind: "self",   icon: "🎲", name: "윷 던지기",   desc: "도·개·걸·윷·모만큼 앞으로" },
     ginseng:   { kind: "self",   icon: "🌿", name: "인삼",        desc: "다음 오답 벌칙을 1번 막아요" },
     warp:      { kind: "use",    icon: "🌀", name: "축지법",      desc: "바로 앞 친구 자리로 순간 이동(최대 6칸)" },
     mapae:     { kind: "use",    icon: "📜", name: "암행어사 마패", desc: "지금 문제의 틀린 보기를 지워요" },
-    smoke:     { kind: "attack", icon: "🌫️", name: "봉화 연기",   desc: "1위의 문제를 3초 동안 가려요" },
+    smoke:     { kind: "attack", icon: "🌫️", name: "봉화 연기",   desc: "고른 친구의 문제를 3초 동안 가려요" },
     fuel:      { kind: "bad",    icon: "🛢️", name: "오염 연료",   desc: "3초 동안 멈춰요" },
     ink:       { kind: "bad",    icon: "🖌️", name: "먹물",        desc: "3초 동안 문제가 가려져요" }
   }

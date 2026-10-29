@@ -708,14 +708,56 @@
     });
   }
 
-  $('#itemBtn').addEventListener('click', () => useItem(false));
+  // ---------- 아이템 크게 보기 ----------
+  // 아래 아이템 버튼을 누르면 크게 보여 줘요. 공격 아이템은 맞힐 친구를 직접 골라요.
+  // 아무것도 안 누르면 잠깐 뒤 저절로 닫히고, 아이템은 그대로 손에 남아요
+  const PICK_ONE = ['balloon', 'lightning', 'caltrop', 'smoke']; // 친구 한 명을 골라 쓰는 아이템
+  const VIEW_SECONDS = 12;
+  let viewTimer = null;
+  function itemViewOpen() { return !$('#itemView').classList.contains('hidden'); }
+  function openItemView() {
+    if (!me || !me.hold) return;
+    const type = me.hold, it = C.items[type], pick = PICK_ONE.includes(type);
+    $('#ivIcon').textContent = it.icon;
+    $('#ivName').textContent = it.name;
+    $('#ivDesc').textContent = it.desc;
+    let hint = '';
+    if (pick) {
+      const friends = myRank().ranked.filter(x => x.uid !== uid && !x.finishedAt);
+      $('#ivList').innerHTML = friends.map(f => `<button type="button" class="iv-friend" data-uid="${escapeHtml(f.uid)}"><b>${f.rank}등</b><span class="iv-car">${A.carSVG(f.car || 0)}</span><span class="iv-nick">${escapeHtml(f.nick || '친구')}</span></button>`).join('');
+      hint = friends.length ? '누구에게 쓸지 골라요' : '지금은 맞힐 친구가 없어요. 나중에 써 봐요';
+    } else {
+      $('#ivList').innerHTML = '';
+      if (type === 'thunder') hint = '나보다 앞선 친구 모두에게 날아가요';
+    }
+    $('#ivHint').textContent = hint;
+    $('#ivList').classList.toggle('hidden', !pick);
+    $('#ivUse').classList.toggle('hidden', pick);
+    $('#itemView').classList.remove('hidden');
+    const bar = $('#ivTimer');
+    bar.style.setProperty('--d', VIEW_SECONDS + 's');
+    bar.classList.remove('go'); void bar.offsetWidth; bar.classList.add('go');
+    clearTimeout(viewTimer);
+    viewTimer = setTimeout(closeItemView, VIEW_SECONDS * 1000);
+    $('#ivBack').focus({ preventScroll: true });
+  }
+  function closeItemView() { clearTimeout(viewTimer); $('#itemView').classList.add('hidden'); }
+  $('#itemBtn').addEventListener('click', openItemView);
+  $('#ivBack').addEventListener('click', closeItemView);
+  $('#ivUse').addEventListener('click', () => useItem(false));
+  $('#ivList').addEventListener('click', e => {
+    const b = e.target.closest('.iv-friend');
+    if (b) useItem(false, b.dataset.uid);
+  });
+  $('#itemView').addEventListener('click', e => { if (e.target === $('#itemView')) closeItemView(); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && itemViewOpen()) closeItemView(); });
 
   // 들고 있는 아이템 쓰기. auto = 시간이 지나 저절로 쓰는 경우(쓸 수 없으면 조용히 조금 뒤 다시 해 봐요)
-  // 쓰지 못하면 false를 돌려줘요
-  function useItem(auto) {
+  // pickUid = 크게 보기에서 고른 친구. 쓰지 못하면 false를 돌려줘요
+  function useItem(auto, pickUid) {
     if (!me || !me.hold || phase === 'over' || phase === 'done' || phase === 'idle' || paused(DB.now())) return false;
     const type = me.hold, now = DB.now();
-    const done = () => { me.hold = null; me.holdAt = null; save(); renderItem(); };
+    const done = () => { me.hold = null; me.holdAt = null; save(); renderItem(); closeItemView(); };
     if (type === 'turbo') {
       // 천리마 부스터: 3초 동안 1초마다 1칸씩, 모두 3칸 저절로 달려요
       startRun(3, now);
@@ -762,7 +804,11 @@
       return true;
     }
     const r = myRank();
-    const found = G.attackTarget(type, uid, r.ranked);
+    let found;
+    if (PICK_ONE.includes(type) && !auto) {
+      found = r.ranked.find(x => x.uid === pickUid && x.uid !== uid && !x.finishedAt) || null;
+      if (!found) { toast('그 친구는 벌써 결승선에 들어왔어요. 다른 친구를 골라 주세요.'); openItemView(); return false; }
+    } else found = G.attackTarget(type, uid, r.ranked);
     const targets = Array.isArray(found) ? found : found ? [found] : [];
     if (!targets.length && !auto) { toast(type === 'caltrop' ? '지금은 뒤에 친구가 없어요. 조금 뒤에 다시 눌러 보세요.' : '지금은 맞힐 친구가 없어요. 조금 뒤에 다시 눌러 보세요.'); return false; }
     if (!targets.length) {
@@ -790,10 +836,11 @@
       // 누르지 않으면 몇 초 뒤 저절로 써요. 아래 막대가 줄어들며 남은 시간을 보여 줘요
       const auto = (C.autoItemSeconds || 0) * 1000;
       const left = auto ? Math.max(0, (me.holdAt || DB.now()) + auto - DB.now()) : 0;
-      btn.innerHTML = `<span class="ib-icon">${it.icon}</span><span><b>${it.name} 쓰기</b><small>${it.desc}${auto ? ' · 안 누르면 저절로 써요' : ''}</small></span>${auto ? `<i class="ib-auto" style="--d:${(left / 1000).toFixed(1)}s"></i>` : ''}`;
+      const how = PICK_ONE.includes(me.hold) ? '눌러서 맞힐 친구를 골라요' : '눌러서 크게 보고 써요';
+      btn.innerHTML = `<span class="ib-icon">${it.icon}</span><span><b>내 아이템 · ${it.name}</b><small>${how}${auto ? ' · 안 누르면 저절로 써요' : ''}</small></span>${auto ? `<i class="ib-auto" style="--d:${(left / 1000).toFixed(1)}s"></i>` : ''}`;
       btn.dataset.item = me.hold;
       btn.classList.remove('hidden');
-    } else btn.classList.add('hidden');
+    } else { btn.classList.add('hidden'); closeItemView(); }
     renderMarks();
   }
   // 지금 걸려 있는 내 효과: 부적(무적), 부스터 질주, 방패
@@ -940,6 +987,7 @@
     phase = 'done';
     cur = null;
     hideOverlay();
+    closeItemView();
     $('#doneCar').innerHTML = A.carSVG(myP.car || 0);
     $('#doneTitle').textContent = '골인! 🏁';
     $('#doneRank').textContent = '마지막 친구를 기다리고 있습니다';
@@ -951,6 +999,7 @@
     if (phase === 'over') return;
     phase = 'over';
     hideOverlay();
+    closeItemView();
     $('#coolPop').classList.add('hidden');
     const r = me ? myRank() : null;
     $('#doneCar').innerHTML = A.carSVG((myP && myP.car) || 0);
@@ -1013,7 +1062,7 @@
     const span = meta.coolAt && lastTickAt ? Math.max(0, Math.min(now, meta.coolUntil) - Math.max(lastTickAt, meta.coolAt)) : 0;
     lastTickAt = now;
     if (span) holdTimers(span, now);
-    if (clock.paused) { showCool(clock); return; }
+    if (clock.paused) { closeItemView(); showCool(clock); return; }
     if (coolShown) hideCool();
     // 막판 역전 구간이 시작되면 크게 알리고, 시간을 빨갛게
     const fin = inFinal(now);

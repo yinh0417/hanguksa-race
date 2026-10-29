@@ -88,6 +88,21 @@
     <span id="shieldMark" class="shield-mark hidden">🛡️ 거북선 방패 있음</span>
     <button id="itemBtn" class="btn item-btn hidden" type="button"></button>
   </div>
+  <!-- 아이템을 누르면 크게 보기: 공격 아이템은 맞힐 친구를 직접 골라요 -->
+  <div id="itemView" class="item-view hidden" role="dialog" aria-modal="true" aria-labelledby="ivName">
+    <div class="iv-card">
+      <i class="iv-timer" id="ivTimer" aria-hidden="true"></i>
+      <div class="iv-icon" id="ivIcon" aria-hidden="true"></div>
+      <h2 id="ivName"></h2>
+      <p class="iv-desc" id="ivDesc"></p>
+      <p class="iv-hint" id="ivHint"></p>
+      <div class="iv-list" id="ivList"></div>
+      <div class="iv-btns">
+        <button type="button" class="btn" id="ivBack">나중에 쓸래요</button>
+        <button type="button" class="btn primary" id="ivUse">지금 쓸래요</button>
+      </div>
+    </div>
+  </div>
   <div id="overlay" class="overlay hidden" aria-live="assertive">
     <div class="ov-icon" id="ovIcon"></div>
     <div class="ov-car" id="ovCar" aria-hidden="true"></div>
