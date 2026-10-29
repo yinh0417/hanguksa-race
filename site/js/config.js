@@ -24,7 +24,7 @@ window.APP_CONFIG = {
   // ③ 게임 숫자 (시범 수업 뒤 여기서 조정)
   classCount: 7,          // 반 개수
   studentsPerClass: 30,   // 한 반 최대 학생 수(출석번호 1~이 숫자, 전학생까지 넉넉하게)
-  questionsPerSet: 6,     // 세트당 문제 수 (O/X·4지선다 5개 + 단답형 1개)
+  maxQuestions: 30,       // 세트당 최대 문제 수(1개부터 이 숫자까지 자유롭게, 보통 O/X·4지선다 5개 + 단답형 1개)
   raceSeconds: 300,       // 한 판 시간(초) = 5분
   finishCells: 40,        // 결승선까지 칸 수 (5분 + 연속 정답 부스터에 맞춰 늘림. 너무 빨리 골인하면 더 늘려요)
   cellsPerScene: 8,       // 몇 칸마다 배경 장면이 바뀌는지 (결승선 칸 수 ÷ 5)

@@ -362,6 +362,7 @@
     renderEdRows();
   });
   $('#edAddRow').addEventListener('click', () => {
+    if (edRows.length >= C.maxQuestions) { toast(`문제는 ${C.maxQuestions}개까지 넣을 수 있어요.`); return; }
     edRows.push(G.validateRow({ type: 'mc', q: '', choices: ['', '', '', ''], answer: null }));
     renderEdRows();
   });
@@ -371,7 +372,8 @@
     const msg = $('#edMsg');
     edRows.forEach(G.validateRow);
     if (!title) { msg.textContent = '세트 이름을 적어 주세요.'; return; }
-    if (edRows.length !== C.questionsPerSet) { msg.textContent = `문제는 ${C.questionsPerSet}개여야 해요. 지금은 ${edRows.length}개예요.`; return; }
+    if (!edRows.length) { msg.textContent = '문제를 1개 이상 넣어 주세요.'; return; }
+    if (edRows.length > C.maxQuestions) { msg.textContent = `문제는 ${C.maxQuestions}개까지 넣을 수 있어요. 지금은 ${edRows.length}개예요.`; return; }
     const bad = edRows.findIndex(r => r.error);
     if (bad >= 0) { msg.textContent = `${bad + 1}번 문제를 확인해 주세요. ${edRows[bad].error}`; return; }
     const data = { title, era: $('#edEra').value, questions: edRows.map(G.cleanQuestion), updatedAt: DB.now() };
@@ -936,6 +938,7 @@
       coolOn = clock.paused;
       $('#coolBoard').classList.toggle('hidden', !coolOn);
       if (coolOn) {
+        $('#cbCards').classList.toggle('many', questions.length > 9);
         $('#cbCards').innerHTML = G.conceptCards(questions).map((c, k) => `<li><b>${k + 1}</b><p>${esc(c.q)}</p><strong>${esc(c.a)}</strong></li>`).join('');
         $('#cbFoot').textContent = `쉬고 나면 남은 ${fmtTime(clock.left)}!${C.finalSeconds ? ` 마지막 ${C.finalSeconds}초는 ⚡ 역전 구간이에요` : ''}`;
         SOUND.stopBgm();

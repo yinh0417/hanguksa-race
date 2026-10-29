@@ -826,3 +826,10 @@
 /* 새 버전 알림 */
 .update-bar { position: fixed; left: 50%; bottom: 14px; transform: translateX(-50%); z-index: 60; display: flex; align-items: center; gap: 12px;
   padding: 10px 12px 10px 18px; border-radius: 14px; background: #1d1d1f; color: #fff; font-weight: 600; box-shadow: 0 8px 24px rgba(0,0,0,.35); }
+
+/* 쿨링 타임: 문제가 많은 세트(10개 이상)는 카드를 4줄로 작게, 넘치면 스크롤 */
+.cb-cards { min-height: 0; overflow-y: auto; }
+.cb-cards.many { grid-template-columns: repeat(4, 1fr); align-content: start; gap: 1.2vh 1vw; }
+.cb-cards.many li { padding: 1.2vh 1vw; }
+.cb-cards.many p { font-size: 1.8vh; }
+.cb-cards.many strong { font-size: 2.3vh; }
