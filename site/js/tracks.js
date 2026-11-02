@@ -203,6 +203,7 @@
     // 칸 눈금
     const cells = (window.APP_CONFIG && window.APP_CONFIG.finishCells) || 15;
     for (let i = 1; i < cells; i++) {
+      if (cells > 50 && i % 5) continue; // 칸이 많으면 5칸마다 눈금
       const a = p.at(g.sAt(i / cells), -TW / 2 + 3), b = p.at(g.sAt(i / cells), -TW / 2 + 13);
       s += `<path d="M${a.x.toFixed(1)} ${a.y.toFixed(1)} L${b.x.toFixed(1)} ${b.y.toFixed(1)}" stroke="#fff" stroke-width="3" stroke-linecap="round" opacity=".8"/>`;
     }

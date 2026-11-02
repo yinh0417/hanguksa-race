@@ -101,6 +101,12 @@
 
   // 공격 대상(비격진천뢰, 또는 저절로 쓸 때): 물풍선은 바로 앞 친구(내가 1위면 바로 뒤 친구), 신기전은 아직 달리는 친구 중 1위
   // 학생이 크게 보기에서 친구를 고르면 그 친구에게 날아가요(play.js)
+  // 순위를 비밀로 하는 때(끝나기 hideRankSeconds초 전부터). 큰 화면과 학생 화면이 함께 써요
+  function rankSecret(meta, now) {
+    if (!C.hideRankSeconds || !meta || meta.status !== 'racing' || !meta.startAt || now < meta.startAt) return false;
+    return raceClock(meta, now).left <= C.hideRankSeconds * 1000;
+  }
+
   function attackTarget(type, myUid, ranked) {
     const alive = ranked.filter(r => !r.finishedAt && r.uid !== myUid);
     if (!alive.length) return null;
@@ -286,7 +292,7 @@
   window.GAME = {
     bannedWordIn, normalizeNick,
     ITEMS, ERAS, era, shuffle, nextOrder, rollGoodItem, rollBadItem, rollYut, comboBonus, ranking, attackTarget,
-    accuracy, sceneIndex, raceClock, conceptCards, questionStats, answerText, TEMPLATE, parseSheet, validateRow,
+    accuracy, sceneIndex, raceClock, rankSecret, conceptCards, questionStats, answerText, TEMPLATE, parseSheet, validateRow,
     cleanQuestion, SAMPLE_7B, checkShort, choHint,
     timeLimit: q => (q.type === 'ox' ? C.timeLimit.ox : q.type === 'sa' ? (C.timeLimit.sa || 40) : C.timeLimit.mc) * 1000
   };

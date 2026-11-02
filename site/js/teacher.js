@@ -1015,8 +1015,7 @@
 
   // 끝나기 몇 초 전부터는 큰 화면에 순위를 숨겨요(시상대에서 3등, 2등, 1등 순으로 공개)
   function rankSecret(now) {
-    if (!C.hideRankSeconds || !meta || meta.status !== 'racing' || now < meta.startAt) return false;
-    return G.raceClock(meta, now).left <= C.hideRankSeconds * 1000;
+    return G.rankSecret(meta, now);
   }
 
   let lastCountShown = null, lastTickSec = null, finalOn = false, secretOn = false, lastSongName = null, trackToastFor = null;
@@ -1053,7 +1052,7 @@
           $('#vRace').classList.toggle('final', fin);
           if (fin) {
             const cd = $('#countdown');
-            cd.innerHTML = `⚡ 역전 구간!<small>남은 ${C.finalSeconds}초, 정답 하나에 2칸</small>`;
+            cd.innerHTML = `⚡ 역전 구간!<small>남은 ${C.finalSeconds}초, 정답 하나에 2칸${C.hideRankSeconds === C.finalSeconds ? ' · 🤫 순위는 이제 비밀!' : ''}</small>`;
             cd.className = 'countdown final-cd';
             setTimeout(() => cd.classList.add('hidden'), 2200);
             SOUND.play('go');
@@ -1064,7 +1063,7 @@
         if (sec2 !== secretOn) {
           secretOn = sec2;
           $('#vRace').classList.toggle('secret', sec2);
-          if (sec2) {
+          if (sec2 && C.hideRankSeconds !== C.finalSeconds) { // 역전 구간과 같은 때 시작하면 그 알림에 함께 적어요
             const cd = $('#countdown');
             cd.innerHTML = `🤫 순위는 이제 비밀!<small>남은 ${C.hideRankSeconds}초, 시상대에서 공개해요</small>`;
             cd.className = 'countdown final-cd';
