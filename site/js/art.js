@@ -399,7 +399,18 @@
       `<g clip-path="url(#${P.id}${key})">${inner}</g>` +
       rects.map(([x, y, w, h]) => `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="2" fill="url(#${P.id}g)"/>`).join('');
   }
-  const BODY = P => `fill="url(#${P.id}b)" stroke="${P.dark}" stroke-width="1.1" stroke-linejoin="round"`;
+  const BODY = P => P.toy
+    ? `fill="url(#${P.id}b)" stroke="${shade(P.c.body, -0.08)}" stroke-width="2.8" stroke-linejoin="round" class="tb" filter="url(#${P.id}p)"`
+    : `fill="url(#${P.id}b)" stroke="${P.dark}" stroke-width="1.1" stroke-linejoin="round"`;
+  // 장난감 입체 효과: 몸통 모양을 부풀린 것처럼 위쪽은 반짝, 아래쪽은 그늘(동물 캐릭터에는 쓰지 않아요)
+  const TOY_FILTER = id => `<filter id="${id}p" x="-8%" y="-12%" width="116%" height="128%" color-interpolation-filters="sRGB">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="3.4" result="b"/>
+      <feDiffuseLighting in="b" surfaceScale="6" diffuseConstant="1.18" lighting-color="#fff" result="d"><feDistantLight azimuth="240" elevation="58"/></feDiffuseLighting>
+      <feSpecularLighting in="b" surfaceScale="6" specularConstant=".95" specularExponent="13" lighting-color="#fff" result="s"><feDistantLight azimuth="240" elevation="58"/></feSpecularLighting>
+      <feComposite in="SourceGraphic" in2="d" operator="arithmetic" k1="1.05" result="lit"/>
+      <feComposite in="lit" in2="s" operator="arithmetic" k2="1" k3=".55" result="shine"/>
+      <feComposite in="shine" in2="SourceAlpha" operator="in"/>
+    </filter>`;
   const WOOD = '#5a3a1e';
 
   const SPECIAL = {
@@ -1367,9 +1378,11 @@
   function carSVG(i) {
     const n = CARS.length, k = ((i % n) + n) % n, c = CARS[k], id = 'car' + k + '_' + (++carUid);
     const dark = shade(c.body, -0.38), lite = shade(c.body, 0.42), deep = shade(c.body, -0.6);
-    const P = { c, id, dark, lite, deep };
-    const top = `<svg class="car-svg" viewBox="0 -14 120 86" aria-hidden="true">
-      <defs>
+    // 동물 캐릭터가 아닌 탈것은 장난감처럼 통통한 입체로: 몸통에 빛과 그림자, 테두리는 몸 색의 부드러운 선
+    const toy = !/캐릭터/.test(c.group);
+    const P = { c, id, dark, lite, deep, toy };
+    const top = `<svg class="car-svg${toy ? ' toy' : ''}" viewBox="0 -14 120 86" aria-hidden="true">
+      <defs>${toy ? TOY_FILTER(id) : ''}
         <linearGradient id="${id}b" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${lite}"/><stop offset=".42" stop-color="${c.body}"/><stop offset="1" stop-color="${dark}"/></linearGradient>
         <linearGradient id="${id}w" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#e9f5fc"/><stop offset=".5" stop-color="#b9d9ec"/><stop offset="1" stop-color="#7fa4c0"/></linearGradient>
         <linearGradient id="${id}g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".45"/><stop offset=".35" stop-color="#fff" stop-opacity=".08"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>
@@ -1396,7 +1409,7 @@
     const tx = x => 60 + (x - 60) * 0.84;
     return top + `<g transform="translate(60 57) scale(.84 1.1) translate(-60 -57)">
       <defs><clipPath id="${id}c"><rect x="0" y="-30" width="120" height="${s.belt + 30}"/></clipPath><clipPath id="${id}v">${s.win.map(d => `<path d="${d}"/>`).join("")}</clipPath></defs>
-      ${s.body.map(d => `<path d="${d}" fill="url(#${id}b)" stroke="${dark}" stroke-width="1.1" stroke-linejoin="round"/>`).join('')}
+      ${s.body.map(d => `<path d="${d}" ${BODY(P)}/>`).join('')}
       ${s.rails ? `<path d="${s.rails}" stroke="${deep}" stroke-width="2.2" stroke-linecap="round"/>` : ''}
       ${s.win.map(d => `<path d="${d}" fill="url(#${id}w)"/>`).join('')}
       ${s.eyes ? `<g clip-path="url(#${id}c)">${driver(c.driver, hx, hy, hr)}</g>${toonEyes(s.eyes[0], s.eyes[1], s.eyes[2], id)}` : `<g clip-path="url(#${id}v)">${toonEyes(hx, hy, hr, id)}</g>`}

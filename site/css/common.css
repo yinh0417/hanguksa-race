@@ -131,3 +131,7 @@ textarea { resize: vertical; }
 
 /* 제목 윗줄: "이동규 선생님과 함께하는" */
 .title-top { display: block; font-size: .45em; font-weight: 600; letter-spacing: -0.01em; opacity: .75; margin-bottom: .15em; }
+
+/* 탈것(동물 캐릭터 제외): 장난감처럼 둥글게. 몸통 네모는 모서리를 크게 깎고, 선 끝과 꺾이는 곳은 둥글게 */
+.car-svg.toy rect.tb { rx: 9px; ry: 9px; }
+.car-svg.toy path, .car-svg.toy rect, .car-svg.toy polygon { stroke-linejoin: round; }
