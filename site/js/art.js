@@ -1236,17 +1236,17 @@
 
   // 따로 그린 탈것의 얼굴 자리: [눈 가운데 x, y, 크기]. 몸통 앞쪽(오른쪽)에 눈과 웃는 입을 그려요.
   // (말마차·루돌프 썰매처럼 동물이 끄는 것, 얼굴이 이미 있는 거북이 등, 램프 요정이 탄 양탄자, 창이 꽉 찬 가마, 마법 빗자루는 얼굴을 넣지 않아요)
+  // 탄 동물의 얼굴 바로 옆이라 얼굴이 두 개로 겹쳐 보이는 탈것도 넣지 않아요
+  // (인력거, 한성 전차, 전투기, 헬리콥터, 수상 비행기, 글라이더, 황포 돛배, 요트, 어선, 지하철, 기차, 포클레인, 덤프트럭, 레미콘, 크레인차, 콤바인, 농업용 드론)
   const FACES = {
-    stonecart: [73, 34, 4.6], hwacha: [79, 28, 6.7], rickshaw: [36, 41, 4], tram: [92, 40, 5.5], steam: [88, 33, 6],
+    stonecart: [73, 34, 4.6], hwacha: [79, 28, 6.7], steam: [88, 33, 6],
     tiller: [100, 32, 3.8], tank: [82, 26, 4.5], spg: [75, 21, 8], x_rocket: [91, 37, 5.4], x_ufo: [85, 40, 6.8],
     x_cloud: [80, 42, 5.5], p_balloon: [60, 16, 8], s_banana: [98, 47, 4.5], x_paperplane: [75, 38, 4.5],
-    x_sled: [75, 45, 3.5], p_airliner: [76, 33, 5.4], p_fighter: [89, 35, 4.1], p_light: [95, 37, 5],
-    p_biplane: [92, 36, 4.8], p_heli: [88, 43, 4.5], p_blimp: [87, 19, 8], p_seaplane: [93, 38, 5], p_glider: [85, 36, 3.5],
-    p_aerobatic: [100, 36, 4], s_turtle: [81, 37, 5.4], s_panokseon: [85, 47, 5], s_sailboat: [84, 47, 4.5], s_yacht: [86, 48, 4],
-    s_carrier: [87, 48, 4.5], s_submarine: [85, 48, 7.5], s_cruise: [87, 51, 5.4], s_fishing: [85, 48, 6.8], s_motorboat: [89, 48, 6.8],
-    s_container: [88, 50, 4.5], t_subway: [87, 31, 8], t_train: [88, 32, 8], t_excavator: [30, 36, 5], t_dump: [106, 37, 5.2],
-    t_mixer: [107, 37, 4.7], t_forklift: [75, 42, 6.8], t_crane: [88, 38, 6], f_tractor: [98, 40, 6.1], f_combine: [64, 30, 8],
-    f_transplanter: [89, 40, 4.8], f_drone: [68, 40, 3.8]
+    x_sled: [75, 45, 3.5], p_airliner: [76, 33, 5.4], p_light: [95, 37, 5],
+    p_biplane: [92, 36, 4.8], p_blimp: [87, 19, 8],
+    p_aerobatic: [100, 36, 4], s_turtle: [81, 37, 5.4], s_panokseon: [85, 47, 5],
+    s_carrier: [87, 48, 4.5], s_submarine: [85, 48, 7.5], s_cruise: [87, 51, 5.4], s_motorboat: [89, 48, 6.8],
+    s_container: [88, 50, 4.5], t_forklift: [75, 42, 6.8], f_tractor: [98, 40, 6.1], f_transplanter: [89, 40, 4.8]
   };
   function objFace(kind, id) {
     const f = FACES[kind];
