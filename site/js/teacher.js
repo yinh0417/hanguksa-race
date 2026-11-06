@@ -891,9 +891,16 @@
   // 차 위치: 목표 지점(칸)을 향해 부드럽게 따라가며 길 방향으로 회전
   const carShown = {};
   let carLoop = null;
+  // 순위를 비밀로 하는 동안(마지막 1분) 트랙의 차는 그때 자리에 멈춰 보여요(앞뒤 순서로 순위를 알 수 없게)
+  let frozenPos = null;
   function carTarget(i, uid) {
     const s = states[uid] || {};
-    const pos = s.finishedAt ? C.finishCells : Math.min(s.pos || 0, C.finishCells);
+    let pos = s.finishedAt ? C.finishCells : Math.min(s.pos || 0, C.finishCells);
+    if (rankSecret(DB.now())) {
+      frozenPos = frozenPos || {};
+      if (frozenPos[uid] == null) frozenPos[uid] = pos;
+      pos = frozenPos[uid];
+    } else frozenPos = null;
     const lane = i % geo.k, grp = Math.floor(i / geo.k);
     return { s: geo.sAt(pos / C.finishCells) - grp * geo.carW * 0.95, off: ((lane + 0.5) / geo.k - 0.5) * geo.TW * 0.86 };
   }
@@ -986,7 +993,7 @@
       racer.classList.toggle('shielded', !!s.shield);
       racer.classList.toggle('boosting', ['boost1', 'boost2', 'yut', 'warp'].includes(fx.type) && age < 900);
       racer.classList.toggle('struck', (fx.type === 'lightning' || fx.type === 'thunder') && age < 800);
-      racer.classList.toggle('done', !!s.finishedAt);
+      racer.classList.toggle('done', !!s.finishedAt && !secret); // 비밀인 동안은 골인 표시(🏁)도 숨겨요
       const r = rankOf[p.uid];
       const badge = racer.querySelector('.rank-badge');
       badge.textContent = !secret && r <= 3 && (s.pos || s.finishedAt) ? r : '';
@@ -994,7 +1001,7 @@
       if (fx.at && seenFx[p.uid] !== fx.at) {
         const fresh = seenFx[p.uid] !== undefined || !initial;
         seenFx[p.uid] = fx.at;
-        if (fresh && age < 3000 && FX_TEXT[fx.type]) {
+        if (fresh && age < 3000 && FX_TEXT[fx.type] && !(secret && fx.type === 'finish')) {
           const f = document.createElement('span');
           f.className = 'fx-float fx-' + fx.type;
           f.textContent = FX_TEXT[fx.type](fx);
@@ -1302,7 +1309,7 @@
       if (!r) return '<div class="podium-col empty"></div>';
       return `<div class="podium-col p${r.rank}" style="--d:${REVEAL_AT[r.rank]}s">
         ${r.rank <= 3 ? `<div class="podium-crown">${crownSVG(r.rank)}</div>` : ''}
-        <div class="podium-car">${A.carSVG(r.car)}</div>
+        <div class="podium-car">${r.no ? `<b class="car-no">${r.no}번</b>` : ""}${A.carSVG(r.car)}</div>
         <div class="podium-nick${Array.from(r.nick).length > 6 ? ' long' : ''}">${esc(r.nick)}</div>
         <div class="podium-block"><span>${r.rank}</span><small>${['', '🥇', '🥈', '🥉'][r.rank]}</small></div>
       </div>`;
@@ -1310,7 +1317,7 @@
     $('#allRank').innerHTML = ranked.map(r => `
       <li class="${r.rank <= 3 ? 'top' : ''}">
         <span class="ar-rank">${r.rank}위</span>
-        <span class="ar-car">${A.carSVG(r.car)}</span>
+        <span class="ar-car">${r.no ? `<b class="car-no">${r.no}</b>` : ""}${A.carSVG(r.car)}</span>
         <span class="ar-nick">${esc(r.nick)}</span>
         <span class="ar-pos">${r.finishedAt ? '완주' : r.pos + '칸'}</span>
       </li>`).join('') || '<li>참여한 학생이 없어요.</li>';

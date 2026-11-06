@@ -852,3 +852,9 @@
   .podium-call.go { animation-duration: .6s !important; }
   .all-title, .all-rank { animation-duration: .6s !important; }
 }
+
+/* 최종 순위: 친구 이름을 닉네임으로 쓴 경우가 있어서, 탈것 왼쪽 위에 출석번호를 붙여요 */
+.podium-car, .ar-car { position: relative; }
+.car-no { position: absolute; left: 0; top: 0; z-index: 2; background: #1d1d1f; color: #fff; border: 2px solid #fff; border-radius: 999px;
+  font: 700 clamp(1rem, 3.2vh, 2rem)/1.15 var(--font-body); padding: .1em .55em; box-shadow: 0 2px 6px rgba(0,0,0,.3); }
+.ar-car .car-no { font-size: .78em; padding: 0 .4em; border-width: 1.5px; left: -.3em; top: -.25em; }
