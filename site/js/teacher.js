@@ -891,27 +891,23 @@
   // 차 위치: 목표 지점(칸)을 향해 부드럽게 따라가며 길 방향으로 회전
   const carShown = {};
   let carLoop = null;
-  // 순위를 비밀로 하는 동안(마지막 1분) 트랙의 차는 그때 자리에 멈춰 보여요(앞뒤 순서로 순위를 알 수 없게)
-  let frozenPos = null;
+  // 순위를 비밀로 하는 동안(쿨링 타임 뒤 남은 2분) 트랙의 차는 모두 결승선에 모여 있어요.
+  // 줄 서는 순서는 들어온 순서라서 앞뒤 자리로 순위를 알 수 없어요
   function carTarget(i, uid) {
     const s = states[uid] || {};
-    let pos = s.finishedAt ? C.finishCells : Math.min(s.pos || 0, C.finishCells);
-    if (rankSecret(DB.now())) {
-      frozenPos = frozenPos || {};
-      if (frozenPos[uid] == null) frozenPos[uid] = pos;
-      pos = frozenPos[uid];
-    } else frozenPos = null;
+    const pos = rankSecret(DB.now()) || s.finishedAt ? C.finishCells : Math.min(s.pos || 0, C.finishCells);
     const lane = i % geo.k, grp = Math.floor(i / geo.k);
     return { s: geo.sAt(pos / C.finishCells) - grp * geo.carW * 0.95, off: ((lane + 0.5) / geo.k - 0.5) * geo.TW * 0.86 };
   }
   function moveCars() {
     if (!geo || currentView() !== '#vRace') { carLoop = null; return; }
+    const jump = rankSecret(DB.now()); // 결승선으로 모일 때는 달려가는 모습 없이 바로 옮겨요(가는 동안 앞뒤가 보이지 않게)
     approvedList().forEach((p, i) => {
       const el = document.querySelector(`.racer[data-uid="${p.uid}"]`);
       if (!el) return;
       const tg = carTarget(i, p.uid);
       const cur = carShown[p.uid] || (carShown[p.uid] = { s: tg.s, off: tg.off });
-      cur.s += (tg.s - cur.s) * 0.08;
+      cur.s += (tg.s - cur.s) * (jump ? 1 : 0.08);
       cur.off += (tg.off - cur.off) * 0.15;
       const pt = geo.at(cur.s, cur.off);
       el.style.left = pt.x.toFixed(1) + 'px';
@@ -1066,13 +1062,13 @@
           }
         }
         // 순위 숨기기가 시작될 때 크게 알려요
-        const sec2 = rankSecret(now);
+        const sec2 = rankSecret(now) && !clock.paused; // 쿨링 타임과 같은 때 시작하면 쉬는 시간이 끝난 뒤에 알려요
         if (sec2 !== secretOn) {
           secretOn = sec2;
           $('#vRace').classList.toggle('secret', sec2);
           if (sec2 && C.hideRankSeconds !== C.finalSeconds) { // 역전 구간과 같은 때 시작하면 그 알림에 함께 적어요
             const cd = $('#countdown');
-            cd.innerHTML = `🤫 순위는 이제 비밀!<small>남은 ${C.hideRankSeconds}초, 시상대에서 공개해요</small>`;
+            cd.innerHTML = `🤫 순위는 이제 비밀!<small>남은 ${fmtTime(C.hideRankSeconds * 1000)}, 시상대에서 공개해요</small>`;
             cd.className = 'countdown final-cd';
             setTimeout(() => cd.classList.add('hidden'), 2200);
             SOUND.play('count');
