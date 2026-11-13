@@ -1151,6 +1151,7 @@
   }
 
   function fluff(P, o) {
+    if (FLUFF_REAR) return fluffRear(P, o);
     const id = P.id + 'm', B = o.body, F = `url(#${id}f)`;
     const amp = o.smooth ? 0.5 : o.shaggy ? 2.8 : 1.9;
     const defs = `<defs>
@@ -1373,6 +1374,346 @@
       `<path d="M${x - 9} ${y - 14} Q${x - 2} ${y - 22} ${x - 1} ${y - 35} Q${x + 3} ${y - 22} ${x + 9} ${y - 14} Z" fill="#4a2a6b"/>` +
       `<path d="M${x - 12} ${y - 14} H${x + 12}" stroke="#3a1f5c" stroke-width="3" stroke-linecap="round"/><path d="M${x - 7.5} ${y - 16} Q${x} ${y - 18} ${x + 7.5} ${y - 16}" stroke="#f2c14e" stroke-width="1.6" fill="none"/>` +
       `<path d="M${x + 1} ${y - 25} l.9 1.9 l2 .2 l-1.5 1.3 l.5 2 l-1.9 -1.1 l-1.9 1.1 l.5 -2 l-1.5 -1.3 l2 -.2 Z" fill="#ffe066"/>`;
+  }
+
+  // ===== 뒷모습: 큰 화면 3D(뒤에서 따라가는 시점)에 써요 =====
+  // 그림 틀은 가로 120, 세로 -30~70, 땅은 y=66, 가운데는 x=60.
+  // 탈것 무리마다 공통 틀(승용차·상자차·궤도차·비행기·배·상상 탈것·동물)에 몸 색과 줄무늬 색을 입히고,
+  // 탄 동물은 뒤돌아보는 얼굴로 창문에 보여요. 동물 캐릭터는 같은 털·귀·꼬리로 등을 그려요.
+  let rearUid = 0, FLUFF_REAR = false;
+  const rearDefs = (id, c) => `<defs>
+      <linearGradient id="${id}b" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${shade(c.body, 0.35)}"/><stop offset=".45" stop-color="${c.body}"/><stop offset="1" stop-color="${shade(c.body, -0.3)}"/></linearGradient>
+      <linearGradient id="${id}h" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#000" stop-opacity=".2"/><stop offset=".22" stop-color="#000" stop-opacity="0"/><stop offset=".78" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".2"/></linearGradient>
+      <linearGradient id="${id}w" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#e9f5fc"/><stop offset=".6" stop-color="#a9cde3"/><stop offset="1" stop-color="#7fa4c0"/></linearGradient>
+      <radialGradient id="${id}s"><stop offset="0" stop-color="#000" stop-opacity=".4"/><stop offset="1" stop-color="#000" stop-opacity="0"/></radialGradient>
+    </defs>`;
+  const rShadow = (id, rx, y) => `<ellipse cx="60" cy="${y || 66}" rx="${rx}" ry="${f1(rx * 0.1 + 2.5)}" fill="url(#${id}s)"/>`;
+  const rTire = (x, top, w) => `<rect x="${f1(x - w / 2)}" y="${top}" width="${w}" height="${66 - top}" rx="${f1(w * 0.36)}" fill="#26262b"/>` +
+    `<path d="M${f1(x - w / 2 + 2)} ${top + 4} H${f1(x + w / 2 - 2)} M${f1(x - w / 2 + 2)} ${top + 9} H${f1(x + w / 2 - 2)}" stroke="#4a4a52" stroke-width="1.4"/>`;
+  const rTail = (x, y, w, h, round) => round
+    ? `<circle cx="${x}" cy="${y}" r="${w / 2}" fill="#ff4b3e" stroke="#9c1c14" stroke-width=".8"/><circle cx="${f1(x - w * 0.15)}" cy="${f1(y - w * 0.15)}" r="${f1(w * 0.15)}" fill="#ffd0c8"/>`
+    : `<rect x="${f1(x - w / 2)}" y="${f1(y - h / 2)}" width="${w}" height="${h}" rx="${f1(Math.min(w, h) * 0.35)}" fill="#ff4b3e" stroke="#9c1c14" stroke-width=".8"/><rect x="${f1(x - w / 2 + 1.2)}" y="${f1(y - h / 2 + 1)}" width="${f1(w * 0.45)}" height="${f1(h * 0.35)}" rx="1" fill="#ffd0c8" opacity=".8"/>`;
+  const rPlate = (y, c) => `<rect x="50" y="${y}" width="20" height="7" rx="1.5" fill="#fff" stroke="${shade(c.stripe, -0.25)}" stroke-width="1"/><path d="M53 ${y + 3.5} H67" stroke="#8a8f99" stroke-width="1.4" stroke-dasharray="2 1.4"/>`;
+  const rBumper = (L, R, y) => `<rect x="${L - 1}" y="${y}" width="${R - L + 2}" height="6" rx="3" fill="#e3e5ec" stroke="#a9adba" stroke-width=".6"/>`;
+  const rFace = (P, x, y, r) => driver(P.c.driver, x, y, r);
+  const rBodyAttr = (P) => `fill="url(#${P.id}b)" stroke="${P.dark}" stroke-width="1.1" stroke-linejoin="round"`;
+  // 창문 안에 뒤돌아보는 운전자
+  function rWin(P, d, x, y, r) {
+    const k = P.id + 'v' + (++rearUid);
+    return `<defs><clipPath id="${k}"><path d="${d}"/></clipPath></defs><path d="${d}" fill="url(#${P.id}w)" stroke="${P.deep}" stroke-width=".8"/>` +
+      `<g clip-path="url(#${k})">${rFace(P, x, y, r)}<path d="${d}" fill="#fff" opacity=".1"/></g>`;
+  }
+  const rRect = (x, y, w, h) => `M${x} ${y} H${x + w} V${y + h} H${x} Z`;
+  const rOval = (x, y, rx, ry) => `M${x - rx} ${y} A${rx} ${ry} 0 1 0 ${x + rx} ${y} A${rx} ${ry} 0 1 0 ${x - rx} ${y} Z`;
+  // 물 위(배·돌고래): 물결과 하얀 물살
+  const rWater = () => `<path d="M0 60 Q15 55 30 60 T60 60 T90 60 T120 60 V70 H0 Z" fill="#5fb8f0"/><path d="M0 60 Q15 55 30 60 T60 60 T90 60 T120 60" stroke="#fff" stroke-width="1.6" fill="none" opacity=".85"/>` +
+    `<path d="M40 68 L60 61 L80 68" stroke="#fff" stroke-width="2.6" fill="none" stroke-linecap="round" opacity=".9"/>`;
+
+  // 승용차: 뒷유리에 운전자 얼굴, 뒷등, 번호판, 범퍼
+  function rCar(P, o) {
+    const { c, id } = P, w = o.w, rw = o.rw, top = o.top, belt = o.belt, bot = o.bot || 60;
+    const L = 60 - w, R = 60 + w;
+    let g = rShadow(id, w + 8) + rTire(L + 7, bot - 8, 13) + rTire(R - 7, bot - 8, 13);
+    const body = `M${L} ${bot - 3} V${belt + 6} Q${L} ${belt} ${L + 4} ${belt - 1} L${60 - rw} ${top + 5} Q${60 - rw + 1} ${top} ${60 - rw + 6} ${top} H${60 + rw - 6} Q${60 + rw - 1} ${top} ${60 + rw} ${top + 5} L${R - 4} ${belt - 1} Q${R} ${belt} ${R} ${belt + 6} V${bot - 3} Q${R} ${bot} ${R - 3} ${bot} H${L + 3} Q${L} ${bot} ${L} ${bot - 3} Z`;
+    g += `<path d="${body}" ${rBodyAttr(P)}/><path d="${body}" fill="url(#${id}h)"/>`;
+    const fr = Math.min((belt - top) * 0.36, rw * 0.42);
+    g += rWin(P, `M${60 - rw + 4} ${top + 4} H${60 + rw - 4} L${R - 8} ${belt - 2} H${L + 8} Z`, 60, (top + belt) / 2 + fr * 0.4, fr);
+    g += `<path d="M${L + 2} ${belt + 3} H${R - 2}" stroke="${c.stripe}" stroke-width="2.4" stroke-linecap="round"/>`;
+    const ly = belt + 8;
+    if (o.lights === 'bar') g += `<rect x="${L + 4}" y="${ly - 2}" width="${2 * w - 8}" height="4.5" rx="2.2" fill="#ff4b3e" stroke="#9c1c14" stroke-width=".7"/>`;
+    else if (o.lights === 'round') g += rTail(L + 9, ly + 1, 8, 8, true) + rTail(R - 9, ly + 1, 8, 8, true);
+    else if (o.lights === 'tall') g += rTail(L + 5, ly + 3, 5, 12) + rTail(R - 5, ly + 3, 5, 12);
+    else g += rTail(L + 9, ly, 11, 6) + rTail(R - 9, ly, 11, 6);
+    if (!o.noPlate) g += rPlate(bot - 13, c);
+    g += rBumper(L, R, bot - 5);
+    if (o.exhaust) [R - 14, L + 14].slice(0, o.exhaust).forEach(x => { g += `<ellipse cx="${x}" cy="${bot + 1.5}" rx="3" ry="2" fill="#4a4a50" stroke="#c9ccd6" stroke-width="1"/>`; });
+    return g + (o.extra ? o.extra(P, o) : '');
+  }
+  const rSpare = (P, o) => `<circle cx="60" cy="${o.belt + 14}" r="9" fill="#26262b"/><circle cx="60" cy="${o.belt + 14}" r="4.4" fill="#c9ccd6" stroke="#8a8f99" stroke-width=".8"/>`;
+  const rSpoiler = (P, o) => `<path d="M${64 - o.w} ${o.belt - 5} H${56 + o.w}" stroke="${P.deep}" stroke-width="3.6" stroke-linecap="round"/><path d="M${74 - o.w} ${o.belt - 4} V${o.belt + 1} M${46 + o.w} ${o.belt - 4} V${o.belt + 1}" stroke="${P.deep}" stroke-width="2.2"/>`;
+  const rSiren = (y) => `<rect x="44" y="${y}" width="16" height="6" rx="2.5" fill="#ff3b30"/><rect x="60" y="${y}" width="16" height="6" rx="2.5" fill="#0a84ff"/><rect x="46" y="${y + 1}" width="5" height="2" rx="1" fill="#fff" opacity=".7"/><rect x="62" y="${y + 1}" width="5" height="2" rx="1" fill="#fff" opacity=".7"/>`;
+  const rTaxi = (P, o) => `<rect x="48" y="${o.top - 8}" width="24" height="8.5" rx="2" fill="#ffd84a" stroke="#b8860b" stroke-width=".8"/><text x="60" y="${o.top - 1.6}" text-anchor="middle" font-size="6" font-weight="800" fill="#3a2a00" font-family="sans-serif">TAXI</text>`;
+
+  // 상자처럼 높은 차(버스·트럭·기차): 뒷창이 있으면 그 안에, 없으면 옆으로 고개를 내민 운전자
+  function rBox(P, o) {
+    const { c, id } = P, w = o.w, top = o.top, bot = o.bot || 60, L = 60 - w, R = 60 + w, rr = o.round || 5;
+    let g = rShadow(id, w + 8) + rTire(L + 8, bot - 8, o.tw || 14) + rTire(R - 8, bot - 8, o.tw || 14);
+    if (o.peek) g += rFace(P, L + 1, top + 10, 8);
+    g += `<rect x="${L}" y="${top}" width="${2 * w}" height="${bot - top}" rx="${rr}" ${rBodyAttr(P)}/><rect x="${L}" y="${top}" width="${2 * w}" height="${bot - top}" rx="${rr}" fill="url(#${id}h)"/>`;
+    if (o.win) {
+      const [wy, wh] = o.win;
+      g += rWin(P, rRect(L + 7, wy, 2 * w - 14, wh), 60, wy + wh * 0.6, Math.min(wh * 0.38, 9));
+    }
+    const doorTop = o.win ? o.win[0] + o.win[1] + 3 : top + 4;
+    if (o.doors) g += `<path d="M60 ${doorTop} V${bot - 7}" stroke="${P.deep}" stroke-width="1.2"/><path d="M56 ${(doorTop + bot) / 2} h-3 M64 ${(doorTop + bot) / 2} h3" stroke="#c9ccd6" stroke-width="2" stroke-linecap="round"/>`;
+    if (o.band) g += `<rect x="${L}" y="${o.band}" width="${2 * w}" height="5" fill="${c.stripe}"/>`;
+    if (o.cross) g += `<path d="M56 ${top + 12} h8 v6 h6 v8 h-6 v6 h-8 v-6 h-6 v-8 h6 Z" fill="#e2412e" stroke="#fff" stroke-width="1.2"/>`;
+    if (o.ribs) for (let y = top + 6; y < bot - 10; y += 7) g += `<path d="M${L + 4} ${y} H${R - 4}" stroke="${P.deep}" stroke-width="1.2" opacity=".55"/>`;
+    g += rTail(L + 5, bot - 12, 5, 11) + rTail(R - 5, bot - 12, 5, 11) + rPlate(bot - 13, c) + rBumper(L, R, bot - 5);
+    if (o.siren) g += rSiren(top - 6);
+    return g + (o.extra ? o.extra(P, o) : '');
+  }
+  // 무한궤도 차(전차·자주포·포클레인·콤바인)
+  function rTreads(L, R, top) {
+    let g = '';
+    [L, R - 16].forEach(x => {
+      g += `<rect x="${x}" y="${top}" width="16" height="${66 - top}" rx="5" fill="#2f3229" stroke="#1b1d17" stroke-width="1"/>`;
+      for (let y = top + 4; y < 64; y += 5) g += `<path d="M${x + 2} ${y} H${x + 14}" stroke="#5b5f52" stroke-width="1.6"/>`;
+    });
+    return g;
+  }
+  function rCamo(P, pts) { return pts.map(([x, y, r]) => `<ellipse cx="${x}" cy="${y}" rx="${r}" ry="${f1(r * 0.6)}" fill="${P.c.stripe}" opacity=".75"/>`).join(''); }
+  // 큰 뒷바퀴 둘(트랙터·경운기)
+  const rBigTire = (x, top, w) => `<rect x="${f1(x - w / 2)}" y="${top}" width="${w}" height="${66 - top}" rx="${f1(w * 0.42)}" fill="#26262b"/>` +
+    Array.from({ length: Math.floor((66 - top - 6) / 6) }, (_, i) => `<path d="M${f1(x - w / 2 + 2)} ${top + 6 + i * 6} l${f1(w / 2 - 2)} 3 l${f1(w / 2 - 2)} -3" stroke="#4a4a52" stroke-width="1.6" fill="none"/>`).join('');
+  // 옆에서 본 바퀴(얇은 타원): 마차·수레
+  const rEdgeWheel = (x, y, ry, col) => `<ellipse cx="${x}" cy="${y}" rx="${f1(ry * 0.26)}" ry="${ry}" fill="${col || '#6b4423'}" stroke="#3a2412" stroke-width="1"/>`;
+
+  // 비행기: 날개·몸통·꼬리날개, 몸통 뒤 동그란 창에 운전자
+  function rPlane(P, o) {
+    const { c, id } = P, B = rBodyAttr(P);
+    let g = rShadow(id, o.shadow || 30);
+    const wy = o.wingY, sp = o.span || 54, th = o.thick || 5;
+    if (o.fin2) g += `<path d="M54 ${o.fy} L44 ${o.fy - 26} L49 ${o.fy - 26} L58 ${o.fy} Z M66 ${o.fy} L76 ${o.fy - 26} L71 ${o.fy - 26} L62 ${o.fy} Z" fill="${c.stripe}" stroke="${P.deep}" stroke-width=".8"/>`;
+    else g += `<path d="M57 ${o.fy} L58.5 ${o.fy - (o.finH || 30)} H61.5 L63 ${o.fy} Z" fill="${c.stripe}" stroke="${P.deep}" stroke-width=".8"/>`;
+    if (o.tStab) g += `<rect x="44" y="${o.fy - (o.finH || 30) - 1}" width="32" height="3" rx="1.5" fill="${c.body}" stroke="${P.dark}" stroke-width=".7"/>`;
+    else g += `<path d="M42 ${o.fy + 1} H78" stroke="${P.dark}" stroke-width="3" stroke-linecap="round"/>`;
+    const wing = y => `<path d="M60 ${y - th / 2} L${60 - sp} ${y + 1} L${60 - sp} ${y + th / 2 + 1} L60 ${y + th / 2} L${60 + sp} ${y + th / 2 + 1} L${60 + sp} ${y + 1} Z" ${B}/>`;
+    if (o.wing2 != null) g += wing(o.wing2) + `<path d="M${60 - sp * 0.6} ${o.wing2} V${wy} M${60 + sp * 0.6} ${o.wing2} V${wy}" stroke="${P.deep}" stroke-width="1.4"/>`;
+    if (!o.lowWing) g += wing(wy);
+    g += `<ellipse cx="60" cy="${o.fusY}" rx="${o.fusR}" ry="${f1(o.fusR * (o.fusRy || 1))}" ${B}/><ellipse cx="60" cy="${o.fusY}" rx="${o.fusR}" ry="${f1(o.fusR * (o.fusRy || 1))}" fill="url(#${id}h)"/>`;
+    if (o.lowWing) g += wing(wy);
+    if (o.struts) g += `<path d="M${60 - sp * 0.45} ${wy + 2} L52 ${o.fusY + 4} M${60 + sp * 0.45} ${wy + 2} L68 ${o.fusY + 4}" stroke="${P.deep}" stroke-width="1.4"/>`;
+    if (o.engines) [60 - o.engines, 60 + o.engines].forEach(x => { g += `<circle cx="${x}" cy="${wy + 7}" r="5.5" fill="#c9ccd6" stroke="#7c8291" stroke-width="1"/><circle cx="${x}" cy="${wy + 7}" r="3" fill="#3a3a40"/>`; });
+    if (o.nozzle) g += `<circle cx="60" cy="${o.fusY + 2}" r="5.5" fill="#3a3a40" stroke="#7c8291" stroke-width="1.2"/><circle cx="60" cy="${o.fusY + 2}" r="3.2" fill="#ff9f0a" opacity=".9"/>`;
+    if (o.gear) g += rTire(50, o.gear, 6) + rTire(70, o.gear, 6) + `<path d="M50 ${o.gear} L54 ${o.fusY + 6} M70 ${o.gear} L66 ${o.fusY + 6}" stroke="#7c8291" stroke-width="1.4"/>`;
+    if (o.floats) g += [40, 80].map(x => `<path d="M${x} ${o.fusY + 8} V52" stroke="${P.deep}" stroke-width="1.4"/><ellipse cx="${x}" cy="55" rx="7" ry="5" fill="#f4f5f7" stroke="#8a8f99" stroke-width="1"/>`).join('') + rWater();
+    const cy = o.canopyY != null ? o.canopyY : o.fusY, cr = o.canopyR || 6.5;
+    g += rWin(P, rOval(60, cy, cr, cr * 0.95), 60, cy + cr * 0.15, cr * 0.82);
+    return g;
+  }
+  // 배: 물결 위에 배 뒤쪽(선미), 위에 갑판·돛·굴뚝
+  const rHull = (P, w, top, col) => `<path d="M${60 - w} ${top} H${60 + w} L${60 + w * 0.72} 63 H${60 - w * 0.72} Z" fill="${col || `url(#${P.id}b)`}" stroke="${P.deep}" stroke-width="1.1" stroke-linejoin="round"/><path d="M${60 - w} ${top + 1.5} H${60 + w}" stroke="${P.c.stripe}" stroke-width="3"/>`;
+
+  const REAR = {
+    // 승용차
+    ev:     P => rCar(P, { w: 40, belt: 34, top: 12, rw: 30, lights: 'bar' }),
+    suv:    P => rCar(P, { w: 42, belt: 33, top: 4, rw: 36, lights: 'tall', noPlate: true, extra: rSpare }),
+    sport:  P => rCar(P, { w: 45, belt: 38, top: 20, rw: 27, exhaust: 2, extra: rSpoiler }),
+    luxury: P => rCar(P, { w: 41, belt: 34, top: 10, rw: 31, lights: 'bar', exhaust: 2 }),
+    hatch:  P => rCar(P, { w: 39, belt: 35, top: 8, rw: 33 }),
+    pickup: P => rCar(P, { w: 42, belt: 30, top: 6, rw: 30, lights: 'tall' }),
+    box:    P => rCar(P, { w: 38, belt: 32, top: -2, rw: 37, lights: 'tall' }),
+    retro:  P => rCar(P, { w: 37, belt: 37, top: 12, rw: 25, lights: 'round' }),
+    jeep:   P => rCar(P, { w: 41, belt: 32, top: 6, rw: 38, noPlate: true, extra: rSpare }),
+    taxi:   P => rCar(P, { w: 40, belt: 34, top: 10, rw: 31, extra: rTaxi }),
+    police: P => rCar(P, { w: 41, belt: 34, top: 10, rw: 31, lights: 'bar', extra: (P2, o) => rSiren(o.top - 6) }),
+    // 큰 차
+    ambulance: P => rBox(P, { w: 41, top: -6, win: [0, 10], doors: true, cross: false, siren: true, band: 30, extra: () => `<path d="M56 34 h8 v4 h4 v6 h-4 v4 h-8 v-4 h-4 v-6 h4 Z" fill="#e2412e"/>` }),
+    fire:   P => rBox(P, { w: 44, top: -2, peek: true, siren: true, band: 22, extra: () =>
+      `<rect x="22" y="-10" width="76" height="8" rx="2" fill="none" stroke="#c9ccd6" stroke-width="2"/>` + [30, 42, 54, 66, 78, 90].map(x => `<path d="M${x} -10 v8" stroke="#c9ccd6" stroke-width="1.6"/>`).join('') +
+      `<circle cx="46" cy="38" r="7" fill="#f5f5f7" stroke="#8a8f99" stroke-width="1.2"/><circle cx="46" cy="38" r="3" fill="#8a8f99"/><circle cx="74" cy="38" r="7" fill="#f5f5f7" stroke="#8a8f99" stroke-width="1.2"/><circle cx="74" cy="38" r="3" fill="#8a8f99"/>` }),
+    bus:    P => rBox(P, { w: 44, top: -16, win: [-10, 20], band: 16, extra: () => `<rect x="34" y="26" width="52" height="8" rx="2" fill="#2b2b33" opacity=".7"/>` }),
+    mtruck: P => rBox(P, { w: 44, top: -4, extra: (P2) =>
+      `<path d="M17 18 Q17 -12 60 -12 Q103 -12 103 18 V40 H17 Z" fill="${shade(P2.c.body, -0.12)}" stroke="${P2.deep}" stroke-width="1"/><path d="M26 40 V16 Q26 -2 60 -2 Q94 -2 94 16 V40 Z" fill="#26271f"/>` + rFace(P2, 60, 22, 9) +
+      rCamo(P2, [[30, 4, 6], [84, 8, 7], [46, -6, 5]]) }),
+    dump:   P => rBox(P, { w: 44, top: 4, ribs: true, extra: (P2) => `<path d="M14 4 L22 -8 H98 L106 4 Z" fill="${shade(P2.c.body, -0.15)}" stroke="${P2.deep}" stroke-width="1"/><path d="M28 -6 Q40 -16 52 -8 Q64 -18 78 -8 Q88 -14 94 -6 Z" fill="#8a6a48"/>` + rFace(P2, 16, 0, 7.5) }),
+    t_dump: P => REAR.dump(P),
+    t_mixer: P => rBox(P, { w: 40, top: 30, peek: false, extra: (P2) => {
+      let g = `<ellipse cx="60" cy="10" rx="34" ry="28" fill="url(#${P2.id}b)" stroke="${P2.dark}" stroke-width="1.1"/><ellipse cx="60" cy="10" rx="34" ry="28" fill="url(#${P2.id}h)"/>`;
+      for (let i = -2; i <= 2; i++) g += `<path d="M${46 + i * 12} -16 Q${66 + i * 12} 10 ${46 + i * 12} 36" stroke="${P2.c.stripe}" stroke-width="3.2" fill="none" opacity=".9"/>`;
+      return g + `<path d="M54 34 L60 44 L66 34 Z" fill="#9aa0ae"/>` + rFace(P2, 22, 24, 7);
+    } }),
+    t_subway: P => rBox(P, { w: 42, top: -18, round: 12, win: [-10, 22], doors: true, band: 18, tw: 8 }),
+    t_train:  P => rBox(P, { w: 42, top: -16, round: 16, win: [-8, 20], band: 16, tw: 8, extra: P2 => `<path d="M30 -16 Q60 -26 90 -16" stroke="${P2.c.stripe}" stroke-width="3" fill="none"/>` }),
+    tram:   P => rBox(P, { w: 40, top: -12, round: 10, win: [-6, 18], doors: true, band: 18, tw: 8, extra: () => `<path d="M60 -12 L50 -24 L66 -30" stroke="#4a4a52" stroke-width="1.8" fill="none"/><path d="M40 -30 H90" stroke="#4a4a52" stroke-width="1"/>` }),
+    steam:  P => rBox(P, { w: 42, top: 0, round: 6, tw: 9, extra: (P2) => `<path d="M22 0 Q30 -12 40 -4 Q50 -14 60 -5 Q72 -15 80 -4 Q90 -12 98 0 Z" fill="#26262b"/>` + rFace(P2, 60, -6, 7.5) +
+      `<circle cx="44" cy="-20" r="7" fill="#f4f5f7" opacity=".9"/><circle cx="56" cy="-26" r="9" fill="#e9ebf1" opacity=".85"/><circle cx="72" cy="-22" r="6" fill="#f4f5f7" opacity=".8"/>` }),
+    // 궤도 차
+    tank: P => rShadow(P.id, 52) + rTreads(10, 110, 36) +
+      `<path d="M24 60 V40 Q24 32 32 32 H88 Q96 32 96 40 V60 Z" ${rBodyAttr(P)}/>` + rCamo(P, [[38, 44, 7], [80, 50, 8], [60, 40, 5]]) +
+      rFace(P, 60, 6, 8) + `<path d="M36 32 Q38 12 60 10 Q82 12 84 32 Z" ${rBodyAttr(P)}/><ellipse cx="60" cy="12" rx="10" ry="3" fill="${P.deep}"/>` + rCamo(P, [[48, 24, 6], [72, 20, 5]]) +
+      `<path d="M78 12 L84 -16" stroke="#3a3a40" stroke-width="1.2"/>`,
+    spg: P => rShadow(P.id, 52) + rTreads(10, 110, 36) + `<path d="M60 4 L62 -26" stroke="${P.deep}" stroke-width="7" stroke-linecap="round"/>` +
+      `<path d="M24 60 V38 H96 V60 Z" ${rBodyAttr(P)}/>` + rFace(P, 80, 0, 7.5) + `<path d="M30 38 L34 6 H86 L90 38 Z" ${rBodyAttr(P)}/>` + rCamo(P, [[44, 20, 7], [76, 28, 6], [56, 50, 8]]) +
+      `<rect x="40" y="14" width="16" height="10" rx="2" fill="${P.deep}" opacity=".5"/>`,
+    t_excavator: P => rShadow(P.id, 50) + rTreads(12, 108, 44) + `<rect x="24" y="44" width="72" height="14" rx="3" fill="#3a3a40"/>` +
+      `<path d="M66 20 L80 -24 L88 -22 L76 22 Z" ${rBodyAttr(P)}/><path d="M80 -24 L96 -18 L92 -10 L84 -14 Z" fill="${P.deep}"/>` +
+      `<rect x="24" y="0" width="38" height="44" rx="5" ${rBodyAttr(P)}/>` + rWin(P, rRect(29, 5, 28, 20), 43, 17, 8) + `<rect x="62" y="20" width="34" height="24" rx="8" ${rBodyAttr(P)}/>` +
+      `<path d="M66 30 H92" stroke="${P.c.stripe}" stroke-width="3"/>`,
+    t_forklift: P => rShadow(P.id, 40) + `<rect x="34" y="-22" width="6" height="58" fill="#7c8291"/><rect x="80" y="-22" width="6" height="58" fill="#7c8291"/>` +
+      rTire(30, 46, 13) + rTire(90, 46, 13) + rFace(P, 60, 14, 9) +
+      `<path d="M28 38 Q28 24 40 24 H80 Q92 24 92 38 V58 H28 Z" ${rBodyAttr(P)}/><path d="M32 24 V-4 M88 24 V-4 M30 -4 H90" stroke="#3a3a40" stroke-width="3" stroke-linecap="round"/>` +
+      `<path d="M30 46 H90" stroke="${P.c.stripe}" stroke-width="5" stroke-dasharray="6 6"/>`,
+    t_crane: P => rBox(P, { w: 44, top: 22, extra: (P2) => `<path d="M52 24 L44 -26 M68 24 L52 -26" stroke="${P2.c.stripe}" stroke-width="3.4"/><path d="M50 14 L64 6 M48 2 L60 -6 M46 -10 L56 -16" stroke="${P2.c.stripe}" stroke-width="1.8"/>` +
+      `<path d="M14 54 H4 M106 54 H116" stroke="#3a3a40" stroke-width="4" stroke-linecap="round"/>` + rWin(P2, rRect(70, 0, 22, 18), 81, 10, 7.5) }),
+    // 농기계
+    f_tractor: P => rShadow(P.id, 52) + rBigTire(20, 22, 22) + rBigTire(100, 22, 22) +
+      `<path d="M8 24 Q20 12 32 24 M88 24 Q100 12 112 24" stroke="url(#${P.id}b)" stroke-width="6" fill="none"/>` +
+      `<rect x="36" y="-4" width="48" height="50" rx="5" ${rBodyAttr(P)}/><rect x="32" y="-10" width="56" height="7" rx="3" fill="${P.deep}"/>` + rWin(P, rRect(41, 0, 38, 26), 60, 15, 10) +
+      `<rect x="40" y="46" width="40" height="12" rx="3" ${rBodyAttr(P)}/><path d="M54 58 h12 v6 h-12 Z" fill="#3a3a40"/>`,
+    tiller: P => rShadow(P.id, 46) + rBigTire(24, 34, 18) + rBigTire(96, 34, 18) +
+      `<rect x="40" y="28" width="40" height="22" rx="4" ${rBodyAttr(P)}/><path d="M48 50 L34 64 M72 50 L86 64" stroke="#3a3a40" stroke-width="3" stroke-linecap="round"/>` +
+      `<rect x="50" y="18" width="20" height="12" rx="4" fill="${P.c.stripe}"/>` + rFace(P, 60, 8, 9),
+    f_combine: P => rShadow(P.id, 52) + rTreads(12, 108, 44) + `<rect x="20" y="-10" width="80" height="62" rx="6" ${rBodyAttr(P)}/><rect x="20" y="-10" width="80" height="62" rx="6" fill="url(#${P.id}h)"/>` +
+      `<path d="M26 -6 L10 -24" stroke="${P.c.stripe}" stroke-width="6" stroke-linecap="round"/>` + rWin(P, rRect(62, -4, 30, 18), 77, 7, 8) +
+      `<path d="M28 20 H92 M28 28 H92" stroke="${P.deep}" stroke-width="1.4" opacity=".6"/><path d="M28 36 H92" stroke="${P.c.stripe}" stroke-width="4"/>`,
+    f_transplanter: P => rShadow(P.id, 50) + rTire(30, 44, 12) + rTire(90, 44, 12) +
+      `<rect x="8" y="40" width="104" height="8" rx="3" fill="#3a3a40"/>` + [16, 30, 44, 58, 72, 86, 100].map(x => `<path d="M${x} 40 q-3 -10 0 -16 M${x} 40 q3 -9 5 -13" stroke="#34c759" stroke-width="2" fill="none" stroke-linecap="round"/>`).join('') +
+      `<rect x="38" y="6" width="44" height="34" rx="6" ${rBodyAttr(P)}/>` + rFace(P, 60, 0, 9) + `<path d="M38 26 H82" stroke="${P.c.stripe}" stroke-width="3"/>`,
+    f_drone: P => rShadow(P.id, 26, 66) + `<path d="M14 18 L106 18 M34 8 L86 8" stroke="#3a3a40" stroke-width="3" stroke-linecap="round"/>` +
+      [[14, 18], [106, 18], [34, 8], [86, 8]].map(([x, y]) => `<ellipse cx="${x}" cy="${y - 4}" rx="13" ry="2.2" fill="#9aa0ae" opacity=".75"/><rect x="${x - 2}" y="${y - 4}" width="4" height="5" fill="#3a3a40"/>`).join('') +
+      `<rect x="40" y="10" width="40" height="22" rx="8" ${rBodyAttr(P)}/>` + rWin(P, rOval(60, 20, 8, 7), 60, 21, 6.5) +
+      `<path d="M44 32 L40 46 M76 32 L80 46 M36 46 H46 M74 46 H84" stroke="#3a3a40" stroke-width="2" stroke-linecap="round"/><rect x="52" y="32" width="16" height="8" rx="2" fill="${P.c.stripe}"/>`,
+    // 전통 탈것
+    stonecart: P => rShadow(P.id, 42) + `<ellipse cx="22" cy="48" rx="6" ry="17" fill="#8f8b84" stroke="#5c5852" stroke-width="1.4"/><ellipse cx="98" cy="48" rx="6" ry="17" fill="#8f8b84" stroke="#5c5852" stroke-width="1.4"/>` +
+      rFace(P, 60, 16, 10) + `<rect x="26" y="24" width="68" height="26" rx="3" fill="#8b5a2b" stroke="#4a2c12" stroke-width="1.2"/><path d="M26 32 H94 M26 41 H94" stroke="#5a3a1e" stroke-width="1.2"/>`,
+    gama: P => rShadow(P.id, 40) + `<path d="M40 46 V62 M48 46 V64 M72 46 V64 M80 46 V62" stroke="#3a2412" stroke-width="2.6" stroke-linecap="round"/>` +
+      `<rect x="34" y="4" width="52" height="44" rx="3" ${rBodyAttr(P)}/>` + rWin(P, rRect(44, 12, 32, 22), 60, 25, 9.5) +
+      `<path d="M44 12 H76 V22 Q60 28 44 22 Z" fill="${P.c.stripe}" opacity=".9"/><path d="M26 6 Q60 -14 94 6 L88 8 Q60 -4 32 8 Z" fill="#3a2a22"/>` +
+      `<circle cx="28" cy="44" r="4" fill="#6b4423"/><circle cx="92" cy="44" r="4" fill="#6b4423"/><path d="M28 44 H40 M80 44 H92" stroke="#6b4423" stroke-width="3"/>`,
+    carriage: P => rShadow(P.id, 46) + rEdgeWheel(20, 44, 20) + rEdgeWheel(100, 44, 20) + `<path d="M24 44 H96" stroke="#3a2412" stroke-width="3"/>` +
+      `<path d="M30 54 V8 Q30 -6 60 -8 Q90 -6 90 8 V54 Z" ${rBodyAttr(P)}/>` + rWin(P, `M42 6 Q60 -2 78 6 V26 H42 Z`, 60, 17, 9.5) +
+      `<path d="M30 34 H90" stroke="${P.c.stripe}" stroke-width="3"/><rect x="40" y="38" width="40" height="12" rx="2" fill="${P.deep}" opacity=".4"/>`,
+    hwacha: P => rShadow(P.id, 46) + rEdgeWheel(18, 46, 18) + rEdgeWheel(102, 46, 18) + `<path d="M22 46 H98" stroke="#3a2412" stroke-width="3"/>` +
+      `<rect x="26" y="0" width="68" height="40" rx="3" fill="#8b5a2b" stroke="#4a2c12" stroke-width="1.2"/>` +
+      Array.from({ length: 20 }, (_, i) => `<circle cx="${33 + (i % 5) * 13.5}" cy="${7 + Math.floor(i / 5) * 9}" r="3.6" fill="#2a1a10" stroke="${P.c.stripe}" stroke-width="1.2"/>`).join('') +
+      rFace(P, 102, 14, 8) + `<path d="M40 40 L36 60 M80 40 L84 60" stroke="#5a3a1e" stroke-width="3"/>`,
+    rickshaw: P => rShadow(P.id, 44) + rEdgeWheel(22, 44, 20, '#2a2a35') + rEdgeWheel(98, 44, 20, '#2a2a35') +
+      `<path d="M30 44 V10 Q30 -10 60 -10 Q90 -10 90 10 V44 Z" fill="#2a2a35" stroke="#111" stroke-width="1.2"/><path d="M38 44 V12 Q38 -2 60 -2 Q82 -2 82 12 V44 Z" fill="#4a1c22"/>` +
+      rFace(P, 60, 18, 10) + `<rect x="32" y="40" width="56" height="12" rx="3" fill="${P.c.stripe}"/><path d="M30 0 H90" stroke="${P.c.stripe}" stroke-width="2"/>`,
+    // 상상 탈것
+    x_rudolph: P => rShadow(P.id, 44) + `<path d="M44 -14 L40 -26 M40 -20 L32 -24 M44 -14 L48 -24 M76 -14 L80 -26 M80 -20 L88 -24 M76 -14 L72 -24" stroke="#8b5a2b" stroke-width="2.6" stroke-linecap="round"/><ellipse cx="60" cy="-8" rx="16" ry="9" fill="#a0703f"/>` +
+      `<path d="M26 60 Q18 60 18 50 M94 60 Q102 60 102 50" stroke="#f5c242" stroke-width="3" fill="none" stroke-linecap="round"/><path d="M24 62 H96" stroke="#f5c242" stroke-width="3" stroke-linecap="round"/>` +
+      `<path d="M68 14 Q66 -2 80 -2 Q94 0 90 16 Z" fill="#8b5a2b"/>` + rFace(P, 46, 12, 9) +
+      `<path d="M26 56 V26 Q26 18 34 18 H86 Q94 18 94 26 V56 Z" ${rBodyAttr(P)}/><path d="M26 26 H94" stroke="${P.c.stripe}" stroke-width="3"/>`,
+    x_pumpkin: P => rShadow(P.id, 46) + rEdgeWheel(16, 46, 18, '#d4a72c') + rEdgeWheel(104, 46, 18, '#d4a72c') +
+      `<ellipse cx="60" cy="26" rx="40" ry="32" ${rBodyAttr(P)}/>` + [36, 48, 72, 84].map(x => `<path d="M60 -6 Q${x} 26 60 58" stroke="${P.dark}" stroke-width="1.4" fill="none" opacity=".5"/>`).join('') +
+      rWin(P, rOval(60, 24, 13, 11), 60, 26, 9.5) + `<path d="M60 -6 q-2 -8 6 -12" stroke="#3e9a4d" stroke-width="4" fill="none" stroke-linecap="round"/>`,
+    x_carpet: P => rShadow(P.id, 34) + rFace(P, 60, 14, 10) + `<rect x="46" y="22" width="28" height="18" rx="7" fill="${P.c.stripe}"/>` +
+      `<path d="M16 50 L30 36 H90 L104 50 Z" ${rBodyAttr(P)}/><path d="M20 49 L32 38 H88 L100 49" stroke="${P.c.stripe}" stroke-width="2" fill="none"/>` +
+      [20, 32, 44, 56, 68, 80, 92, 100].map(x => `<path d="M${x} 50 v5" stroke="${P.c.stripe}" stroke-width="2" stroke-linecap="round"/>`).join(''),
+    x_broom: P => rShadow(P.id, 26) + `<path d="M60 40 L62 4" stroke="#8a5a2b" stroke-width="3.2" stroke-linecap="round"/>` +
+      `<path d="M50 20 Q60 10 70 20 L74 38 H46 Z" fill="${P.c.stripe}"/>` + rFace(P, 60, 8, 9) + `<path d="M48 2 L60 -24 L72 2 Z" fill="${P.c.stripe}"/><path d="M44 2 H76" stroke="${shade(P.c.stripe, -0.3)}" stroke-width="3" stroke-linecap="round"/>` +
+      `<path d="M60 40 L42 58 Q60 64 78 58 Z" fill="#d9a441" stroke="#8a6a28" stroke-width="1"/>` + [48, 54, 60, 66, 72].map(x => `<path d="M60 42 L${x} 59" stroke="#8a6a28" stroke-width=".8"/>`).join(''),
+    x_cloud: P => rShadow(P.id, 30) + rFace(P, 60, 8, 10) + `<path d="${fuzz(60, 36, 44, 20, 16, 6)}" fill="#ffffff" stroke="#dbe9f5" stroke-width="1.2"/><path d="${fuzz(60, 40, 30, 10, 12, 3)}" fill="${P.c.stripe}" opacity=".25"/>`,
+    x_rocket: P => rShadow(P.id, 22) + [0, 120, 240].map(a => `<path d="M60 24 L${f1(60 + Math.sin(a * Math.PI / 180) * 34)} ${f1(24 - Math.cos(a * Math.PI / 180) * 34)}" stroke="${P.c.stripe}" stroke-width="9" stroke-linecap="round"/>`).join('') +
+      `<circle cx="60" cy="24" r="22" ${rBodyAttr(P)}/><circle cx="60" cy="24" r="17" fill="none" stroke="${P.c.stripe}" stroke-width="3"/>` +
+      `<circle cx="60" cy="24" r="10" fill="#3a3a40"/><circle cx="60" cy="24" r="7" fill="#ff9f0a"/><circle cx="60" cy="24" r="4" fill="#fff6c2"/>` + rWin(P, rOval(60, -4, 7, 7), 60, -3, 6),
+    x_ufo: P => rShadow(P.id, 30) + rWin(P, `M38 22 Q38 -6 60 -6 Q82 -6 82 22 Z`, 60, 10, 11) + `<ellipse cx="60" cy="28" rx="54" ry="11" ${rBodyAttr(P)}/>` +
+      [16, 32, 48, 60, 72, 88, 104].map((x, i) => `<circle cx="${x}" cy="${i % 2 ? 31 : 29}" r="2.4" fill="${P.c.stripe}"/>`).join('') + `<path d="M48 39 L40 56 H80 L72 39 Z" fill="#fff6a8" opacity=".35"/>`,
+    x_paperplane: P => rShadow(P.id, 30) + rFace(P, 60, 4, 9) + `<path d="M60 30 L6 12 L60 22 Z" fill="#ffffff" stroke="#c9ccd6" stroke-width="1"/><path d="M60 30 L114 12 L60 22 Z" fill="#f2f4f7" stroke="#c9ccd6" stroke-width="1"/>` +
+      `<path d="M60 22 L56 42 L60 40 L64 42 Z" fill="#e3e6ec" stroke="#c9ccd6" stroke-width="1"/><path d="M60 22 V40" stroke="${P.c.stripe}" stroke-width="1.6"/>`,
+    x_sled: P => rShadow(P.id, 40) + `<path d="M26 62 Q16 62 18 50 M94 62 Q104 62 102 50" stroke="#d7261e" stroke-width="3" fill="none" stroke-linecap="round"/><path d="M24 62 H96" stroke="#d7261e" stroke-width="3" stroke-linecap="round"/>` +
+      rFace(P, 60, 18, 10) + `<rect x="28" y="30" width="64" height="24" rx="5" ${rBodyAttr(P)}/><path d="M28 38 H92 M28 46 H92" stroke="${P.dark}" stroke-width="1.1"/>`,
+    x_turtle: P => rShadow(P.id, 44) + `<ellipse cx="34" cy="58" rx="9" ry="6" fill="#4f9a5a"/><ellipse cx="86" cy="58" rx="9" ry="6" fill="#4f9a5a"/><path d="M60 54 L56 64 L64 64 Z" fill="#4f9a5a"/>` +
+      rFace(P, 60, 2, 9) + `<path d="M16 52 Q16 6 60 6 Q104 6 104 52 Z" ${rBodyAttr(P)}/>` +
+      `<path d="M60 10 L48 22 L54 36 H66 L72 22 Z M36 22 L48 22 M72 22 L84 22 M54 36 L46 50 M66 36 L74 50" stroke="${P.deep}" stroke-width="1.4" fill="none" opacity=".7"/><path d="M16 52 H104" stroke="${P.c.stripe}" stroke-width="3"/>`,
+    // 비행기
+    p_airliner:  P => rPlane(P, { fy: 18, finH: 34, wingY: 32, span: 56, fusY: 30, fusR: 14, engines: 28, canopyY: 30, canopyR: 7.5, shadow: 40 }),
+    p_fighter:   P => rPlane(P, { fy: 28, fin2: true, wingY: 36, span: 46, thick: 4, fusY: 34, fusR: 11, fusRy: 0.85, nozzle: true, canopyY: 20, canopyR: 7, shadow: 34 }),
+    p_light:     P => rPlane(P, { fy: 26, finH: 30, wingY: 14, span: 56, thick: 6, fusY: 34, fusR: 12, struts: true, gear: 52, canopyY: 26, canopyR: 6.5, shadow: 30 }),
+    p_biplane:   P => rPlane(P, { fy: 24, finH: 26, wingY: 40, wing2: 12, span: 50, thick: 5, fusY: 32, fusR: 11, gear: 52, canopyY: 22, canopyR: 7, shadow: 32 }),
+    p_aerobatic: P => rPlane(P, { fy: 26, finH: 30, wingY: 40, lowWing: true, span: 48, thick: 5, fusY: 34, fusR: 11, gear: 54, canopyY: 22, canopyR: 7.5, shadow: 32 }),
+    p_glider:    P => rPlane(P, { fy: 26, finH: 34, tStab: true, wingY: 30, span: 60, thick: 2.6, fusY: 32, fusR: 7, canopyY: 25, canopyR: 6.5, shadow: 30 }),
+    p_seaplane:  P => rPlane(P, { fy: 22, finH: 30, wingY: 10, span: 54, thick: 6, fusY: 30, fusR: 12, struts: true, floats: true, canopyY: 22, canopyR: 6.5, shadow: 1 }),
+    p_heli: P => rShadow(P.id, 32) + `<ellipse cx="60" cy="-12" rx="58" ry="3" fill="#3a3a40" opacity=".75"/><rect x="58" y="-12" width="4" height="12" fill="#3a3a40"/>` +
+      `<path d="M38 56 H82 M44 56 L48 44 M76 56 L72 44" stroke="#3a3a40" stroke-width="2.4" stroke-linecap="round"/>` +
+      `<ellipse cx="60" cy="22" rx="24" ry="22" ${rBodyAttr(P)}/><ellipse cx="60" cy="22" rx="24" ry="22" fill="url(#${P.id}h)"/>` + rWin(P, rOval(60, 14, 11, 9), 60, 16, 8.5) +
+      `<circle cx="60" cy="38" r="7" fill="${P.c.stripe}" stroke="${P.deep}" stroke-width="1"/><ellipse cx="70" cy="36" rx="1.6" ry="10" fill="#3a3a40" opacity=".8"/>`,
+    p_balloon: P => rShadow(P.id, 18) + `<path d="M40 22 L52 46 M80 22 L68 46" stroke="#6b4423" stroke-width="1.2"/>` +
+      [[-1, 0], [0, 1], [1, 0]].map(([k, s]) => `<path d="M60 -30 Q${60 + k * 44 - 12} -6 ${60 + k * 14} 24 Q${60 + k * 44 + 12} -6 60 -30 Z" fill="${s ? P.c.stripe : P.c.body}"/>`).join('') +
+      `<path d="M60 -30 Q22 -28 22 -4 Q22 14 46 26 H74 Q98 14 98 -4 Q98 -28 60 -30 Z" fill="none" stroke="${P.dark}" stroke-width="1.2"/>` +
+      rFace(P, 60, 40, 8) + `<rect x="46" y="44" width="28" height="16" rx="3" fill="#a0703f" stroke="#5a3a1e" stroke-width="1.2"/><path d="M46 50 H74 M53 44 V60 M60 44 V60 M67 44 V60" stroke="#7a5230" stroke-width=".8"/>`,
+    p_blimp: P => rShadow(P.id, 26) + `<path d="M60 -6 L52 -30 H68 Z M60 42 L52 60 H68 Z M34 18 L8 10 V26 Z M86 18 L112 10 V26 Z" fill="${P.c.stripe}" stroke="${P.deep}" stroke-width=".8"/>` +
+      `<circle cx="60" cy="18" r="28" ${rBodyAttr(P)}/><circle cx="60" cy="18" r="28" fill="url(#${P.id}h)"/><circle cx="60" cy="18" r="20" fill="none" stroke="${P.c.stripe}" stroke-width="2.4" opacity=".7"/>` +
+      `<rect x="48" y="42" width="24" height="12" rx="5" fill="#e3e5ec" stroke="#8a8f99" stroke-width="1"/>` + rWin(P, rOval(60, 48, 6, 4.6), 60, 49, 5.5),
+    // 배
+    s_turtle: P => rWater() + rHull(P, 42, 36) + `<path d="M22 38 Q60 -6 98 38 Z" fill="#3b2a1e" stroke="#1d140c" stroke-width="1.2"/>` +
+      Array.from({ length: 9 }, (_, i) => { const a = Math.PI * (0.12 + i * 0.095), x = 60 - Math.cos(a) * 34, y = 38 - Math.sin(a) * 30; return `<path d="M${f1(x - 2)} ${f1(y + 1)} L${f1(x)} ${f1(y - 5)} L${f1(x + 2)} ${f1(y + 1)} Z" fill="#c9ccd6"/>`; }).join('') +
+      `<path d="M34 30 Q60 12 86 30" stroke="${P.c.stripe}" stroke-width="2" fill="none"/>` + rWin(P, rRect(52, 42, 16, 12), 60, 49, 6),
+    s_panokseon: P => rWater() + `<path d="M60 4 V-28" stroke="#5a3a1e" stroke-width="2.4"/><path d="M60 -28 L80 -22 L60 -16 Z" fill="#e2412e"/>` + rHull(P, 44, 34) +
+      `<rect x="24" y="14" width="72" height="20" fill="#a0703f" stroke="#5a3a1e" stroke-width="1"/><rect x="36" y="2" width="48" height="12" fill="#a0703f" stroke="#5a3a1e" stroke-width="1"/>` +
+      `<path d="M24 14 H96 M36 2 H84" stroke="${P.c.stripe}" stroke-width="2.4"/>` + rFace(P, 60, -4, 7) + [30, 42, 54, 66, 78, 90].map(x => `<rect x="${x - 3}" y="20" width="6" height="8" fill="#5a3a1e"/>`).join(''),
+    s_sailboat: P => rWater() + `<path d="M60 40 V-28" stroke="#5a3a1e" stroke-width="2.4"/><path d="M34 -24 H86 L92 30 H28 Z" fill="${P.c.stripe}" stroke="#a0703f" stroke-width="1.2"/>` +
+      [-12, 0, 12].map(y => `<path d="M${33 - y * 0.02} ${y} H${87 + y * 0.02}" stroke="#a0703f" stroke-width="1.4"/>`).join('') + rHull(P, 34, 40) + rFace(P, 60, 34, 7),
+    s_yacht: P => rWater() + `<path d="M60 44 V-28" stroke="#9aa0ae" stroke-width="2"/><path d="M62 -26 L84 40 H62 Z" fill="#ffffff" stroke="#c9ccd6" stroke-width="1"/><path d="M62 10 L74 10" stroke="${P.c.stripe}" stroke-width="3"/>` +
+      rHull(P, 36, 42) + rFace(P, 48, 36, 7) + `<path d="M28 50 H92" stroke="${P.c.stripe}" stroke-width="2.4"/>`,
+    s_carrier: P => rWater() + rHull(P, 50, 38) + `<path d="M2 32 H118 L114 40 H6 Z" fill="#5b6578" stroke="#3a4250" stroke-width="1"/><path d="M14 36 H106" stroke="#fff" stroke-width="1" stroke-dasharray="6 4"/>` +
+      `<rect x="84" y="2" width="14" height="30" rx="2" fill="#8a95a8" stroke="#5b6578" stroke-width="1"/><path d="M91 2 V-14 M86 -8 H96" stroke="#5b6578" stroke-width="1.6"/>` + rWin(P, rRect(86, 8, 10, 9), 91, 13, 4.5) +
+      `<path d="M30 30 L40 26 L50 30 M38 26 V22" stroke="#3a4250" stroke-width="2.2" fill="none"/>`,
+    s_submarine: P => `<path d="M52 4 V-14 M52 -14 H58" stroke="#3a3a40" stroke-width="2"/>` + rFace(P, 60, -2, 7.5) + `<path d="M50 30 V6 Q50 0 56 0 H64 Q70 0 70 6 V30 Z" ${rBodyAttr(P)}/>` +
+      `<circle cx="60" cy="44" r="26" ${rBodyAttr(P)}/><circle cx="60" cy="44" r="26" fill="url(#${P.id}h)"/><path d="M60 30 V58 M46 44 H74" stroke="${P.c.stripe}" stroke-width="5" stroke-linecap="round"/><circle cx="60" cy="44" r="4" fill="#3a3a40"/>` + rWater(),
+    s_cruise: P => rWater() + rHull(P, 48, 34) + `<rect x="18" y="20" width="84" height="14" fill="#ffffff" stroke="#c9ccd6" stroke-width="1"/><rect x="26" y="8" width="68" height="12" fill="#ffffff" stroke="#c9ccd6" stroke-width="1"/><rect x="36" y="-2" width="48" height="10" fill="#ffffff" stroke="#c9ccd6" stroke-width="1"/>` +
+      [[22, 25, 11], [30, 12, 9], [40, 1, 6]].map(([x0, y, n]) => Array.from({ length: n }, (_, i) => `<rect x="${x0 + i * 7}" y="${y}" width="4.4" height="4" rx="1" fill="#5fb8f0"/>`).join('')).join('') +
+      `<path d="M50 -2 L52 -20 H68 L70 -2 Z" fill="${P.c.stripe}"/><path d="M52 -20 H68 V-15 H51.5 Z" fill="#26262b"/>` + rWin(P, rRect(54, 0, 12, 7), 60, 5, 4.6),
+    s_fishing: P => rWater() + `<path d="M84 40 V-20 M84 -20 L60 10 M84 -14 L100 4" stroke="#5a3a1e" stroke-width="1.8"/>` + [[70, -4, '#ffd84a'], [92, -6, '#e2412e']].map(([x, y, col]) => `<path d="M${x} ${y} l6 3 l-6 3 Z" fill="${col}"/>`).join('') +
+      rHull(P, 36, 40) + `<rect x="40" y="16" width="34" height="24" rx="2" fill="#ffffff" stroke="#c9ccd6" stroke-width="1"/>` + rWin(P, rRect(45, 20, 24, 12), 57, 27, 6.5) + `<circle cx="96" cy="48" r="4" fill="#ff9f0a"/>`,
+    s_motorboat: P => rWater() + rHull(P, 38, 40) + rWin(P, `M40 40 L46 20 H74 L80 40 Z`, 60, 30, 8.5) + `<rect x="54" y="42" width="12" height="16" rx="2" fill="#26262b"/><rect x="52" y="38" width="16" height="8" rx="3" fill="#3a3a40"/>` +
+      `<path d="M30 62 Q22 54 14 60 M90 62 Q98 54 106 60" stroke="#fff" stroke-width="2.4" fill="none" stroke-linecap="round"/>`,
+    s_container: P => rWater() + rHull(P, 50, 38) + [['#2f7fd1', 16, 26], ['#f5c242', 30, 26], ['#34c759', 76, 26], ['#e2412e', 90, 26], ['#ff9f0a', 16, 16], ['#8a55d6', 90, 16]].map(([col, x, y]) => `<rect x="${x}" y="${y}" width="14" height="10" fill="${col}" stroke="rgba(0,0,0,.25)" stroke-width=".8"/>`).join('') +
+      `<rect x="46" y="-6" width="28" height="44" rx="2" fill="#ffffff" stroke="#c9ccd6" stroke-width="1"/>` + [6, 16, 26].map(y => `<rect x="50" y="${y}" width="20" height="5" rx="1" fill="#5fb8f0"/>`).join('') + rWin(P, rRect(50, -3, 20, 8), 60, 2, 4.8),
+    s_banana: P => rWater() + `<circle cx="34" cy="52" r="8" fill="#f5c21f" stroke="#c49a00" stroke-width="1"/><circle cx="86" cy="52" r="8" fill="#f5c21f" stroke="#c49a00" stroke-width="1"/>` +
+      rFace(P, 60, 10, 6) + rFace(P, 60, 22, 7.5) + `<path d="M44 46 Q44 30 60 30 Q76 30 76 46 Q76 60 60 60 Q44 60 44 46 Z" ${rBodyAttr(P)}/>` + rFace(P, 60, 32, 9) + `<ellipse cx="60" cy="50" rx="6" ry="4" fill="#5a4a10" opacity=".7"/>`
+  };
+
+  // 동물 캐릭터의 등: 같은 털·귀를 쓰고 얼굴 대신 꼬리와 등 무늬
+  function fluffRear(P, o) {
+    const id = P.id + 'm', B = o.body, F = `url(#${id}f)`;
+    const amp = o.smooth ? 0.5 : o.shaggy ? 2.8 : 1.9;
+    let g = `<defs><radialGradient id="${id}f" cx=".5" cy=".3" r=".8"><stop offset="0" stop-color="${shade(B, 0.4)}"/><stop offset=".55" stop-color="${B}"/><stop offset="1" stop-color="${shade(B, -0.25)}"/></radialGradient></defs>`;
+    const ear = o.earColor || B;
+    if (o.mane) g += `<path d="${fuzz(60, 32, 38, 30, 26, 4.5)}" fill="${o.mane}"/>`;
+    g += fluffEars(Object.assign({}, o, { earIn: shade(ear, -0.1), earTip: o.earTip }), o.earColor ? ear : F);
+    if (o.feet === 'bird') g += [52, 68].map(x => `<path d="M${x} 58 V65 M${x} 65 l-3.5 1.5 M${x} 65 l3.5 1.5" stroke="${o.legs || '#f2a33a'}" stroke-width="2.4" stroke-linecap="round"/>`).join('');
+    else if (o.feet === 'flipper') g += `<path d="M44 60 Q36 66 46 66 Q52 65 52 61 Z M76 60 Q84 66 74 66 Q68 65 68 61 Z" fill="${shade(B, -0.2)}"/>`;
+    else if (o.feet !== 'water' && o.feet !== 'none') g += [49, 71].map(x => `<ellipse cx="${x}" cy="63.5" rx="7" ry="3.4" fill="${o.limb || shade(B, -0.08)}"/><ellipse cx="${x}" cy="64.2" rx="3.4" ry="1.6" fill="#f4a7a0" opacity="${o.limb ? 0.5 : 0.85}"/>`).join('');
+    g += `<path d="${fuzz(60, 37, 31.5, 26.5, 34, amp)}" fill="${F}"/>`;
+    // 등 무늬: 머리 뒤 색, 줄무늬, 점
+    if (o.cap) g += `<path d="M30 37 C29 18 42 10 60 10 C78 10 91 18 90 37 C80 30 40 30 30 37 Z" fill="${o.cap}"/>`;
+    if (o.b_back) g += `<path d="${fuzz(60, 40, 24, 20, 22, amp * 0.6)}" fill="${o.b_back}"/>`;
+    if (o.stripes) g += `<path d="M47 14 q5 6 1 13 M60 11 v13 M73 14 q-5 6 -1 13 M33 34 q8 1 11 8 M87 34 q-8 1 -11 8 M38 50 q7 -2 11 4 M82 50 q-7 -2 -11 4" stroke="${o.stripes}" stroke-width="2.8" fill="none" stroke-linecap="round"/>`;
+    if (o.spots) g += [[44, 22], [76, 26], [54, 46], [70, 50], [38, 40], [84, 44]].map(([x, y]) => `<ellipse cx="${x}" cy="${y}" rx="2.4" ry="1.7" fill="${o.spots}" opacity=".7"/>`).join('');
+    if (o.shaggy) g += `<path d="${fuzz(60, 20, 26, 10, 22, 2.4)}" fill="${o.shaggy}"/>`;
+    g += `<ellipse cx="52" cy="20" rx="10" ry="5" fill="#fff" opacity=".22"/>`; // 머리 뒤 반짝
+    g += flopEars(o);
+    // 날개·지느러미
+    if (o.arms === 'wing') g += [[30, 44, 20], [90, 44, -20]].map(([x, y, r]) => `<g transform="rotate(${r} ${x} ${y})"><ellipse cx="${x}" cy="${y}" rx="6.5" ry="11" fill="${o.wing || shade(B, -0.12)}"/></g>`).join('');
+    else if (o.arms === 'flipper' || o.arms === 'fin') g += [[31, 50, 35], [89, 50, -35]].map(([x, y, r]) => `<ellipse cx="${x}" cy="${y}" rx="${o.arms === 'fin' ? 4.5 : 5}" ry="${o.arms === 'fin' ? 9 : 10}" fill="${o.limb || shade(B, -0.18)}" transform="rotate(${r} ${x} ${y})"/>`).join('');
+    // 꼬리(가운데 아래쪽)
+    const TC = o.tailColor || B;
+    switch (o.tail) {
+      case 'bushy': g += `<ellipse cx="66" cy="52" rx="9" ry="15" fill="${F}" transform="rotate(-28 66 52)"/><ellipse cx="72" cy="63" rx="5" ry="5.5" fill="${o.tailTip || '#fff'}"/>`; break;
+      case 'long': g += `<path d="M60 56 Q74 56 72 44 Q70 32 80 28" fill="none" stroke="${TC}" stroke-width="5" stroke-linecap="round"/>` + (o.stripes ? `<path d="M60 56 Q74 56 72 44 Q70 32 80 28" fill="none" stroke="${o.stripes}" stroke-width="5" stroke-dasharray="2.5 5"/>` : '') + (o.tailTip ? `<circle cx="80" cy="28" r="4.2" fill="${o.tailTip}"/>` : ''); break;
+      case 'curl': g += `<path d="M60 56 q8 -2 7 -10 q-1 -6 -6 -3 q-3 3 1 5" fill="none" stroke="${TC}" stroke-width="4.4" stroke-linecap="round"/>`; break;
+      case 'thin': g += `<path d="M60 56 Q64 64 74 62" fill="none" stroke="${TC}" stroke-width="3" stroke-linecap="round"/>`; break;
+      case 'feather': g += `<path d="M53 54 L46 67 L56 63 L60 69 L64 63 L74 67 L67 54 Z" fill="${TC}" stroke-linejoin="round"/>`; break;
+      case 'rooster': g += `<path d="M60 54 Q42 34 48 10 Q56 24 60 40 Q64 24 72 10 Q78 34 60 54 Z" fill="${TC}"/>`; break;
+      case 'fish': g += `<path d="M60 50 Q48 55 36 50 Q40 60 60 60 Q80 60 84 50 Q72 55 60 50 Z" fill="${F}"/>`; break;
+      case 'otter': g += `<path d="M60 54 Q62 64 70 66" fill="none" stroke="${shade(B, -0.15)}" stroke-width="7" stroke-linecap="round"/>`; break;
+      default:
+        if (o.face === 'beak') g += `<path d="M53 54 Q60 63 67 54 Q60 58 53 54 Z" fill="${o.wing || shade(B, -0.12)}"/>`;
+        else if (!o.smooth) g += `<circle cx="60" cy="56" r="5" fill="${shade(B, 0.3)}"/>`;
+    }
+    if (o.fin) g += `<path d="M55 13 Q60 ${o.fin === 'tall' ? -12 : -2} 65 13 Z" fill="${shade(B, -0.18)}"/>`;
+    if (o.spout) g += `<path d="M60 10 Q58 0 52 -4 M60 10 Q60 -2 60 -8 M60 10 Q62 0 68 -4" stroke="#8fd3ff" stroke-width="2.6" fill="none" stroke-linecap="round"/>`;
+    if (o.comb) g += `<path d="M50 14 Q50 2 56 6 Q58 -2 63 4 Q67 -1 69 8 Q72 8 70 14 Z" fill="${o.comb}"/>`;
+    if (o.tuft) g += `<path d="M58 12 Q55 2 60 3 Q58 7 62 6 Q61 10 62 12 Z" fill="${o.tuft}"/>`;
+    if (o.crest) g += `<path d="M54 13 Q50 -2 58 2 Q60 -4 64 2 Q70 0 66 13 Z" fill="${o.crest}"/>`;
+    if (o.feet === 'water') g += `<path d="M22 58 Q30 53 38 58 T54 58 T70 58 T86 58 T102 58 V66 H22 Z" fill="#5fb8f0" opacity=".9"/><path d="M22 58 Q30 53 38 58 T54 58 T70 58 T86 58 T102 58" stroke="#fff" stroke-width="1.6" fill="none" opacity=".85"/>`;
+    return g;
+  }
+
+  function rearSVG(i) {
+    const n = CARS.length, k = ((i % n) + n) % n, c = CARS[k], id = 'rr' + k + '_' + (++rearUid);
+    const P = { c, id, dark: shade(c.body, -0.38), lite: shade(c.body, 0.42), deep: shade(c.body, -0.6), toy: false };
+    let inner;
+    if (REAR[c.kind]) inner = REAR[c.kind](P);
+    else if (/^[abm]_/.test(c.kind) && SPECIAL[c.kind]) {
+      FLUFF_REAR = true;
+      try { inner = rShadow(id, 34) + SPECIAL[c.kind](P); } finally { FLUFF_REAR = false; }
+    } else inner = rCar(P, { w: 40, belt: 34, top: 10, rw: 31 });
+    return `<svg class="car-svg rear" viewBox="0 -30 120 100" aria-hidden="true">${rearDefs(id, c)}${inner}</svg>`;
   }
 
   function carSVG(i) {
@@ -2345,5 +2686,5 @@
   }
   function hasArt(eraId) { return !!SCENE_ART[eraId]; }
 
-  window.ART = { CARS, GROUPS, carSVG, sceneSVG, hasArt };
+  window.ART = { CARS, GROUPS, carSVG, rearSVG, sceneSVG, hasArt };
 })();

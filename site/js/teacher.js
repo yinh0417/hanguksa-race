@@ -790,10 +790,11 @@
     const eraChanged = !raceBuiltFor.startsWith(meta.era + '|');
     raceBuiltFor = key;
     if (eraChanged) updateBackdrop(true);
+    // 탈것은 옆모습(2D)과 뒷모습(3D)을 함께 넣어 두고 화면에 맞는 것만 보여요
     $('#lanes').innerHTML = ap.map(p => `
       <div class="racer" data-uid="${p.uid}">
-        <span class="tag"><b class="rank-badge"></b>${esc(p.nick)}</span>
-        <div class="car-box"><span class="fx-flame"></span><span class="fx-aura"></span><span class="fx-hit"></span>${A.carSVG(p.car)}<span class="fx-bubble"></span><span class="fx-shield">🛡️</span><span class="fx-bolt">⚡</span></div>
+        <span class="tag" data-uid="${p.uid}"><b class="rank-badge"></b>${esc(p.nick)}</span>
+        <div class="car-box"><span class="fx-flame"></span><span class="fx-aura"></span><span class="fx-hit"></span>${A.carSVG(p.car)}${A.rearSVG(p.car)}<span class="fx-bubble"></span><span class="fx-shield">🛡️</span><span class="fx-bolt">⚡</span></div>
       </div>`).join('');
     lastRankSig = '';
     layoutRace();
@@ -862,6 +863,46 @@
     if (n > bgSolved && DB.now() - bgAt >= BG_HOLD) { bgSolved = n; showBackdrop((bgIdx + 1) % 5); }
   }
 
+  // ---------- 3D 화면(뒤에서 따라가는 시점, race3d.js) ----------
+  // 위쪽의 2D·3D 단추로 바꾸고, 고른 화면은 이 노트북에 기억해요
+  let view3d = false, r3 = null;
+  try { view3d = localStorage.getItem('hkr-race-view') === '3d'; } catch (e) { /* 무시 */ }
+  function showViewSeg() { $$('#viewSeg button').forEach(b => b.setAttribute('aria-pressed', String((b.dataset.view === '3d') === view3d))); }
+  showViewSeg();
+  $('#viewSeg').addEventListener('click', e => {
+    const b = e.target.closest('button[data-view]');
+    if (!b || (b.dataset.view === '3d') === view3d) return;
+    view3d = b.dataset.view === '3d';
+    try { localStorage.setItem('hkr-race-view', view3d ? '3d' : '2d'); } catch (err) { /* 무시 */ }
+    showViewSeg();
+    if (!view3d) leave3d();
+    layoutRace();
+    updateRace();
+    startCarLoop();
+  });
+  function leave3d() {
+    if (r3) { r3.destroy(); r3 = null; }
+    $('#circuit').classList.remove('is3d');
+    $$('#lanes .racer').forEach(el => { el.style.transform = ''; el.style.zIndex = ''; el.classList.remove('moving'); });
+    Object.keys(shown3d).forEach(k => delete shown3d[k]);
+  }
+  function layout3d(circ, Wd, Ht, n, type) {
+    if (!r3) r3 = RACE3D.create(circ, { carsEl: $('#lanes') });
+    circ.classList.add('is3d');
+    $$('#lanes .racer').forEach(el => { el.style.left = ''; el.style.top = ''; el.querySelector('.car-box').style.transform = ''; }); // 2D 자리·회전 지우기
+    const g = r3.layout(Wd, Ht, n, { cells: C.finishCells, track: type });
+    circ.style.setProperty('--car-w', g.carW + 'px');
+    circ.style.setProperty('--tag-size', g.tagSize + 'px');
+    circ.style.setProperty('--sky-h', (g.skyBottom / Ht * 100).toFixed(2) + '%');
+    // 역사 장면 전광판: 진행 막대와 땅 사이 하늘 가운데
+    const el = $('#bgScreen');
+    let h = g.skyBottom - g.miniBottom - 14, w = h * 1.5;
+    if (w > Wd * 0.6) { w = Wd * 0.6; h = w / 1.5; }
+    Object.assign(el.style, { left: (Wd - w) / 2 + 'px', top: (g.skyBottom - 4 - h) + 'px', width: w + 'px', height: h + 'px' });
+    el.classList.remove('hidden');
+    if (bgIdx >= 0 && !el.innerHTML) el.innerHTML = A.sceneSVG(G.era(meta.era).id, bgIdx);
+  }
+
   function layoutRace() {
     const circ = $('#circuit');
     if (!circ || currentView() !== '#vRace') return;
@@ -869,6 +910,14 @@
     if (!Wd || !Ht) return;
     const n = Math.max(approvedList().length, 1), k = Math.min(n, 2); // 2줄로 달려서 탈것을 크게
     const type = trackType();
+    if (view3d) {
+      geo = TRACKS.build(type, Wd, Ht, { x: 0, y: 0, w: Wd, h: Ht }); // 코스 이름(geo.name)과 준비됐다는 표시로 써요
+      geo.k = k;
+      circ.dataset.track = type;
+      layout3d(circ, Wd, Ht, n, type);
+      return;
+    }
+    if (r3) leave3d();
     const rect = { x: 0, y: 0, w: Wd, h: Ht };
     geo = TRACKS.build(type, Wd, Ht, rect);
     geo.k = k;
@@ -899,8 +948,29 @@
     const lane = i % geo.k, grp = Math.floor(i / geo.k);
     return { s: geo.sAt(pos / C.finishCells) - grp * geo.carW * 0.95, off: ((lane + 0.5) / geo.k - 0.5) * geo.TW * 0.86 };
   }
-  function moveCars() {
-    if (!geo || currentView() !== '#vRace') { carLoop = null; return; }
+  // 3D: 칸 단위로 부드럽게 따라가고, 줄 세우기·카메라·그리기는 race3d.js가 해요
+  const shown3d = {};
+  let lastFrameAt = 0, rankNow = {};
+  function moveCars3d(now) {
+    const dt = lastFrameAt ? Math.min(0.1, (now - lastFrameAt) / 1000) : 0.016;
+    lastFrameAt = now;
+    const secret = rankSecret(DB.now());
+    const cars = [];
+    approvedList().forEach((p, i) => {
+      const el = document.querySelector(`.racer[data-uid="${p.uid}"]`);
+      if (!el) return;
+      const s = states[p.uid] || {};
+      const target = secret || s.finishedAt ? C.finishCells : Math.min(s.pos || 0, C.finishCells);
+      const cur = shown3d[p.uid] == null || secret ? target : shown3d[p.uid] + (target - shown3d[p.uid]) * Math.min(1, dt * 5);
+      shown3d[p.uid] = cur;
+      const car = A.CARS[((p.car % A.CARS.length) + A.CARS.length) % A.CARS.length];
+      cars.push({ el, c: cur, i, color: car.body, rank: secret ? 0 : rankNow[p.uid] || 0, moving: Math.abs(target - cur) > 0.05 });
+    });
+    r3.frame(cars, dt, { secret, jump: secret });
+  }
+  function moveCars(now) {
+    if (!geo || currentView() !== '#vRace') { carLoop = null; lastFrameAt = 0; return; }
+    if (view3d && r3) { moveCars3d(now || performance.now()); carLoop = requestAnimationFrame(moveCars); return; }
     const jump = rankSecret(DB.now()); // 결승선으로 모일 때는 달려가는 모습 없이 바로 옮겨요(가는 동안 앞뒤가 보이지 않게)
     approvedList().forEach((p, i) => {
       const el = document.querySelector(`.racer[data-uid="${p.uid}"]`);
@@ -991,9 +1061,15 @@
       racer.classList.toggle('struck', (fx.type === 'lightning' || fx.type === 'thunder') && age < 800);
       racer.classList.toggle('done', !!s.finishedAt && !secret); // 비밀인 동안은 골인 표시(🏁)도 숨겨요
       const r = rankOf[p.uid];
-      const badge = racer.querySelector('.rank-badge');
-      badge.textContent = !secret && r <= 3 && (s.pos || s.finishedAt) ? r : '';
-      badge.dataset.rank = r;
+      // 이름표는 3D 화면에서 맨 위 층으로 옮겨 가니 data-uid로 찾아요
+      const tag = document.querySelector(`.tag[data-uid="${p.uid}"]`);
+      if (tag) {
+        tag.classList.toggle('done', !!s.finishedAt && !secret);
+        const badge = tag.querySelector('.rank-badge');
+        badge.textContent = !secret && r <= 3 && (s.pos || s.finishedAt) ? r : '';
+        badge.dataset.rank = r;
+      }
+      rankNow[p.uid] = !secret && r <= 3 && (s.pos || s.finishedAt) ? r : 0;
       if (fx.at && seenFx[p.uid] !== fx.at) {
         const fresh = seenFx[p.uid] !== undefined || !initial;
         seenFx[p.uid] = fx.at;
