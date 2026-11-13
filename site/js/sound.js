@@ -68,6 +68,7 @@
   // ---------- 배경 음악 (대기실, 레이스) ----------
   // 음원 파일 없이 브라우저가 그 자리에서 만드는 K-pop 걸그룹 댄스풍 창작곡이라 저작권 문제가 없습니다.
   //  - 대기실과 레이스 모두 10곡(118~130BPM): 묵직한 베이스, 탁 튀는 스네어, 금관 신스 후렴, "헤이!" 함성, 댄스 브레이크
+  //  - 대기실에 상큼 팝 10곡, 레이스에 감성 EDM 10곡을 더해 모두 20곡씩(아래 POP_SONGS, EDM_SONGS)
   //  - 레이스는 6BPM 더 빠르게, 마지막 30초는 더 빨라지고 하이햇이 촘촘해지며 마디 끝에 손뼉 연타
   const m = n => 440 * Math.pow(2, (n - 69) / 12);
   let song = null, hot = 0, nextTime = 0, step = 0, noiseBuf = null, bus = null;
@@ -294,6 +295,147 @@
     };
   }
 
+  // ---------- 상큼 팝(대기실): 통통 튀는 걸그룹 팝 느낌 ----------
+  // 맑은 종소리 멜로디 + "아·이·오" 같은 짧은 목소리 소리(보컬 찹), 손가락 튕기는 소리, 통통 튀는 킥
+  const VOWEL = { a: [800, 1200], i: [300, 2300], o: [450, 800], e: [520, 1850], u: [350, 900] };
+  function chop(n, time, dur, vol, vowel) {
+    const [f1, f2] = VOWEL[vowel] || VOWEL.a, o = ctx.createOscillator(), g = ctx.createGain();
+    o.type = 'sawtooth';
+    o.frequency.setValueAtTime(m(n) * 0.94, time); o.frequency.exponentialRampToValueAtTime(m(n), time + 0.035); // 살짝 끌어올리는 귀여운 발음
+    g.gain.setValueAtTime(0.0001, time); g.gain.exponentialRampToValueAtTime(vol, time + 0.012); g.gain.exponentialRampToValueAtTime(0.0001, time + dur);
+    [[f1, 9, 1], [f2, 12, 0.55]].forEach(([fq, q, lv]) => {
+      const f = ctx.createBiquadFilter(), fg = ctx.createGain();
+      f.type = 'bandpass'; f.frequency.value = fq; f.Q.value = q; fg.gain.value = lv * 5;
+      o.connect(f); f.connect(fg); fg.connect(g);
+    });
+    g.connect(bus); o.start(time); o.stop(time + dur + 0.05);
+  }
+  function snap(time, vol) { noise(time, 0.05, vol, 2600, 'bandpass'); noise(time, 0.02, vol * 0.7, 7000); }
+  function glock(n, time, vol) { at(m(n), time, 0.35, 'sine', vol); at(m(n) * 2.76, time, 0.12, 'sine', vol * 0.3); }
+  function softPad(notes, time, dur, vol) {
+    notes.forEach(n => [[0, 'triangle'], [7, 'sine']].forEach(([det, w]) => {
+      const o = ctx.createOscillator(), g = ctx.createGain();
+      o.type = w; o.frequency.setValueAtTime(m(n), time); o.detune.value = det;
+      g.gain.setValueAtTime(0.0001, time); g.gain.exponentialRampToValueAtTime(vol, time + dur * 0.25); g.gain.exponentialRampToValueAtTime(0.0001, time + dur);
+      o.connect(g); g.connect(bus); o.start(time); o.stop(time + dur + 0.05);
+    }));
+  }
+  function makePop(def) {
+    const chords = def.prog.map(chordOf), hook = makeHook(chords, def.seed, def.rhythm), vow = def.vowels || ['a', 'i', 'o', 'e'];
+    return {
+      name: def.name, tag: '상큼 팝', bpm: def.bpm, bpmHot: def.bpm + 10,
+      step(s, t, sd) {
+        const bar = Math.floor(s / 16) % 16, i = s % 16, ch = chords[bar % 4], h = hook[s % 64];
+        const part = bar < 4 ? 'verse' : bar < 6 ? 'pre' : bar < 14 ? 'chorus' : 'bridge';
+        // 북: 벌스는 통통, 후렴은 튀는 바운스(0·3·6·10·13), 브리지는 비워 두고 손가락 소리만
+        if (part === 'verse' && (i === 0 || i === 7 || i === 10)) kick(t, 0.5);
+        if (part === 'pre' && i % 4 === 0 && !(bar === 5 && i >= 12)) kick(t, 0.5);
+        if (part === 'chorus' && [0, 3, 6, 10, 13].includes(i)) kick(t, 0.58);
+        if (part === 'bridge' && bar === 15 && i >= 8 && i % 2 === 0) kick(t, 0.3 + (i - 8) * 0.04);
+        if (i === 4 || i === 12) { if (part === 'chorus') { clap(t, 0.16); snare(t, 0.12); } else snap(t, 0.12); }
+        if (bar === 5 && i >= 8) snare(t, 0.05 + (i - 8) * 0.022);
+        if (bar === 4 && i === 0) riser(t, sd * 32);
+        if (bar === 6 && i === 0) crash(t);
+        if (i % 2 === 0) noise(t, 0.02, part === 'chorus' ? 0.04 : 0.03, 9000);
+        // 베이스: 동글동글한 소리로 통통
+        if (part !== 'bridge' && [0, 3, 6, 8, 11, 14].includes(i)) heavyBass(ch.bass + (i === 6 || i === 14 ? 12 : 0), t, sd * 1.4, part === 'chorus' ? 0.08 : 0.06);
+        if (part === 'bridge' && i === 0) heavyBass(ch.bass, t, sd * 12, 0.07, true);
+        // 화음: 부드러운 패드, 후렴은 박자마다 출렁
+        if (i === 0 && part !== 'chorus') softPad(ch.notes, t, sd * 16, part === 'bridge' ? 0.03 : 0.022);
+        if (part === 'chorus' && i % 4 === 0) pumpChord(ch.notes, t, sd, 0.022, 2000);
+        if (part === 'chorus' && i % 4 === 2) ch.notes.forEach(n => pluck(n + 12, t, 0.016, 'triangle'));
+        // 멜로디: 종소리 + 보컬 찹(후렴), 벌스는 종소리만 살짝, 프리는 반짝이 아르페지오
+        if (part === 'chorus' && h) { glock(h + 12, t, 0.05); chop(h, t, sd * 1.5, 0.05, vow[(s >> 1) % vow.length]); }
+        else if (part === 'verse' && h && i % 4 !== 1) glock(h + 12, t, 0.028);
+        else if (part === 'pre') glock(ch.notes[i % ch.notes.length] + 24, t, 0.026);
+        else if (part === 'bridge' && h && i < 12) chop(h, t, sd * 2, 0.05, vow[i % vow.length]);
+        if (hot && i >= 12 && bar % 2 === 1) clap(t, 0.12);
+      }
+    };
+  }
+
+  // ---------- 감성 EDM(레이스): 심장이 두근거리는 멜로딕 하우스 ----------
+  // 1~4 잔잔한 부분: 부드러운 패드와 메아리치는 플럭 멜로디, 심장 박동처럼 "쿵쿵" 하는 킥
+  // 5~8 빌드업: 네 박 킥, 점점 촘촘해지는 스네어, 쉬익 상승음, 화음 필터가 열려요
+  // 9~16 드롭: 슈퍼소우 화음이 박자마다 출렁, 엇박 베이스, 메아리치는 리드 멜로디, 손뼉과 열린 하이햇
+  let echo = null, echoIn = null;
+  function echoBus(sd) { // 점 8분음표 메아리
+    if (!echo) {
+      echoIn = ctx.createGain(); echo = ctx.createDelay(1.5);
+      const fb = ctx.createGain(), wet = ctx.createGain(), lp = ctx.createBiquadFilter();
+      fb.gain.value = 0.38; wet.gain.value = 0.45; lp.type = 'lowpass'; lp.frequency.value = 3200;
+      echoIn.connect(echo); echo.connect(lp); lp.connect(fb); fb.connect(echo); lp.connect(wet); wet.connect(bus);
+    }
+    echo.delayTime.setValueAtTime(Math.min(1.4, sd * 3), ctx.currentTime);
+    return echoIn;
+  }
+  function superSaw(notes, time, sd, vol, cutoff) {
+    const f = ctx.createBiquadFilter(), g = ctx.createGain();
+    f.type = 'lowpass'; f.frequency.setValueAtTime(cutoff, time); f.Q.value = 0.9;
+    g.gain.setValueAtTime(0.0001, time);
+    g.gain.exponentialRampToValueAtTime(vol, time + sd * 1.4);
+    g.gain.exponentialRampToValueAtTime(vol * 0.55, time + sd * 3.2);
+    g.gain.exponentialRampToValueAtTime(0.0001, time + sd * 3.95);
+    f.connect(g); g.connect(bus);
+    notes.forEach(n => [-22, -9, 0, 9, 22].forEach(det => {
+      const o = ctx.createOscillator();
+      o.type = 'sawtooth'; o.frequency.setValueAtTime(m(n), time); o.detune.value = det;
+      o.connect(f); o.start(time); o.stop(time + sd * 4);
+    }));
+  }
+  function sawPluck(n, time, vol, sd) {
+    const f = ctx.createBiquadFilter(), g = ctx.createGain(), out = echoBus(sd);
+    f.type = 'lowpass'; f.frequency.setValueAtTime(5200, time); f.frequency.exponentialRampToValueAtTime(700, time + 0.22);
+    g.gain.setValueAtTime(vol, time); g.gain.exponentialRampToValueAtTime(0.0001, time + 0.3);
+    f.connect(g); g.connect(bus); g.connect(out);
+    [-8, 8].forEach(det => { const o = ctx.createOscillator(); o.type = 'sawtooth'; o.frequency.setValueAtTime(m(n), time); o.detune.value = det; o.connect(f); o.start(time); o.stop(time + 0.32); });
+  }
+  function heartbeat(time, vol) { // 심장 박동 "쿵" (부드럽고 낮게)
+    const o = ctx.createOscillator(), g = ctx.createGain(), f = ctx.createBiquadFilter();
+    o.frequency.setValueAtTime(90, time); o.frequency.exponentialRampToValueAtTime(38, time + 0.14);
+    f.type = 'lowpass'; f.frequency.value = 220;
+    g.gain.setValueAtTime(vol, time); g.gain.exponentialRampToValueAtTime(0.0001, time + 0.22);
+    o.connect(f); f.connect(g); g.connect(bus); o.start(time); o.stop(time + 0.25);
+  }
+  function makeEdm(def) {
+    const chords = def.prog.map(chordOf), hook = makeHook(chords, def.seed, def.rhythm);
+    return {
+      name: def.name, tag: '감성 EDM', bpm: def.bpm, bpmHot: def.bpm + 8,
+      step(s, t, sd) {
+        const bar = Math.floor(s / 16) % 16, i = s % 16, ch = chords[bar % 4], h = hook[s % 64];
+        const part = bar < 4 ? 'calm' : bar < 8 ? 'build' : 'drop';
+        if (part === 'calm') {
+          if (i === 0 || i === 3 || i === 8 || i === 11) heartbeat(t, i % 8 === 0 ? 0.5 : 0.32); // 쿵쿵, 쿵쿵
+          if (i === 0) softPad(ch.notes, t, sd * 16, 0.028);
+          if (h) sawPluck(h, t, 0.03, sd);
+          if (i % 4 === 2) noise(t, 0.02, 0.018, 9500);
+          return;
+        }
+        if (part === 'build') {
+          const k = bar - 4;                                   // 0~3
+          if (i % 4 === 0 && !(bar === 7 && i >= 12)) kick(t, 0.5 + k * 0.03);
+          const roll = k < 2 ? 4 : k < 3 ? 2 : 1;              // 스네어가 점점 촘촘하게
+          if (i % roll === 0 && !(bar === 7 && i >= 14)) snare(t, 0.06 + (k * 16 + i) / 64 * 0.16);
+          if (bar === 4 && i === 0) riser(t, sd * 64);
+          if (i % 4 === 0) superSaw(ch.notes, t, sd, 0.016 + k * 0.004, 600 + (k * 16 + i) * 55);  // 필터가 조금씩 열려요
+          if (h && k < 3) sawPluck(h, t, 0.03, sd);
+          if (i % 2 === 0) noise(t, 0.02, 0.025, 9000);
+          if (i === 0) heavyBass(ch.bass, t, sd * 4, 0.06);
+          return;
+        }
+        // 드롭
+        if (bar === 8 && i === 0) crash(t);
+        if (i % 4 === 0) kick(t, 0.64);
+        if (i === 4 || i === 12) clap(t, 0.16);
+        if (i % 4 === 2) noise(t, 0.09, 0.07, 6500); else if (i % 2 === 1) noise(t, 0.02, 0.025, 9000);
+        if (i % 4 === 2 || (def.roll && i === 15)) heavyBass(ch.bass + (i === 14 ? 12 : 0), t, sd * 1.6, 0.1);
+        if (i % 4 === 0) superSaw(ch.notes, t, sd, 0.03, 3600);
+        if (h) { sawPluck(h + 12, t, 0.045, sd); at(m(h), t, sd * 1.4, 'sine', 0.02); }
+        if (hot && i >= 12 && bar % 2 === 1) clap(t, 0.12);   // 마지막 30초: 마디 끝 손뼉 연타
+      }
+    };
+  }
+
   // K-pop 걸그룹 댄스풍 창작곡 10곡. 대기실에서는 이 빠르기로, 레이스에서는 조금 더 빠르게(마지막 30초는 더더 빠르게) 틀어요.
   const SONGS = [
     { name: '네온 스타트',     groove: 'bounce',   prog: ['Am', 'F', 'C', 'G'],     bpm: 124, seed: 101, rhythm: [0, 3, 6, 8, 10, 14], chant: true, kickExtra: 10 },
@@ -307,10 +449,39 @@
     { name: '파워 업',         groove: 'drive',    prog: ['Cm', 'Ab', 'Eb', 'Bb'],  bpm: 126, seed: 181, rhythm: [0, 3, 8, 11, 14], chant: true, cutoff: 3200, kickExtra: 6 },
     { name: '무지개 댄스',     groove: 'tropical', prog: ['C', 'Am', 'F', 'G'],     bpm: 120, seed: 191, rhythm: [0, 2, 6, 8, 12, 14], lead: 'square', kickExtra: 11 }
   ];
+  // 대기실에 더한 상큼 팝 창작곡 10곡: 밝은 장조, 종소리 멜로디와 보컬 찹, 통통 튀는 킥
+  const POP_SONGS = [
+    { name: '젤리 하트',   type: 'pop', prog: ['C', 'G', 'Am', 'F'],     bpm: 122, seed: 211, rhythm: [0, 2, 4, 8, 10, 12, 14], vowels: ['a', 'i', 'a', 'o'] },
+    { name: '딸기 우유',   type: 'pop', prog: ['F', 'C', 'Dm', 'Bb'],    bpm: 120, seed: 223, rhythm: [0, 3, 6, 8, 10, 14], vowels: ['u', 'a', 'i', 'a'] },
+    { name: '반짝 마법',   type: 'pop', prog: ['G', 'D', 'Em', 'C'],     bpm: 126, seed: 227, rhythm: [0, 2, 6, 8, 12, 14], vowels: ['a', 'e', 'i', 'o'] },
+    { name: '체리 블링',   type: 'pop', prog: ['D', 'Bm', 'G', 'A'],     bpm: 124, seed: 229, rhythm: [0, 3, 4, 8, 11, 12], vowels: ['i', 'i', 'a', 'e'] },
+    { name: '코튼 캔디',   type: 'pop', prog: ['Eb', 'Bb', 'Cm', 'Ab'],  bpm: 118, seed: 233, rhythm: [0, 2, 4, 6, 8, 12], vowels: ['o', 'a', 'u', 'a'] },
+    { name: '레몬 사이다', type: 'pop', prog: ['A', 'E', 'F#m', 'D'],    bpm: 128, seed: 239, rhythm: [0, 3, 6, 10, 12, 14], vowels: ['a', 'i', 'e', 'a'] },
+    { name: '두근 스텝',   type: 'pop', prog: ['Bb', 'F', 'Gm', 'Eb'],   bpm: 124, seed: 241, rhythm: [0, 2, 6, 8, 10, 12], vowels: ['u', 'u', 'a', 'i'] },
+    { name: '말랑 데이',   type: 'pop', prog: ['C', 'Am', 'F', 'G'],     bpm: 120, seed: 251, rhythm: [0, 4, 6, 8, 12, 14], vowels: ['a', 'o', 'a', 'e'] },
+    { name: '별사탕 팡팡', type: 'pop', prog: ['E', 'B', 'C#m', 'A'],    bpm: 126, seed: 257, rhythm: [0, 2, 3, 8, 10, 11], vowels: ['i', 'a', 'i', 'o'] },
+    { name: '구름 산책',   type: 'pop', prog: ['F', 'Am', 'Bb', 'C'],    bpm: 116, seed: 263, rhythm: [0, 3, 6, 8, 12], vowels: ['o', 'u', 'a', 'a'] }
+  ];
+  // 레이스에 더한 감성 EDM 창작곡 10곡: 단조 화음, 메아리치는 플럭 멜로디, 심장 박동 킥으로 시작해 드롭에서 터져요
+  const EDM_SONGS = [
+    { name: '심장 박동',   type: 'edm', prog: ['Am', 'F', 'C', 'G'],     bpm: 126, seed: 307, rhythm: [0, 3, 6, 8, 10, 13] },
+    { name: '오로라 드롭', type: 'edm', prog: ['Fm', 'Db', 'Ab', 'Eb'],  bpm: 124, seed: 311, rhythm: [0, 2, 4, 7, 8, 12] },
+    { name: '새벽 질주',   type: 'edm', prog: ['Em', 'C', 'G', 'D'],     bpm: 128, seed: 313, rhythm: [0, 3, 6, 8, 11, 14], roll: true },
+    { name: '빛의 속도',   type: 'edm', prog: ['Cm', 'Ab', 'Eb', 'Bb'],  bpm: 128, seed: 317, rhythm: [0, 2, 6, 8, 10, 14], roll: true },
+    { name: '네온 레인',   type: 'edm', prog: ['Bm', 'G', 'D', 'A'],     bpm: 122, seed: 331, rhythm: [0, 3, 4, 8, 11, 12] },
+    { name: '파도 너머',   type: 'edm', prog: ['Dm', 'Bb', 'F', 'C'],    bpm: 124, seed: 337, rhythm: [0, 4, 6, 8, 12, 14] },
+    { name: '얼음 불꽃',   type: 'edm', prog: ['Gm', 'Eb', 'Bb', 'F'],   bpm: 126, seed: 347, rhythm: [0, 2, 3, 8, 10, 11], roll: true },
+    { name: '마지막 바퀴', type: 'edm', prog: ['C#m', 'A', 'E', 'B'],    bpm: 128, seed: 349, rhythm: [0, 3, 6, 10, 12, 14], roll: true },
+    { name: '블루 라이트', type: 'edm', prog: ['F#m', 'D', 'A', 'E'],    bpm: 124, seed: 353, rhythm: [0, 2, 6, 8, 12, 13] },
+    { name: '하늘 끝까지', type: 'edm', prog: ['Am', 'G', 'F', 'G'],     bpm: 126, seed: 359, rhythm: [0, 3, 6, 8, 10, 14] }
+  ];
+  // 새 곡은 뒤에 붙여서, 선생님이 예전에 꺼 둔 곡 설정(차례 번호)이 그대로 맞아요
   const PLAYLIST = {
-    lobby: SONGS,
-    race: SONGS.map(s => Object.assign({}, s, { bpm: s.bpm + 6, hot: s.bpm + 16 }))
+    lobby: SONGS.concat(POP_SONGS),
+    race: SONGS.map(s => Object.assign({}, s, { bpm: s.bpm + 6, hot: s.bpm + 16 })).concat(EDM_SONGS)
   };
+  const TAG = { pop: '상큼 팝', edm: '감성 EDM' };
+  const makerOf = def => (def.type === 'pop' ? makePop : def.type === 'edm' ? makeEdm : makeSong);
   // 선생님이 켜 둔 곡만 무작위 재생에 넣습니다 (노트북에 기억)
   function enabledList(kind) {
     try {
@@ -335,7 +506,7 @@
     const k = force != null ? force : from[Math.floor(Math.random() * from.length)];
     try { localStorage.setItem('hkr-last-song-' + kind, String(k)); } catch (e) { /* 무시 */ }
     songIdx = k;
-    return makeSong(list[k]);
+    return makerOf(list[k])(list[k]);
   }
 
   let songKind = null, songIdx = -1;
@@ -367,7 +538,7 @@
     // 선생님 화면의 음악 목록
     playlist: kind => {
       const en = enabledList(kind);
-      return PLAYLIST[kind].map((s, k) => ({ name: s.name, bpm: s.bpm, enabled: en[k], playing: !!bgmTimer && songKind === kind && songIdx === k }));
+      return PLAYLIST[kind].map((s, k) => ({ name: s.name, tag: TAG[s.type] || 'K-pop 댄스', bpm: s.bpm, enabled: en[k], playing: !!bgmTimer && songKind === kind && songIdx === k }));
     },
     setSongEnabled,
     playSong: (kind, k) => startBgm(kind, k),

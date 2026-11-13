@@ -1219,7 +1219,7 @@
     const now = musicKindNow();
     const sec = (kind, label) => `<section class="mp-sec"><h4>${label}</h4><ul>${SOUND.playlist(kind).map((s, k) => `
       <li class="${s.playing ? 'playing' : ''}">
-        <label><input type="checkbox" data-kind="${kind}" data-k="${k}" ${s.enabled ? 'checked' : ''}><span>${esc(s.name)}</span><small>${s.bpm} BPM</small></label>
+        <label><input type="checkbox" data-kind="${kind}" data-k="${k}" ${s.enabled ? 'checked' : ''}><span>${esc(s.name)}</span><small>${s.tag ? esc(s.tag) + ' · ' : ''}${s.bpm} BPM</small></label>
         ${kind === now ? `<button class="btn small" data-play="${k}" ${s.playing ? 'disabled' : ''}>${s.playing ? '나오는 중' : '틀기'}</button>` : ''}
       </li>`).join('')}</ul></section>`;
     $('#mpBody').innerHTML = sec(now, now === 'race' ? '레이스 음악' : '대기실 음악') + sec(now === 'race' ? 'lobby' : 'race', now === 'race' ? '대기실 음악' : '레이스 음악');
