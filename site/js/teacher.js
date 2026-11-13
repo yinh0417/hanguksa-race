@@ -790,11 +790,11 @@
     const eraChanged = !raceBuiltFor.startsWith(meta.era + '|');
     raceBuiltFor = key;
     if (eraChanged) updateBackdrop(true);
-    // 탈것은 옆모습(2D)과 뒷모습(3D)을 함께 넣어 두고 화면에 맞는 것만 보여요
+    // 탈것은 옆모습(2D)과 45도 모습(3D)을 함께 넣어 두고 화면에 맞는 것만 보여요
     $('#lanes').innerHTML = ap.map(p => `
       <div class="racer" data-uid="${p.uid}">
         <span class="tag" data-uid="${p.uid}"><b class="rank-badge"></b>${esc(p.nick)}</span>
-        <div class="car-box"><span class="fx-flame"></span><span class="fx-aura"></span><span class="fx-hit"></span>${A.carSVG(p.car)}${A.rearSVG(p.car)}<span class="fx-bubble"></span><span class="fx-shield">🛡️</span><span class="fx-bolt">⚡</span></div>
+        <div class="car-box"><span class="fx-flame"></span><span class="fx-aura"></span><span class="fx-hit"></span>${A.carSVG(p.car)}${A.quarterSVG(p.car)}<span class="fx-bubble"></span><span class="fx-shield">🛡️</span><span class="fx-bolt">⚡</span></div>
       </div>`).join('');
     lastRankSig = '';
     layoutRace();
@@ -893,12 +893,9 @@
     const g = r3.layout(Wd, Ht, n, { cells: C.finishCells, track: type });
     circ.style.setProperty('--car-w', g.carW + 'px');
     circ.style.setProperty('--tag-size', g.tagSize + 'px');
-    circ.style.setProperty('--sky-h', (g.skyBottom / Ht * 100).toFixed(2) + '%');
-    // 역사 장면 전광판: 진행 막대와 땅 사이 하늘 가운데
-    const el = $('#bgScreen');
-    let h = g.skyBottom - g.miniBottom - 14, w = h * 1.5;
-    if (w > Wd * 0.6) { w = Wd * 0.6; h = w / 1.5; }
-    Object.assign(el.style, { left: (Wd - w) / 2 + 'px', top: (g.skyBottom - 4 - h) + 'px', width: w + 'px', height: h + 'px' });
+    // 역사 장면 전광판: 길이 지나가지 않는 오른쪽 위
+    const el = $('#bgScreen'), b = g.board;
+    Object.assign(el.style, { left: b.x + 'px', top: b.y + 'px', width: b.w + 'px', height: b.h + 'px' });
     el.classList.remove('hidden');
     if (bgIdx >= 0 && !el.innerHTML) el.innerHTML = A.sceneSVG(G.era(meta.era).id, bgIdx);
   }

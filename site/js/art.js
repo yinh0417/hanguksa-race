@@ -1181,6 +1181,11 @@
     // 해달: 배 위에 조개를 들고 있어요
     const shell = o.shell ? `<path d="M53 50 Q60 42 67 50 Z" fill="#f6d7b8"/><path d="M56 50 L60 45 M60 50 V44.5 M64 50 L60 45" stroke="#d9a878" stroke-width=".7"/>` : '';
     const water = o.feet === 'water' ? `<path d="M22 58 Q30 53 38 58 T54 58 T70 58 T86 58 T102 58 V66 H22 Z" fill="#5fb8f0" opacity=".9"/><path d="M22 58 Q30 53 38 58 T54 58 T70 58 T86 58 T102 58" stroke="#fff" stroke-width="1.6" fill="none" opacity=".85"/>` : '';
+    if (FLUFF_TURN) { // 큰 화면 3D: 고개를 왼쪽 뒤로 살짝 돌려 우리를 봐요(얼굴은 조금 좁게, 왼쪽으로)
+      const turn = 'translate(-7 0) translate(60 0) scale(.86 1) translate(-60 0)';
+      return defs + fluffBack(o, F) + `<g transform="translate(-4 0)">${fluffEars(o, F)}</g>` + (o.feet === 'water' ? '' : feet) + body +
+        `<g transform="${turn}">${flopEars(o)}${fluffFace(o, id)}${shell}</g>` + arms + water;
+    }
     return defs + fluffBack(o, F) + fluffEars(o, F) + (o.feet === 'water' ? '' : feet) + body + flopEars(o) + fluffFace(o, id) + shell + arms + water;
   }
 
@@ -1395,7 +1400,13 @@
     : `<rect x="${f1(x - w / 2)}" y="${f1(y - h / 2)}" width="${w}" height="${h}" rx="${f1(Math.min(w, h) * 0.35)}" fill="#ff4b3e" stroke="#9c1c14" stroke-width=".8"/><rect x="${f1(x - w / 2 + 1.2)}" y="${f1(y - h / 2 + 1)}" width="${f1(w * 0.45)}" height="${f1(h * 0.35)}" rx="1" fill="#ffd0c8" opacity=".8"/>`;
   const rPlate = (y, c) => `<rect x="50" y="${y}" width="20" height="7" rx="1.5" fill="#fff" stroke="${shade(c.stripe, -0.25)}" stroke-width="1"/><path d="M53 ${y + 3.5} H67" stroke="#8a8f99" stroke-width="1.4" stroke-dasharray="2 1.4"/>`;
   const rBumper = (L, R, y) => `<rect x="${L - 1}" y="${y}" width="${R - L + 2}" height="6" rx="3" fill="#e3e5ec" stroke="#a9adba" stroke-width=".6"/>`;
-  const rFace = (P, x, y, r) => driver(P.c.driver, x, y, r);
+  // 옆면이 붙는 탈것은 옆 창문에 얼굴이 보이니, 뒤에서는 뒤통수만(얼굴이 두 개로 보이지 않게)
+  const rFace = (P, x, y, r) => (P.back ? driverBack(P.c.driver, x, y, r) : driver(P.c.driver, x, y, r));
+  function driverBack(kind, x, y, r) {
+    const s = driver(kind, x, y, r), key = `<circle cx="${x}" cy="${y}" r="${r}" fill="`, at = s.indexOf(key);
+    const col = at >= 0 ? s.slice(at + key.length, s.indexOf('"', at + key.length)) : SKIN;
+    return s + `<circle cx="${x}" cy="${y}" r="${f1(r * 0.94)}" fill="${col}"/><ellipse cx="${f1(x - r * 0.3)}" cy="${f1(y - r * 0.42)}" rx="${f1(r * 0.36)}" ry="${f1(r * 0.2)}" fill="#fff" opacity=".28"/>`;
+  }
   const rBodyAttr = (P) => `fill="url(#${P.id}b)" stroke="${P.dark}" stroke-width="1.1" stroke-linejoin="round"`;
   // 창문 안에 뒤돌아보는 운전자
   function rWin(P, d, x, y, r) {
@@ -1661,21 +1672,26 @@
   function fluffRear(P, o) {
     const id = P.id + 'm', B = o.body, F = `url(#${id}f)`;
     const amp = o.smooth ? 0.5 : o.shaggy ? 2.8 : 1.9;
-    let g = `<defs><radialGradient id="${id}f" cx=".5" cy=".3" r=".8"><stop offset="0" stop-color="${shade(B, 0.4)}"/><stop offset=".55" stop-color="${B}"/><stop offset="1" stop-color="${shade(B, -0.25)}"/></radialGradient></defs>`;
+    const blob = fuzz(60, 37, 31.5, 26.5, 34, amp);
+    let g = `<defs><radialGradient id="${id}f" cx=".5" cy=".3" r=".8"><stop offset="0" stop-color="${shade(B, 0.4)}"/><stop offset=".55" stop-color="${B}"/><stop offset="1" stop-color="${shade(B, -0.25)}"/></radialGradient>` +
+      `<radialGradient id="${id}e" cx=".4" cy=".35" r=".7"><stop offset="0" stop-color="#3a3340"/><stop offset=".7" stop-color="#0d0b10"/><stop offset="1" stop-color="#000"/></radialGradient>` +
+      `<clipPath id="${id}c"><path d="${blob}"/></clipPath></defs>`;
     const ear = o.earColor || B;
     if (o.mane) g += `<path d="${fuzz(60, 32, 38, 30, 26, 4.5)}" fill="${o.mane}"/>`;
     g += fluffEars(Object.assign({}, o, { earIn: shade(ear, -0.1), earTip: o.earTip }), o.earColor ? ear : F);
     if (o.feet === 'bird') g += [52, 68].map(x => `<path d="M${x} 58 V65 M${x} 65 l-3.5 1.5 M${x} 65 l3.5 1.5" stroke="${o.legs || '#f2a33a'}" stroke-width="2.4" stroke-linecap="round"/>`).join('');
     else if (o.feet === 'flipper') g += `<path d="M44 60 Q36 66 46 66 Q52 65 52 61 Z M76 60 Q84 66 74 66 Q68 65 68 61 Z" fill="${shade(B, -0.2)}"/>`;
     else if (o.feet !== 'water' && o.feet !== 'none') g += [49, 71].map(x => `<ellipse cx="${x}" cy="63.5" rx="7" ry="3.4" fill="${o.limb || shade(B, -0.08)}"/><ellipse cx="${x}" cy="64.2" rx="3.4" ry="1.6" fill="#f4a7a0" opacity="${o.limb ? 0.5 : 0.85}"/>`).join('');
-    g += `<path d="${fuzz(60, 37, 31.5, 26.5, 34, amp)}" fill="${F}"/>`;
+    g += `<path d="${blob}" fill="${F}"/>`;
     // 등 무늬: 머리 뒤 색, 줄무늬, 점
     if (o.cap) g += `<path d="M30 37 C29 18 42 10 60 10 C78 10 91 18 90 37 C80 30 40 30 30 37 Z" fill="${o.cap}"/>`;
     if (o.b_back) g += `<path d="${fuzz(60, 40, 24, 20, 22, amp * 0.6)}" fill="${o.b_back}"/>`;
     if (o.stripes) g += `<path d="M47 14 q5 6 1 13 M60 11 v13 M73 14 q-5 6 -1 13 M33 34 q8 1 11 8 M87 34 q-8 1 -11 8 M38 50 q7 -2 11 4 M82 50 q-7 -2 -11 4" stroke="${o.stripes}" stroke-width="2.8" fill="none" stroke-linecap="round"/>`;
     if (o.spots) g += [[44, 22], [76, 26], [54, 46], [70, 50], [38, 40], [84, 44]].map(([x, y]) => `<ellipse cx="${x}" cy="${y}" rx="2.4" ry="1.7" fill="${o.spots}" opacity=".7"/>`).join('');
     if (o.shaggy) g += `<path d="${fuzz(60, 20, 26, 10, 22, 2.4)}" fill="${o.shaggy}"/>`;
-    g += `<ellipse cx="52" cy="20" rx="10" ry="5" fill="#fff" opacity=".22"/>`; // 머리 뒤 반짝
+    g += `<ellipse cx="58" cy="20" rx="10" ry="5" fill="#fff" opacity=".22"/>`; // 머리 뒤 반짝
+    // 비스듬히 뒤에서 보면 얼굴이 왼쪽 가장자리로 살짝 보여요(옆으로 눌러 그린 얼굴)
+    g += `<g clip-path="url(#${id}c)"><g transform="translate(38 1) scale(.42 1) translate(-60 0)">${fluffFace(o, id)}</g></g>`;
     g += flopEars(o);
     // 날개·지느러미
     if (o.arms === 'wing') g += [[30, 44, 20], [90, 44, -20]].map(([x, y, r]) => `<g transform="rotate(${r} ${x} ${y})"><ellipse cx="${x}" cy="${y}" rx="6.5" ry="11" fill="${o.wing || shade(B, -0.12)}"/></g>`).join('');
@@ -1704,9 +1720,25 @@
     return g;
   }
 
+  // 비스듬한 뒤 시점: 뒷모습 왼쪽 가장자리(뒷모습 그림의 x)에 옆모습 그림을 비스듬히 붙여요.
+  // 동물 캐릭터·열기구·구름은 옆모습이 앞을 보는 얼굴이라 붙이지 않고, 대신 얼굴이 옆으로 살짝 보여요
+  const SIDE_X = {
+    ev: 20, suv: 18, sport: 15, luxury: 19, hatch: 21, pickup: 18, box: 22, retro: 23, jeep: 19, taxi: 20, police: 19,
+    ambulance: 19, fire: 16, bus: 16, mtruck: 16, t_dump: 16, t_mixer: 20, t_subway: 18, t_train: 18, tram: 20, steam: 18, t_crane: 16,
+    tank: 10, spg: 10, t_excavator: 12, t_forklift: 24, f_tractor: 9, tiller: 15, f_combine: 12, f_transplanter: 38, f_drone: 40,
+    stonecart: 16, gama: 34, carriage: 16, hwacha: 15, rickshaw: 22,
+    x_rudolph: 26, x_pumpkin: 20, x_carpet: 30, x_broom: 50, x_rocket: 40, x_ufo: 30, x_paperplane: 54, x_sled: 28, x_turtle: 16,
+    p_airliner: 46, p_fighter: 49, p_light: 48, p_biplane: 49, p_aerobatic: 49, p_glider: 53, p_seaplane: 48, p_heli: 36, p_blimp: 32,
+    s_turtle: 18, s_panokseon: 16, s_sailboat: 26, s_yacht: 24, s_carrier: 10, s_submarine: 34, s_cruise: 12, s_fishing: 24, s_motorboat: 22, s_container: 10, s_banana: 44
+  };
+  function rearSide(i) {
+    const n = CARS.length, c = CARS[((i % n) + n) % n];
+    return SIDE_X[c.kind] == null ? null : SIDE_X[c.kind];
+  }
+
   function rearSVG(i) {
     const n = CARS.length, k = ((i % n) + n) % n, c = CARS[k], id = 'rr' + k + '_' + (++rearUid);
-    const P = { c, id, dark: shade(c.body, -0.38), lite: shade(c.body, 0.42), deep: shade(c.body, -0.6), toy: false };
+    const P = { c, id, dark: shade(c.body, -0.38), lite: shade(c.body, 0.42), deep: shade(c.body, -0.6), toy: false, back: SIDE_X[c.kind] != null };
     let inner;
     if (REAR[c.kind]) inner = REAR[c.kind](P);
     else if (/^[abm]_/.test(c.kind) && SPECIAL[c.kind]) {
@@ -1714,6 +1746,533 @@
       try { inner = rShadow(id, 34) + SPECIAL[c.kind](P); } finally { FLUFF_REAR = false; }
     } else inner = rCar(P, { w: 40, belt: 34, top: 10, rw: 31 });
     return `<svg class="car-svg rear" viewBox="0 -30 120 100" aria-hidden="true">${rearDefs(id, c)}${inner}</svg>`;
+  }
+
+  // ===== 45도 비스듬한 뒷모습: 큰 화면 3D(왼쪽 뒤 위에서 45도로 내려다보는 카메라) =====
+  // 탈것을 몸통·창문·지붕·바퀴로 조립해서 한 시점으로 그려요(정사영, 길과 같은 각도).
+  // 탈것 좌표: x 오른쪽, y 위, z 앞. 바닥 한가운데가 (0, 0, 0)이고, 그림 틀은 viewBox "-85 -125 170 170"이에요.
+  const QS = Math.sin(32 * Math.PI / 180), QC = Math.cos(32 * Math.PI / 180), QK = Math.SQRT1_2;
+  const QL = (() => { const v = [-0.55, 0.78, 0.05], n = Math.hypot(v[0], v[1], v[2]); return v.map(a => a / n); })(); // 빛이 오는 쪽
+  const f3 = n => (+n).toFixed(3);
+  const qu = (x, y, z) => (x - z) * QK, qv = (x, y, z) => -(QK * QS * (x + z) + QC * y);
+  const qp = p => f1(qu(p[0], p[1], p[2])) + ' ' + f1(qv(p[0], p[1], p[2]));
+  const qPoly = pts => 'M' + pts.map(qp).join(' L') + 'Z';
+  // 면 방향(n)에 따라 밝기: 윗면은 밝고, 왼쪽 옆면은 조금 밝고, 뒷면은 조금 어두워요
+  const qTone = (col, n) => { const L = Math.hypot(n[0], n[1], n[2]) || 1, d = (n[0] * QL[0] + n[1] * QL[1] + n[2] * QL[2]) / L; return shade(col, d > 0.3 ? (d - 0.3) * 0.45 : (d - 0.3) * 0.5); };
+  // 평면 위에 2D로 그리는 변환: x면(a=z, b=-y), z면(a=x, b=-y), y면(a=x, b=z)
+  const qMx = x0 => `matrix(${f3(-QK)} ${f3(-QK * QS)} 0 ${f3(QC)} ${f3(x0 * QK)} ${f3(-QK * QS * x0)})`;
+  const qMz = z0 => `matrix(${f3(QK)} ${f3(-QK * QS)} 0 ${f3(QC)} ${f3(-z0 * QK)} ${f3(-QK * QS * z0)})`;
+  const qMy = y0 => `matrix(${f3(QK)} ${f3(-QK * QS)} ${f3(-QK)} ${f3(-QK * QS)} 0 ${f3(-QC * y0)})`;
+  let QID = '', QSHADOW = ''; // 지금 그리는 그림의 id, 바닥 그림자(외곽선 밖에 따로 그려요)
+  const qFace = (pts, col, n, sw) => { const t = qTone(col, n), d = qPoly(pts); return `<path d="${d}" fill="${t}" stroke="${shade(t, -0.18)}" stroke-width="${sw || 1.4}" stroke-linejoin="round"/><path d="${d}" fill="url(#${QID}h)"/>`; };
+  // 사각형 면 안쪽 자리(쌍선형): p0(0,0) p1(1,0) p2(1,1) p3(0,1)
+  const qIn = (q, u0, u1, v0, v1) => [[u0, v0], [u1, v0], [u1, v1], [u0, v1]].map(([u, v]) => [0, 1, 2].map(k =>
+    q[0][k] * (1 - u) * (1 - v) + q[1][k] * u * (1 - v) + q[2][k] * u * v + q[3][k] * (1 - u) * v));
+  function qHull(pts) {
+    pts = pts.slice().sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+    const cr = (o, a, b) => (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0]);
+    const lo = [], up = [];
+    pts.forEach(p => { while (lo.length > 1 && cr(lo[lo.length - 2], lo[lo.length - 1], p) <= 0) lo.pop(); lo.push(p); });
+    pts.slice().reverse().forEach(p => { while (up.length > 1 && cr(up[up.length - 2], up[up.length - 1], p) <= 0) up.pop(); up.push(p); });
+    return lo.slice(0, -1).concat(up.slice(0, -1));
+  }
+  const qHullPath = pts => 'M' + qHull(pts).map(p => f1(p[0]) + ' ' + f1(p[1])).join(' L') + 'Z';
+  // 상자: 보이는 면은 뒤(z0)·왼쪽(x0)·위(y1)
+  function qBox(x0, x1, y0, y1, z0, z1, col, o) {
+    o = o || {};
+    let g = '';
+    if (!o.noRear) g += qFace([[x0, y0, z0], [x1, y0, z0], [x1, y1, z0], [x0, y1, z0]], col, [0, 0, -1], o.sw);
+    if (!o.noLeft) g += qFace([[x0, y0, z0], [x0, y1, z0], [x0, y1, z1], [x0, y0, z1]], col, [-1, 0, 0], o.sw);
+    if (!o.noTop) g += qFace([[x0, y1, z0], [x1, y1, z0], [x1, y1, z1], [x0, y1, z1]], o.topCol || col, [0, 1, 0], o.sw);
+    return g;
+  }
+  // 모서리를 깎은 상자(장난감처럼 둥근 느낌): 보이는 세 모서리와 꼭짓점을 c만큼 깎아요
+  function qBoxB(x0, x1, y0, y1, z0, z1, col, c, o) {
+    o = o || {};
+    const t = o.topCol || col;
+    return qFace([[x0 + c, y0, z0], [x1, y0, z0], [x1, y1 - c, z0], [x0 + c, y1 - c, z0]], col, [0, 0, -1]) +
+      qFace([[x0, y0, z0 + c], [x0, y1 - c, z0 + c], [x0, y1 - c, z1], [x0, y0, z1]], col, [-1, 0, 0]) +
+      qFace([[x0, y0, z0 + c], [x0 + c, y0, z0], [x0 + c, y1 - c, z0], [x0, y1 - c, z0 + c]], col, [-1, 0, -1]) +
+      qFace([[x0 + c, y1 - c, z0], [x1, y1 - c, z0], [x1, y1, z0 + c], [x0 + c, y1, z0 + c]], t, [0, 1, -1]) +
+      qFace([[x0, y1 - c, z0 + c], [x0 + c, y1, z0 + c], [x0 + c, y1, z1], [x0, y1 - c, z1]], t, [-1, 1, 0]) +
+      qFace([[x0, y1 - c, z0 + c], [x0 + c, y1 - c, z0], [x0 + c, y1, z0 + c]], t, [-1, 1, -1]) +
+      qFace([[x0 + c, y1, z0 + c], [x1, y1, z0 + c], [x1, y1, z1], [x0 + c, y1, z1]], t, [0, 1, 0]);
+  }
+  // 위가 좁아지는 몸통(지붕 있는 칸): 아래 ±b(z0~z1), 위 ±t(z0+sr~z1-sf)
+  function qCab(o) {
+    const B = [[-o.b, o.y0, o.z0], [o.b, o.y0, o.z0], [o.b, o.y0, o.z1], [-o.b, o.y0, o.z1]];
+    const T = [[-o.t, o.y1, o.z0 + o.sr], [o.t, o.y1, o.z0 + o.sr], [o.t, o.y1, o.z1 - o.sf], [-o.t, o.y1, o.z1 - o.sf]];
+    const h = o.y1 - o.y0;
+    return { rear: [B[0], B[1], T[1], T[0]], left: [B[0], T[0], T[3], B[3]], top: [T[0], T[1], T[2], T[3]], nRear: [0, o.sr, -h], nLeft: [-h, o.b - o.t, 0] };
+  }
+  // 바퀴(축이 x 방향): x0 쪽 바깥 면과 타이어 두께
+  function qWheel(x0, x1, yc, zc, r, o) {
+    o = o || {};
+    const pts = [];
+    for (let i = 0; i < 28; i++) {
+      const t = i / 28 * Math.PI * 2, y = yc + Math.sin(t) * r, z = zc + Math.cos(t) * r;
+      pts.push([qu(x0, y, z), qv(x0, y, z)], [qu(x1, y, z), qv(x1, y, z)]);
+    }
+    return `<path d="${qHullPath(pts)}" fill="${o.tire || '#2a2a30'}"/>` +
+      `<g transform="${qMx(x0)}"><circle cx="${f1(zc)}" cy="${f1(-yc)}" r="${f1(r)}" fill="${o.face || '#3a3a42'}"/>` +
+      (o.plain ? '' : `<circle cx="${f1(zc)}" cy="${f1(-yc)}" r="${f1(r * 0.6)}" fill="${o.rim || '#e4e6ec'}" stroke="#9aa0ae" stroke-width="1"/><circle cx="${f1(zc)}" cy="${f1(-yc)}" r="${f1(r * 0.22)}" fill="#8a8f9c"/>`) + '</g>';
+  }
+  // 둥근 몸(타원체) → 화면에서는 타원
+  function qBall(cx, cy, cz, a, b, c, fill, extra) {
+    const r1 = [QK, 0, -QK], r2 = [-QK * QS, -QC, -QK * QS], d = [a * a, b * b, c * c];
+    const s = (u, v) => u[0] * v[0] * d[0] + u[1] * v[1] * d[1] + u[2] * v[2] * d[2];
+    const p = s(r1, r1), q = s(r1, r2), r = s(r2, r2), m = (p + r) / 2, dd = Math.sqrt(((p - r) / 2) ** 2 + q * q);
+    const ang = 0.5 * Math.atan2(2 * q, p - r) * 180 / Math.PI, x = qu(cx, cy, cz), y = qv(cx, cy, cz);
+    return `<ellipse cx="${f1(x)}" cy="${f1(y)}" rx="${f1(Math.sqrt(m + dd))}" ry="${f1(Math.sqrt(Math.max(0.01, m - dd)))}" transform="rotate(${f1(ang)} ${f1(x)} ${f1(y)})" fill="${fill}"${extra || ''}/>`;
+  }
+  const qShadow = (id, rx, rz, cz) => { QSHADOW = `<ellipse cx="0" cy="${cz || 0}" rx="${rx}" ry="${rz}" transform="${qMy(0)}" fill="url(#${id}s)"/>`; return ''; };
+  const qDefs = (id, c) => `<defs>
+      <radialGradient id="${id}s"><stop offset=".55" stop-color="#000" stop-opacity=".32"/><stop offset="1" stop-color="#000" stop-opacity="0"/></radialGradient>
+      <linearGradient id="${id}w" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#eaf6fd"/><stop offset=".55" stop-color="#a9cde3"/><stop offset="1" stop-color="#7fa4c0"/></linearGradient>
+      <radialGradient id="${id}b" cx=".36" cy=".3" r=".8"><stop offset="0" stop-color="${shade(c.body, 0.45)}"/><stop offset=".5" stop-color="${c.body}"/><stop offset="1" stop-color="${shade(c.body, -0.32)}"/></radialGradient>
+      <linearGradient id="${id}h" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".22"/><stop offset=".45" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".1"/></linearGradient>
+      <filter id="${id}o" x="-10%" y="-10%" width="120%" height="120%"><feMorphology in="SourceAlpha" operator="dilate" radius="1.3" result="d"/><feFlood flood-color="#231d2a" flood-opacity=".6"/><feComposite in2="d" operator="in" result="o"/><feMerge><feMergeNode in="o"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+    </defs>`;
+  // 창문: 유리 → 운전석 창에는 우리를 보는 운전자 얼굴, 뒷유리에는 머리받침 → 유리 반사
+  function qWindows(P, side, rear) {
+    let g = side.concat(rear ? [rear] : []).map(w => `<path d="${qPoly(w)}" fill="url(#${P.id}w)" stroke="${shade(P.c.body, -0.45)}" stroke-width="1.2" stroke-linejoin="round"/>`).join('');
+    const box = w => { const us = w.map(p => qu(...p)), vs = w.map(p => qv(...p)); return { x: (Math.min(...us) + Math.max(...us)) / 2, y: (Math.min(...vs) + Math.max(...vs)) / 2, h: Math.max(...vs) - Math.min(...vs), wd: Math.max(...us) - Math.min(...us) }; };
+    const clip = (w, inner) => { const k = P.id + 'g' + (++rearUid); return `<defs><clipPath id="${k}"><path d="${qPoly(w)}"/></clipPath></defs><g clip-path="url(#${k})">${inner}</g>`; };
+    if (rear) { const b = box(rear); g += clip(rear, `<rect x="${f1(b.x - b.wd * 0.22)}" y="${f1(b.y - b.h * 0.05)}" width="${f1(b.wd * 0.44)}" height="${f1(b.h * 0.8)}" rx="${f1(b.wd * 0.12)}" fill="${shade(P.c.body, -0.55)}" opacity=".75"/>`); }
+    const dw = side[side.length - 1], b = box(dw), r = Math.min(b.h * 0.4, b.wd * 0.36);
+    g += clip(dw, driver(P.c.driver, +b.x.toFixed(1), +(b.y + r * 0.25).toFixed(1), +r.toFixed(1)));
+    g += side.concat(rear ? [rear] : []).map(w => `<path d="${qPoly(qIn(w, 0.06, 0.55, 0.62, 0.94))}" fill="#fff" opacity=".2"/>`).join('');
+    return g;
+  }
+
+  // 승용차: 아래 몸통 + 위가 좁은 지붕 칸 + 바퀴 넷 + 뒷등·번호판
+  function qCar(P, o) {
+    const { c, id } = P, w = o.w, L = o.L, zr = -L / 2, zf = L / 2, yb = o.yb || 10, bt = o.belt, R = o.R || 12;
+    const wz = [zr + (o.wr || 22), zf - (o.wf || 20)];
+    let g = qShadow(id, w + 10, L / 2 + 8);
+    g += qWheel(w - 9, w + 1, R, wz[0], R) + qWheel(w - 9, w + 1, R, wz[1], R);
+    g += qBoxB(-w, w, yb, bt, zr, zf, c.body, 5);
+    // 바퀴집(옆면에 어두운 반원), 옆 줄무늬와 문 선·손잡이
+    const ak = P.id + 'a' + (++rearUid);
+    g += `<defs><clipPath id="${ak}"><path d="${qPoly([[-w, yb, zr + 5], [-w, bt - 5, zr + 5], [-w, bt - 5, zf], [-w, yb, zf]])}"/></clipPath></defs>` +
+      `<g clip-path="url(#${ak})"><g transform="${qMx(-w)}">${wz.map(z => `<circle cx="${f1(z)}" cy="${-R}" r="${R + 3.5}" fill="${shade(c.body, -0.55)}"/>`).join('')}</g></g>`;
+    const mid = (o.cz0 + o.cz1) / 2;
+    g += `<g transform="${qMx(-w)}"><rect x="${f1(zr + 6)}" y="${f1(-(bt - 9))}" width="${f1(L - 12)}" height="3.2" rx="1.6" fill="${c.stripe}"/>` +
+      `<path d="M${f1(mid)} ${f1(-bt + 5)} V${f1(-yb - 4)}" stroke="${shade(c.body, -0.3)}" stroke-width="1"/>` +
+      `<rect x="${f1(mid - 9)}" y="${f1(-bt + 11)}" width="6" height="2" rx="1" fill="${shade(c.body, -0.35)}"/></g>`;
+    const ly = bt - 7;
+    g += `<g transform="${qMz(zr)}">` +
+      (o.lights === 'round' ? [-w + 9, w - 9].map(x => `<circle cx="${x}" cy="${-ly}" r="4" fill="#ff4b3e" stroke="#9c1c14" stroke-width=".8"/>`).join('')
+        : o.lights === 'bar' ? `<rect x="${-w + 4}" y="${-ly - 2.5}" width="${2 * w - 8}" height="5" rx="2.5" fill="#ff4b3e" stroke="#9c1c14" stroke-width=".7"/>`
+          : [-w + 4, w - 15].map(x => `<rect x="${x}" y="${-ly - 3}" width="11" height="6" rx="2" fill="#ff4b3e" stroke="#9c1c14" stroke-width=".8"/>`).join('')) +
+      `<rect x="-10" y="${-(yb + 13)}" width="20" height="7" rx="1.5" fill="#fff" stroke="${shade(c.stripe, -0.25)}" stroke-width="1"/>` +
+      `<rect x="${-w - 1}" y="${-(yb + 4)}" width="${2 * w + 2}" height="6" rx="3" fill="#e3e5ec" stroke="#a9adba" stroke-width=".6"/></g>`;
+    if (o.extraLow) g += o.extraLow(P, o);
+    // 지붕 칸
+    const cab = qCab({ b: o.b, t: o.t, y0: bt, y1: o.roof, z0: o.cz0, z1: o.cz1, sr: o.sr, sf: o.sf });
+    g += qFace(cab.rear, c.body, cab.nRear) + qFace(cab.left, c.body, cab.nLeft);
+    const side = o.split ? [qIn(cab.left, 0.14, 0.86, 0.08, 0.47), qIn(cab.left, 0.14, 0.86, 0.53, 0.9)] : [qIn(cab.left, 0.14, 0.86, 0.08, 0.9)];
+    g += qWindows(P, side, qIn(cab.rear, 0.1, 0.9, 0.12, 0.86));
+    g += qFace(cab.top, c.body, [0, 1, 0]);
+    if (o.extra) g += o.extra(P, o, cab);
+    g += qBox(-o.b - 5, -o.b, bt + 2, bt + 7, o.cz1 - 7, o.cz1 - 2, shade(c.body, -0.15)); // 옆 거울
+    g += qWheel(-w - 2, -w + 8, R, wz[0], R) + qWheel(-w - 2, -w + 8, R, wz[1], R);
+    return g;
+  }
+  const qSpare = (P, o) => `<g transform="${qMz(-o.L / 2 - 3)}"><circle cx="0" cy="${-(o.belt - 4)}" r="11" fill="#2a2a30"/><circle cx="0" cy="${-(o.belt - 4)}" r="5.5" fill="#d9dce4" stroke="#8a8f99" stroke-width="1"/></g>`;
+  const qSpoiler = (P, o) => qBox(-o.w + 3, o.w - 3, o.belt + 9, o.belt + 12, -o.L / 2 + 2, -o.L / 2 + 10, shade(P.c.body, -0.25)) +
+    [-o.w + 10, o.w - 10].map(x => qBox(x - 1.5, x + 1.5, o.belt, o.belt + 9, -o.L / 2 + 5, -o.L / 2 + 8, shade(P.c.body, -0.35))).join('');
+  const qRoofBox = (o, cab, col, h, wd, ln) => qBox(-wd, wd, o.roof, o.roof + h, (o.cz0 + o.sr + o.cz1 - o.sf) / 2 - ln / 2, (o.cz0 + o.sr + o.cz1 - o.sf) / 2 + ln / 2, col);
+  const qSiren = (P, o) => { const z = (o.cz0 + o.sr + o.cz1 - o.sf) / 2; return qBox(-14, 0, o.roof, o.roof + 5, z - 4, z + 4, '#ff3b30') + qBox(0, 14, o.roof, o.roof + 5, z - 4, z + 4, '#0a84ff'); };
+  const qTaxi = (P, o) => { const z = (o.cz0 + o.sr + o.cz1 - o.sf) / 2; return qBox(-11, 11, o.roof, o.roof + 7, z - 5, z + 5, '#ffd84a') +
+    `<g transform="${qMz(z - 5)}"><text x="0" y="${-(o.roof + 1.6)}" text-anchor="middle" font-size="5.6" font-weight="800" fill="#3a2a00" font-family="sans-serif">TAXI</text></g>`; };
+  const qBed = (P, o) => { // 픽업트럭 짐칸: 뚫린 칸 안쪽
+    const zr = -o.L / 2;
+    return `<path d="${qPoly([[-o.w + 4, o.belt, zr + 4], [o.w - 4, o.belt, zr + 4], [o.w - 4, o.belt, o.cz0 - 2], [-o.w + 4, o.belt, o.cz0 - 2]])}" fill="${shade(P.c.body, -0.45)}"/>`; };
+
+  const Q45 = {
+    ev:     P => qCar(P, { w: 40, L: 104, belt: 30, roof: 54, b: 36, t: 28, cz0: -32, cz1: 26, sr: 12, sf: 18, lights: 'bar' }),
+    suv:    P => qCar(P, { w: 42, L: 108, belt: 31, roof: 62, b: 39, t: 35, cz0: -50, cz1: 24, sr: 4, sf: 14, split: true, R: 13, extraLow: qSpare }),
+    sport:  P => qCar(P, { w: 45, L: 114, belt: 25, roof: 44, b: 38, t: 27, cz0: -24, cz1: 22, sr: 14, sf: 18, R: 12, extraLow: qSpoiler }),
+    luxury: P => qCar(P, { w: 41, L: 118, belt: 30, roof: 54, b: 37, t: 29, cz0: -28, cz1: 28, sr: 12, sf: 16, split: true, lights: 'bar' }),
+    hatch:  P => qCar(P, { w: 39, L: 98, belt: 30, roof: 57, b: 36, t: 31, cz0: -44, cz1: 20, sr: 6, sf: 16 }),
+    pickup: P => qCar(P, { w: 42, L: 118, belt: 31, roof: 60, b: 39, t: 34, cz0: -6, cz1: 30, sr: 3, sf: 12, R: 13, extraLow: qBed }),
+    box:    P => qCar(P, { w: 38, L: 100, belt: 28, roof: 68, b: 37, t: 35, cz0: -48, cz1: 30, sr: 2, sf: 10, split: true }),
+    retro:  P => qCar(P, { w: 37, L: 96, belt: 31, roof: 55, b: 33, t: 24, cz0: -26, cz1: 18, sr: 13, sf: 13, lights: 'round' }),
+    jeep:   P => qCar(P, { w: 41, L: 100, belt: 31, roof: 60, b: 40, t: 37, cz0: -44, cz1: 22, sr: 2, sf: 8, R: 13, extraLow: qSpare }),
+    taxi:   P => qCar(P, { w: 40, L: 112, belt: 30, roof: 54, b: 37, t: 29, cz0: -28, cz1: 26, sr: 12, sf: 16, split: true, extra: qTaxi }),
+    police: P => qCar(P, { w: 41, L: 116, belt: 30, roof: 54, b: 37, t: 29, cz0: -28, cz1: 28, sr: 12, sf: 16, split: true, lights: 'bar', extra: qSiren })
+  };
+
+  // ---------- 45도 부품: 기둥(z·x 방향으로 뽑은 모양), 원기둥, 판, 탄 사람 ----------
+  // prof: (x, y) 점들(시계 반대 방향), z0(뒤)~z1(앞)로 뽑아요. 뒷면과 보이는 옆·윗면을 칠해요
+  function qPrismZ(prof, z0, z1, col) {
+    let g = '';
+    prof.forEach((a, i) => {
+      const b = prof[(i + 1) % prof.length], ex = b[0] - a[0], ey = b[1] - a[1], n = [ey, -ex, 0];
+      if (n[0] * QK * QC + n[1] * -QS >= 0) return;
+      g += qFace([[a[0], a[1], z0], [b[0], b[1], z0], [b[0], b[1], z1], [a[0], a[1], z1]], col, n);
+    });
+    return g + qFace(prof.map(p => [p[0], p[1], z0]), col, [0, 0, -1]);
+  }
+  // prof: (z, y) 점들(시계 반대 방향), x0(왼쪽)~x1로 뽑아요. 왼쪽 면과 보이는 윗·뒷면을 칠해요
+  function qPrismX(prof, x0, x1, col) {
+    let g = '';
+    prof.forEach((a, i) => {
+      const b = prof[(i + 1) % prof.length], ez = b[0] - a[0], ey = b[1] - a[1], n = [0, -ez, ey];
+      if (n[1] * -QS + n[2] * QK * QC >= 0) return;
+      g += qFace([[x0, a[1], a[0]], [x0, b[1], b[0]], [x1, b[1], b[0]], [x1, a[1], a[0]]], col, n);
+    });
+    return g + qFace(prof.map(p => [x0, p[1], p[0]]), col, [-1, 0, 0]);
+  }
+  const qRing = (f, n) => Array.from({ length: n || 28 }, (_, i) => f(i / (n || 28) * Math.PI * 2));
+  // 원기둥: z 방향(뒤 원판이 보여요), y 방향(윗 원판이 보여요)
+  function qCylZ(x, y, z0, z1, r, col, cap) {
+    const pts = qRing(t => [[x + Math.cos(t) * r, y + Math.sin(t) * r, z0], [x + Math.cos(t) * r, y + Math.sin(t) * r, z1]]).flat().map(p => [qu(...p), qv(...p)]);
+    return `<path d="${qHullPath(pts)}" fill="${qTone(col, [-0.4, 0.6, 0])}" stroke="${shade(col, -0.3)}" stroke-width="1.1"/><path d="${qHullPath(pts)}" fill="url(#${QID}h)"/>` +
+      `<g transform="${qMz(z0)}"><circle cx="${f1(x)}" cy="${f1(-y)}" r="${f1(r)}" fill="${cap || qTone(col, [0, 0, -1])}" stroke="${shade(col, -0.3)}" stroke-width="1"/></g>`;
+  }
+  function qCylY(x, z, y0, y1, r, col, cap) {
+    const pts = qRing(t => [[x + Math.cos(t) * r, y0, z + Math.sin(t) * r], [x + Math.cos(t) * r, y1, z + Math.sin(t) * r]]).flat().map(p => [qu(...p), qv(...p)]);
+    return `<path d="${qHullPath(pts)}" fill="${qTone(col, [-1, 0, -1])}" stroke="${shade(col, -0.3)}" stroke-width="1.1"/>` +
+      `<g transform="${qMy(y1)}"><circle cx="${f1(x)}" cy="${f1(z)}" r="${f1(r)}" fill="${cap || qTone(col, [0, 1, 0])}" stroke="${shade(col, -0.3)}" stroke-width="1"/></g>`;
+  }
+  // 우리를 보는 얼굴(어느 쪽에서 봐도 둥글어요)
+  const qHead = (P, x, y, z, r) => driver(P.c.driver, +qu(x, y, z).toFixed(1), +qv(x, y, z).toFixed(1), +r.toFixed(1));
+  // 앉아 있는 운전자: 둥근 몸 + 얼굴
+  const qRider = (P, x, y, z, r, shirt) => qBall(x, y + r * 0.9, z, r * 0.95, r * 1.05, r * 0.85, shirt || shade(P.c.stripe, -0.05), ` stroke="${shade(shirt || P.c.stripe, -0.3)}" stroke-width="1"`) + qHead(P, x, y + r * 2.25, z, r);
+  // 상자 면 위 창문 하나에 얼굴: 창문 사각형(3D 점 넷)
+  function qFaceWin(P, win, head) {
+    const k = P.id + 'g' + (++rearUid), us = win.map(p => qu(...p)), vs = win.map(p => qv(...p));
+    const cx = (Math.min(...us) + Math.max(...us)) / 2, cy = (Math.min(...vs) + Math.max(...vs)) / 2, h = Math.max(...vs) - Math.min(...vs), wd = Math.max(...us) - Math.min(...us);
+    const r = Math.min(h * 0.4, wd * 0.38);
+    return `<path d="${qPoly(win)}" fill="url(#${P.id}w)" stroke="${shade(P.c.body, -0.45)}" stroke-width="1.2" stroke-linejoin="round"/>` +
+      (head === false ? '' : `<defs><clipPath id="${k}"><path d="${qPoly(win)}"/></clipPath></defs><g clip-path="url(#${k})">${driver(P.c.driver, +cx.toFixed(1), +(cy + r * 0.25).toFixed(1), +r.toFixed(1))}</g>`) +
+      `<path d="${qPoly(qIn(win, 0.06, 0.55, 0.62, 0.94))}" fill="#fff" opacity=".2"/>`;
+  }
+  const qGlass = (P, win) => qFaceWin(P, win, false);
+  // x면·z면 위 사각형(3D 점 넷)
+  const qXRect = (x, z0, z1, y0, y1) => [[x, y0, z0], [x, y1, z0], [x, y1, z1], [x, y0, z1]];
+  const qZRect = (z, x0, x1, y0, y1) => [[x0, y0, z], [x1, y0, z], [x1, y1, z], [x0, y1, z]];
+  const qTails = (z, w, y, h) => `<g transform="${qMz(z)}">` + [-w + 3, w - 9].map(x => `<rect x="${x}" y="${-y - h}" width="6" height="${h}" rx="2" fill="#ff4b3e" stroke="#9c1c14" stroke-width=".8"/>`).join('') + '</g>';
+  const qPlate = (z, y, c) => `<g transform="${qMz(z)}"><rect x="-10" y="${-y - 7}" width="20" height="7" rx="1.5" fill="#fff" stroke="${shade(c.stripe, -0.25)}" stroke-width="1"/></g>`;
+  const qWheels = (zs, w, R, wd, o) => ({ far: zs.map(z => qWheel(w - wd, w, R, z, R, o)).join(''), near: zs.map(z => qWheel(-w, -w + wd, R, z, R, o)).join('') });
+
+  // 큰 차: 통으로 긴 몸통(버스·전철) 또는 짐칸(뒤) + 운전칸(앞)
+  function qTruck(P, o) {
+    const { c, id } = P, w = o.w, L = o.L, zr = -L / 2, zf = L / 2, yb = o.yb || 10, R = o.R || 13, body = o.bodyCol || c.body;
+    qShadow(id, w + 12, L / 2 + 10);
+    const W = qWheels(o.wheels, w + 2, R, 11, o.wheelOpt);
+    let g = W.far;
+    if (o.single) {
+      g += qBoxB(-w, w, yb, o.top, zr, zf, body, o.bevel || 6);
+      const n = o.win || 4, z0 = zr + 8, z1 = zf - 8, step = (z1 - z0) / n;
+      g += `<g transform="${qMx(-w)}"><rect x="${zr + 4}" y="${-(o.wy0 - 5)}" width="${L - 8}" height="4" fill="${c.stripe}"/></g>`;
+      g += `<g transform="${qMz(zr)}"><rect x="${-w + 2}" y="${-(o.wy0 - 5)}" width="${2 * w - 4}" height="4" fill="${c.stripe}"/></g>`;
+      for (let i = 0; i < n - 1; i++) g += qGlass(P, qXRect(-w, z0 + i * step + 2, z0 + (i + 1) * step - 2, o.wy0, o.wy1));
+      g += qFaceWin(P, qXRect(-w, z0 + (n - 1) * step + 2, z1, o.wy0, o.wy1));
+      g += qGlass(P, qZRect(zr, -w + 7, w - 7, o.wy0, o.wy1));
+      g += qTails(zr, w, yb + 6, 10) + qPlate(zr, yb + 4, c);
+    } else {
+      const zc = o.zc, wc = o.wc || w - 2;
+      g += qBoxB(-wc, wc, yb, o.cabTop, zc, zf, body, 5);
+      g += qFaceWin(P, qXRect(-wc, zc + 5, zf - 9, o.cabTop - 18, o.cabTop - 5));
+      g += o.cargo ? o.cargo(P, o) : qBoxB(-w, w, yb, o.top, zr, zc, o.cargoCol || body, 5);
+      g += qTails(zr, w, yb + 6, 10) + qPlate(zr, yb + 4, c);
+    }
+    if (o.extra) g += o.extra(P, o);
+    return g + W.near;
+  }
+  // 궤도(무한궤도): 왼쪽 것은 앞에, 오른쪽 것은 뒤에
+  function qTrack(x0, x1, z0, z1, h) {
+    let g = qBoxB(x0, x1, 2, h, z0, z1, '#3a3d33', 3);
+    g += `<g transform="${qMx(x0)}">` + Array.from({ length: Math.floor((z1 - z0) / 8) }, (_, i) => `<circle cx="${f1(z0 + 6 + i * 8)}" cy="${f1(-h / 2 - 1)}" r="${f1(h * 0.28)}" fill="#5b5f52" stroke="#1b1d17" stroke-width=".8"/>`).join('') + '</g>';
+    return g;
+  }
+  function qTank(P, o) {
+    const { c, id } = P, w = o.w || 46, L = o.L || 120, zr = -L / 2, zf = L / 2;
+    qShadow(id, w + 10, L / 2 + 8);
+    let g = qTrack(w - 14, w, zr + 4, zf - 4, 20);
+    g += qBoxB(-w + 10, w - 10, 12, 30, zr, zf - 6, c.body, 5);
+    g += o.top(P, o);
+    g += qTrack(-w, -w + 14, zr + 4, zf - 4, 20);
+    return g;
+  }
+  const qCamo = (P, pts) => pts.map(([x, y, z, r]) => qBall(x, y, z, r, 0.5, r * 0.8, P.c.stripe, ' opacity=".7"')).join('');
+
+  Object.assign(Q45, {
+    // 큰 차
+    bus:       P => qTruck(P, { single: true, w: 42, L: 150, top: 72, wy0: 40, wy1: 62, win: 5, wheels: [-48, 46], R: 14 }),
+    t_subway:  P => qTruck(P, { single: true, w: 40, L: 150, top: 72, wy0: 38, wy1: 62, win: 5, wheels: [-50, -36, 36, 50], R: 9, bevel: 10, extra: (P2, o) => qBox(-6, 6, o.top, o.top + 3, -10, 10, '#4a4a52') }),
+    t_train:   P => qTruck(P, { single: true, w: 40, L: 150, top: 70, wy0: 38, wy1: 60, win: 5, wheels: [-50, -36, 36, 50], R: 9, bevel: 12 }),
+    tram:      P => qTruck(P, { single: true, w: 38, L: 118, top: 66, wy0: 36, wy1: 58, win: 4, wheels: [-34, 34], R: 10, bevel: 8,
+      extra: (P2, o) => qBox(-20, 20, o.top, o.top + 6, -30, 30, shade(P2.c.body, -0.2)) + qCylY(0, 0, o.top + 6, o.top + 30, 1.4, '#4a4a52') }),
+    ambulance: P => qTruck(P, { w: 41, L: 124, top: 66, zc: 22, cabTop: 54, wheels: [-36, 40], cargoCol: P.c.body,
+      extra: (P2, o) => `<g transform="${qMx(-o.w)}"><path d="M-22 -38 h8 v6 h6 v8 h-6 v6 h-8 v-6 h-6 v-8 h6 Z" fill="#e2412e"/></g>` +
+        `<g transform="${qMz(-o.L / 2)}"><path d="M-4 -46 h8 v6 h6 v8 h-6 v6 h-8 v-6 h-6 v-8 h6 Z" fill="#e2412e"/></g>` +
+        qBox(-14, 0, 54, 59, 32, 40, '#ff3b30') + qBox(0, 14, 54, 59, 32, 40, '#0a84ff') }),
+    fire:      P => qTruck(P, { w: 44, L: 140, top: 56, zc: 30, cabTop: 58, wheels: [-50, -30, 46], R: 14,
+      extra: (P2, o) => [-16, 16].map(x => qBox(x - 2, x + 2, o.top + 4, o.top + 7, -66, 30, '#c9ccd6')).join('') +
+        Array.from({ length: 9 }, (_, i) => qBox(-16, 16, o.top + 4, o.top + 6, -62 + i * 11, -60 + i * 11, '#c9ccd6')).join('') +
+        `<g transform="${qMx(-o.w)}">${[-40, -14].map(z => `<circle cx="${z}" cy="-34" r="8" fill="#f5f5f7" stroke="#8a8f99" stroke-width="1.2"/><circle cx="${z}" cy="-34" r="3" fill="#8a8f99"/>`).join('')}</g>` +
+        qBox(-14, 0, 58, 63, 44, 52, '#ff3b30') + qBox(0, 14, 58, 63, 44, 52, '#0a84ff') }),
+    mtruck:    P => qTruck(P, { w: 44, L: 136, top: 34, zc: 26, cabTop: 54, wheels: [-46, -28, 44], R: 14,
+      cargo: (P2, o) => { const arch = [[-44, 34], [44, 34], ...Array.from({ length: 9 }, (_, i) => { const t = (i + 1) / 10 * Math.PI; return [Math.cos(t) * 44, 34 + Math.sin(t) * 34]; })];
+        return qBoxB(-44, 44, 10, 34, -68, 26, shade(P2.c.body, -0.05), 4) + qPrismZ(arch, -66, 24, shade(P2.c.body, -0.12)) +
+          `<path d="${qPoly([[-34, 34, -66], [34, 34, -66], [30, 58, -66], [-30, 58, -66]])}" fill="#26271f"/>` + qHead(P2, 0, 42, -64, 9) +
+          qCamo(P2, [[-20, 66, -30, 9], [10, 62, 0, 8], [-34, 50, -50, 6]]); } }),
+    t_dump:    P => qTruck(P, { w: 44, L: 132, top: 30, zc: 26, cabTop: 56, wheels: [-44, -26, 44], R: 14,
+      cargo: (P2, o) => qPrismZ([[-38, 26], [38, 26], [46, 58], [-46, 58]], -66, 24, P2.c.body) + qBall(0, 58, -22, 34, 8, 36, '#8a6a48') }),
+    t_mixer:   P => qTruck(P, { w: 40, L: 132, top: 26, zc: 28, cabTop: 56, wheels: [-44, -26, 44], R: 13,
+      cargo: (P2, o) => qBoxB(-34, 34, 12, 24, -66, 28, '#5b6070', 3) + qBall(0, 50, -20, 32, 28, 46, `url(#${P2.id}b)`, ` stroke="${shade(P2.c.body, -0.35)}" stroke-width="1.2"`) +
+        qBall(-24, 62, -24, 10, 12, 22, '#fff', ' opacity=".25"') }),
+    t_crane:   P => qTruck(P, { w: 44, L: 140, top: 26, zc: 34, cabTop: 54, wheels: [-48, -30, 46], R: 14,
+      cargo: (P2, o) => qBoxB(-40, 40, 12, 26, -68, 34, '#5b6070', 3) + qBoxB(-16, 16, 26, 44, -50, -20, P2.c.body, 4) +
+        qPrismX([[-40, 40], [-36, 40], [60, 110], [56, 112]], -6, 6, P2.c.stripe) }),
+    steam:     P => { const { c } = P; qShadow(P.id, 52, 76); const W = qWheels([-46, -20, 6, 32], 40, 12, 9, { rim: '#d7261e' });
+      return W.far + qBoxB(-38, 38, 10, 22, -70, 66, '#26262b', 3) + qCylZ(0, 42, -24, 66, 24, c.body, shade(c.body, -0.25)) + qCylY(0, 50, 60, 84, 8, '#26262b') +
+        qBall(0, 96, 50, 10, 6, 10, '#e9ebf1', ' opacity=".9"') + qBoxB(-38, 38, 22, 74, -70, -26, c.body, 5) + qFaceWin(P, qXRect(-38, -62, -36, 46, 66)) +
+        qGlass(P, qZRect(-70, -26, 26, 46, 64)) + `<g transform="${qMx(-38)}"><rect x="-70" y="-26" width="136" height="4" fill="${c.stripe}"/></g>` + W.near; },
+    // 궤도 차
+    tank:      P => qTank(P, { top: (P2) => qCamo(P2, [[-30, 30, -20, 9], [20, 30, 20, 10]]) + qBall(0, 40, -6, 30, 14, 34, `url(#${P2.id}b)`, ` stroke="${shade(P2.c.body, -0.35)}" stroke-width="1.2"`) +
+      qCylZ(0, 42, 26, 92, 4, shade(P2.c.body, -0.15)) + qCamo(P2, [[-12, 50, -14, 8], [12, 46, 10, 6]]) + qCylY(-10, -10, 50, 54, 8, shade(P2.c.body, -0.25)) + qHead(P2, -10, 62, -10, 9) }),
+    spg:       P => qTank(P, { top: (P2) => qBoxB(-34, 34, 30, 60, -50, 16, P2.c.body, 6) + qCamo(P2, [[-34, 46, -30, 9], [0, 60, -10, 10]]) +
+      qPrismX([[0, 52], [10, 52], [86, 92], [80, 96]], -4, 4, shade(P2.c.body, -0.2)) + qHead(P2, -18, 68, -36, 9) }),
+    t_excavator: P => qTank(P, { w: 44, top: (P2) => qBoxB(-34, 34, 30, 46, -50, 40, '#3a3a40', 3) + qBoxB(-34, 34, 46, 62, -50, -16, P2.c.body, 5) +
+      qPrismX([[10, 60], [20, 60], [70, 116], [62, 120]], -4, 6, P2.c.body) + qPrismX([[62, 120], [70, 116], [90, 80], [84, 76]], -4, 6, P2.c.body) +
+      qBoxB(-34, -4, 46, 90, -14, 22, P2.c.body, 5) + qFaceWin(P2, qXRect(-34, -10, 18, 58, 84)) }),
+    f_combine: P => qTank(P, { w: 44, top: (P2) => qBoxB(-38, 38, 30, 88, -54, 40, P2.c.body, 6) + qFaceWin(P2, qXRect(-38, 14, 36, 64, 84)) +
+      `<g transform="${qMx(-38)}"><rect x="-50" y="-56" width="60" height="5" fill="${P2.c.stripe}"/></g>` + qCylZ(-30, 92, -50, 10, 5, P2.c.stripe) + qBoxB(-46, 46, 12, 30, 44, 60, '#5b6070', 3) }),
+    // 농기계
+    f_tractor: P => { const { c } = P; qShadow(P.id, 56, 60);
+      const far = qWheel(34, 48, 26, -24, 26) + qWheel(30, 40, 14, 40, 14);
+      return far + qBoxB(-24, 24, 18, 44, -10, 58, c.body, 5) + qBoxB(-30, 30, 22, 90, -46, -8, c.body, 5) + qBox(-34, 34, 90, 94, -50, -4, shade(c.body, -0.3)) +
+        qFaceWin(P, qXRect(-30, -40, -14, 54, 82)) + qGlass(P, qZRect(-46, -24, 24, 54, 82)) + qCylY(18, 48, 44, 64, 3, '#3a3a40') +
+        qWheel(-48, -34, 26, -24, 26) + qWheel(-40, -30, 14, 40, 14); },
+    tiller:    P => { const { c } = P; qShadow(P.id, 50, 58);
+      return qWheel(30, 42, 18, 30, 18) + qBoxB(-22, 22, 26, 50, 10, 54, c.body, 5) + qBoxB(-12, 12, 50, 62, 20, 44, c.stripe, 3) +
+        qPrismX([[10, 40], [14, 42], [-50, 60], [-54, 56]], -18, -14, '#3a3a40') + qPrismX([[10, 40], [14, 42], [-50, 60], [-54, 56]], 14, 18, '#3a3a40') +
+        qBoxB(-30, 30, 14, 26, -56, 6, '#8b5a2b', 3) + qRider(P, 0, 26, -24, 9) + qWheel(-42, -30, 18, 30, 18); },
+    f_transplanter: P => { const { c } = P; qShadow(P.id, 56, 56);
+      return qWheel(28, 38, 13, 30, 13) + qWheel(28, 38, 13, -20, 13) + qBoxB(-56, 56, 12, 20, -60, -46, '#3a3a40', 2) +
+        Array.from({ length: 8 }, (_, i) => qPrismZ([[-50 + i * 14, 20], [-46 + i * 14, 20], [-48 + i * 14, 34]], -58, -50, '#34c759')).join('') +
+        qBoxB(-26, 26, 18, 44, -40, 50, c.body, 5) + qRider(P, 0, 44, -10, 10) + qWheel(-38, -28, 13, 30, 13) + qWheel(-38, -28, 13, -20, 13); },
+    f_drone:   P => { const { c } = P; qShadow(P.id, 40, 40);
+      const arm = (x, z) => qBox(Math.min(0, x) - 2, Math.max(0, x) + 2, 58, 62, Math.min(0, z) - 2, Math.max(0, z) + 2, '#3a3a40') + qCylY(x, z, 62, 66, 3, '#3a3a40') + qBall(x, 68, z, 20, 0.8, 20, '#9aa0ae', ' opacity=".6"');
+      return arm(38, 38) + arm(38, -38) + qBoxB(-18, 18, 44, 66, -22, 22, c.body, 6) + arm(-38, 38) + arm(-38, -38) + qFaceWin(P, qXRect(-18, -12, 12, 50, 64)) +
+        qBox(-3, 3, 30, 44, -3, 3, '#3a3a40') + qBox(-12, 12, 30, 34, -14, 14, c.stripe); },
+    // 전통 탈것
+    stonecart: P => { qShadow(P.id, 48, 56);
+      const sw = x => qCylX(x, 18, 0, 20, 9, '#8f8b84');
+      return sw(36) + qBoxB(-36, 36, 22, 30, -46, 46, '#8b5a2b', 3) + qBoxB(-32, 32, 30, 46, -40, -10, '#a0703f', 3) + qRider(P, 0, 30, 14, 10) +
+        qPrismZ([[-4, 26], [4, 26], [4, 30], [-4, 30]], 46, 86, '#6b4423') + sw(-45); },
+    gama:      P => { const { c } = P; qShadow(P.id, 40, 64);
+      return qBoxB(26, 32, 26, 31, -76, 76, '#6b4423', 2) + qBoxB(-30, 30, 30, 80, -32, 32, c.body, 4) + qFaceWin(P, qXRect(-30, -18, 18, 48, 72)) +
+        qGlass(P, qZRect(-32, -18, 18, 50, 72)).replace(/url\(#[^)]*w\)/, c.stripe) + qPrismZ([[-42, 80], [42, 80], [26, 98], [-26, 98]], -44, 44, '#3a2a22') +
+        qBoxB(-32, -26, 26, 31, -76, 76, '#6b4423', 2) + [-60, 60].map(z => `<path d="M${qp([-29, 26, z])} L${qp([-29, 2, z])}" stroke="#3a2412" stroke-width="3" stroke-linecap="round"/>`).join(''); },
+    carriage:  P => { const { c } = P; qShadow(P.id, 46, 80);
+      const wl = x => qWheel(x, x + 5, 22, -22, 22, { tire: '#3a2412', face: '#6b4423', rim: '#a0703f' });
+      return wl(36) + qHorse(4, 70) + qBoxB(-32, 32, 26, 88, -48, 20, c.body, 8) +
+        qFaceWin(P, qXRect(-32, -30, 8, 52, 78)) + qGlass(P, qZRect(-48, -20, 20, 52, 78)) + `<g transform="${qMx(-32)}"><rect x="-48" y="-40" width="68" height="4" fill="${c.stripe}"/></g>` + wl(-41); },
+    hwacha:    P => { const { c } = P; qShadow(P.id, 46, 56);
+      const wl = x => qWheel(x, x + 5, 20, -6, 20, { tire: '#3a2412', face: '#6b4423', rim: '#a0703f' });
+      let rack = qPrismX([[-40, 40], [30, 40], [30, 88], [-40, 66]], -32, 32, '#8b5a2b');
+      for (let i = 0; i < 4; i++) for (let j = 0; j < 5; j++) rack += `<g transform="${qMz(-40)}"><circle cx="${-24 + j * 12}" cy="${-(46 + i * 5)}" r="2.4" fill="#2a1a10"/></g>`;
+      return wl(36) + qBoxB(-36, 36, 28, 40, -46, 40, '#6b4423', 3) + rack + qRider(P, -20, 40, -42, 9) + wl(-41); },
+    rickshaw:  P => { const { c } = P; qShadow(P.id, 44, 60);
+      const wl = x => qWheel(x, x + 4, 24, -10, 24, { tire: '#2a2a35', face: '#3a3a45', rim: '#c9ccd6' });
+      return wl(34) + qBoxB(-28, 28, 26, 40, -40, 24, '#2a2a35', 4) + qPrismZ([[-30, 40], [30, 40], [26, 70], [0, 78], [-26, 70]], -40, -26, '#4a1c22') + qRider(P, -4, 40, -6, 11) +
+        [-20, 20].map(x => qPrismZ([[x - 2, 32], [x + 2, 32], [x + 2, 35], [x - 2, 35]], 24, 84, '#2a2a35')).join('') + wl(-38); }
+  });
+  // 말(마차를 끌어요): 다리 넷, 몸통, 목, 머리, 갈기, 꼬리
+  function qHorse(x, z) {
+    const col = '#9a6a3f', dk = '#6b4423', leg = (lx, lz) => qBox(x + lx - 3, x + lx + 3, 0, 30, z + lz - 3, z + lz + 3, col);
+    return leg(8, 18) + leg(8, -16) + `<path d="M${qp([x, 40, z - 22])} Q${qp([x, 30, z - 34])} ${qp([x, 18, z - 30])}" stroke="${dk}" stroke-width="5" fill="none" stroke-linecap="round"/>` +
+      qBall(x, 40, z, 11, 12, 26, col, ` stroke="${dk}" stroke-width="1"`) + qBall(x, 56, z + 22, 6, 13, 7, col, ` stroke="${dk}" stroke-width="1"`) +
+      qBall(x, 66, z + 30, 6, 7, 11, col, ` stroke="${dk}" stroke-width="1"`) + qBall(x - 1, 60, z + 18, 3, 12, 6, dk) +
+      `<path d="M${qp([x - 2, 72, z + 26])} L${qp([x - 3, 79, z + 25])} M${qp([x + 2, 72, z + 26])} L${qp([x + 3, 79, z + 25])}" stroke="${dk}" stroke-width="2.6" stroke-linecap="round"/>` +
+      qBall(x - 5, 68, z + 34, 1.6, 1.6, 1.6, '#1d1d1f') + leg(-8, 18) + leg(-8, -16);
+  }
+  // ---------- 하늘을 나는 탈것 ----------
+  // 날개판: 뿌리(x=xr, z zr0~zr1) → 끝(x=xt, z zt0~zt1), 두께 th
+  function qWing(xr, xt, y, zr0, zr1, zt0, zt1, th, col) {
+    let g = qFace([[xr, y - th, zr0], [xt, y - th, zt0], [xt, y, zt0], [xr, y, zr0]], col, [0, 0, -1]);
+    if (xt < xr) g += qFace([[xt, y - th, zt0], [xt, y - th, zt1], [xt, y, zt1], [xt, y, zt0]], col, [-1, 0, 0]);
+    return g + qFace([[xr, y, zr0], [xt, y, zt0], [xt, y, zt1], [xr, y, zr1]], col, [0, 1, 0]);
+  }
+  // 둥근 창(몸통 옆 가까운 쪽) 안에 얼굴
+  function qPort(P, x, y, z, r) {
+    const k = P.id + 'g' + (++rearUid), e = qBall(x, y, z, 0.4, r, r, `url(#${P.id}w)`, ` stroke="${shade(P.c.body, -0.45)}" stroke-width="1.6"`);
+    return e + `<defs><clipPath id="${k}">${e}</clipPath></defs><g clip-path="url(#${k})">${qHead(P, x, y - r * 0.15, z, r * 0.82)}</g>`;
+  }
+  // 유리 덮개(조종석) 안에 얼굴
+  function qCanopy(P, x, y, z, a, b, c) {
+    const k = P.id + 'g' + (++rearUid), e = qBall(x, y, z, a, b, c, `url(#${P.id}w)`, ` stroke="${shade(P.c.body, -0.45)}" stroke-width="1.2"`);
+    return e + `<defs><clipPath id="${k}">${e}</clipPath></defs><g clip-path="url(#${k})">${qHead(P, x, y - b * 0.1, z, Math.min(b, c) * 0.85)}</g>` + qBall(x - a * 0.3, y + b * 0.35, z - c * 0.2, a * 0.35, b * 0.25, c * 0.35, '#fff', ' opacity=".35"');
+  }
+  function qPlaneQ(P, o) {
+    const { c, id } = P, Y = o.y || 34, fr = o.fr, h = o.len / 2, sp = o.span;
+    qShadow(id, sp * 0.55, h * 0.75);
+    const wy = Y + (o.high ? fr * 0.9 : -fr * 0.3), wz0 = o.wz - o.chord / 2, wz1 = o.wz + o.chord / 2, sw = o.sweep || 0;
+    const tz0 = -h + 2, tz1 = -h + o.tail;
+    let g = '';
+    if (o.prop) g += qBall(0, Y, h + 4, 22, 22, 0.6, '#c9ccd6', ' opacity=".5"');
+    g += qWing(fr * 0.7, sp, wy, wz0, wz1, wz0 - sw, wz1 - sw - o.chord * 0.35, 3, c.body);        // 오른쪽 날개(멀리)
+    if (o.wing2) g += qWing(fr * 0.7, sp * 0.95, wy + o.wing2, wz0, wz1, wz0 - sw, wz1 - sw - o.chord * 0.35, 3, c.body);
+    g += qWing(fr * 0.5, o.stab, Y + fr * 0.2, tz0, tz1, tz0 - 4, tz0 + 6, 2.5, c.body);              // 오른쪽 꼬리날개
+    if (o.engines) g += qCylZ(o.engines, wy - 9, wz0 + 4, wz1 + 4, 6, '#c9ccd6', '#3a3a40');
+    g += qBall(0, Y, 0, fr, fr * (o.fy || 1), h, `url(#${id}b)`, ` stroke="${shade(c.body, -0.35)}" stroke-width="1.2"`);   // 몸통
+    if (o.ports) for (let z = -h * 0.45; z < h * 0.55; z += 9) g += qBall(-fr * 0.92, Y + fr * 0.25, z, 0.3, 2.2, 2.2, '#5a7a96');
+    g += qBall(-fr * 0.3, Y - fr * 0.05, 0, fr * 0.72, 2.4, h * 0.92, c.stripe, ' opacity=".85"');                                // 띠
+    if (o.fin2) [-1, 1].forEach(s => { g += qFace([[s * 5, Y + fr * 0.6, tz0], [s * 5, Y + fr * 0.6, tz1], [s * 12, Y + fr + o.finH, tz0 + o.tail * 0.4], [s * 12, Y + fr + o.finH, tz0 + 4]], c.stripe, [-1, 0.2, 0]); });
+    else g += qFace([[0, Y + fr * 0.6, tz0], [0, Y + fr * 0.6, tz1], [0, Y + fr + o.finH, tz0 + o.tail * 0.35], [0, Y + fr + o.finH, tz0 + 3]], c.stripe, [-1, 0, 0]);
+    if (o.tstab) g += qWing(0, o.stab, Y + fr + o.finH, tz0 + 2, tz0 + 12, tz0, tz0 + 8, 2, c.body) + qWing(0, -o.stab, Y + fr + o.finH, tz0 + 2, tz0 + 12, tz0, tz0 + 8, 2, c.body);
+    if (o.engines) g += qCylZ(-o.engines, wy - 9, wz0 + 4, wz1 + 4, 6, '#c9ccd6', '#3a3a40');
+    if (o.nozzle) g += `<g transform="${qMz(-h + 1)}"><circle cx="0" cy="${-Y}" r="5" fill="#ff9f0a"/><circle cx="0" cy="${-Y}" r="2.6" fill="#fff6c2"/></g>`;
+    g += qWing(-fr * 0.5, -o.stab, Y + fr * 0.2, tz0, tz1, tz0 - 4, tz0 + 6, 2.5, c.body);              // 왼쪽 꼬리날개
+    if (o.wing2) g += qWing(-fr * 0.7, -sp * 0.95, wy + o.wing2, wz0, wz1, wz0 - sw, wz1 - sw - o.chord * 0.35, 3, c.body) +
+      [-1, 1].map(s => qBox(s * sp * 0.55 - 1, s * sp * 0.55 + 1, wy, wy + o.wing2, o.wz - 1, o.wz + 1, '#6b4423')).join('');
+    g += o.port ? qPort(P, -fr * 0.95, Y + fr * 0.15, -h * 0.25, fr * 0.55) : qCanopy(P, 0, Y + fr * 0.75, o.cz || h * 0.25, fr * 0.55, fr * 0.6, fr * 0.95);
+    g += qWing(-fr * 0.7, -sp, wy, wz0, wz1, wz0 - sw, wz1 - sw - o.chord * 0.35, 3, c.body);          // 왼쪽 날개(가까이)
+    if (o.floats) g += [-1, 1].map(s => qBall(s * 20, 7, 4, 6, 5, h * 0.8, '#f4f5f7', ' stroke="#8a8f99" stroke-width="1"')).join('');
+    return g;
+  }
+  // ---------- 물 위의 탈것 ----------
+  const qSea = (rx, rz, cz) => `<ellipse cx="0" cy="${cz || 0}" rx="${rx}" ry="${rz}" transform="${qMy(0)}" fill="#5fb8f0" opacity=".9"/>` +
+    `<path d="M${qp([-16, 0, -rz * 0.6])} L${qp([-40, 0, -rz * 1.15])} M${qp([16, 0, -rz * 0.6])} L${qp([40, 0, -rz * 1.15])}" stroke="#fff" stroke-width="3" stroke-linecap="round" opacity=".85"/>`;
+  const qFoam = (rx, rz, cz) => `<ellipse cx="0" cy="${cz || 0}" rx="${rx}" ry="${rz}" transform="${qMy(0)}" fill="none" stroke="#fff" stroke-width="3" opacity=".75"/>`;
+  // 배 몸통: 갑판(y=deck)의 윤곽이 뱃머리로 좁아지고, 물(y=0)까지 내려와요
+  function qHullQ(P, w, deck, zr, zb, zf, col, deckCol) {
+    const k = 0.78, A = [-w, deck, zr], B = [w, deck, zr], C = [w, deck, zb], D = [0, deck, zf], E = [-w, deck, zb];
+    const a = [-w * k, 0, zr + 4], b = [w * k, 0, zr + 4], e = [-w * k, 0, zb], d = [0, 0, zf - 8];
+    return qFace([A, B, b, a], col, [0, 0.3, -1]) + qFace([A, a, e, E], col, [-1, 0.2, 0]) + qFace([E, e, d, D], col, [-1, 0.2, 0.7]) +
+      qFace([A, B, C, D, E], deckCol || '#c49a63', [0, 1, 0]) + `<path d="M${qp(B)} L${qp(A)} L${qp(E)} L${qp(D)}" fill="none" stroke="${P.c.stripe}" stroke-width="3" stroke-linejoin="round"/>`;
+  }
+  function qShip(P, o) {
+    qShadow(P.id, 1, 1);
+    QSHADOW = qSea(o.w + 18, (o.zf - o.zr) / 2 + 14, (o.zf + o.zr) / 2);
+    let g = (o.back ? o.back(P, o) : '') + qHullQ(P, o.w, o.deck, o.zr, o.zb, o.zf, o.hull || P.c.body, o.deckCol) + (o.top ? o.top(P, o) : '');
+    return g + qFoam(o.w * 0.85, (o.zf - o.zr) / 2 + 2, (o.zf + o.zr) / 2);
+  }
+
+  Object.assign(Q45, {
+    p_airliner:  P => qPlaneQ(P, { fr: 13, len: 124, span: 62, chord: 26, wz: 4, sweep: 16, stab: 24, tail: 22, finH: 26, engines: 28, ports: true, port: true }),
+    p_fighter:   P => qPlaneQ(P, { fr: 10, len: 110, span: 44, chord: 34, wz: -8, sweep: 18, stab: 20, tail: 20, finH: 18, fin2: true, nozzle: true, cz: 24 }),
+    p_light:     P => qPlaneQ(P, { fr: 11, len: 92, span: 58, chord: 18, wz: 10, high: true, stab: 20, tail: 18, finH: 20, prop: true, cz: 16 }),
+    p_biplane:   P => qPlaneQ(P, { fr: 11, len: 88, span: 52, chord: 18, wz: 12, wing2: 18, stab: 18, tail: 18, finH: 18, prop: true, cz: 0 }),
+    p_aerobatic: P => qPlaneQ(P, { fr: 11, len: 92, span: 50, chord: 20, wz: 6, stab: 20, tail: 18, finH: 20, prop: true, cz: 14 }),
+    p_glider:    P => qPlaneQ(P, { fr: 7, len: 96, span: 76, chord: 12, wz: 8, stab: 16, tail: 16, finH: 22, tstab: true, cz: 24 }),
+    p_seaplane:  P => { const g = qPlaneQ(P, { fr: 11, len: 92, span: 56, chord: 18, wz: 10, high: true, stab: 20, tail: 18, finH: 20, prop: true, floats: true, y: 26, cz: 16 }); QSHADOW = qSea(48, 56); return g; },
+    p_heli: P => { const { c, id } = P, Y = 34; qShadow(id, 36, 48);
+      return qCylZ(0, Y + 4, -72, -16, 4, c.body) + qFace([[0, Y + 4, -72], [0, Y + 4, -60], [0, Y + 24, -66], [0, Y + 24, -72]], c.stripe, [-1, 0, 0]) +
+        [16].map(x => qCylZ(x, 6, -24, 26, 2, '#3a3a40')).join('') + qBall(0, Y, 0, 22, 20, 30, `url(#${id}b)`, ` stroke="${shade(c.body, -0.35)}" stroke-width="1.2"`) +
+        qCanopy(P, -6, Y + 4, 14, 16, 14, 16) + qCylY(0, 0, Y + 18, Y + 26, 2.5, '#3a3a40') + `<ellipse cx="0" cy="0" rx="64" ry="64" transform="${qMy(Y + 26)}" fill="#9aa0ae" opacity=".28"/>` +
+        `<g transform="${qMy(Y + 26)}"><rect x="-64" y="-2.5" width="128" height="5" rx="2.5" fill="#3a3a40" transform="rotate(25)"/></g>` + qCylZ(-16, 6, -24, 26, 2, '#3a3a40') +
+        [-16, 16].map(x => `<path d="M${qp([x, 6, -10])} L${qp([x * 0.6, Y - 14, -10])} M${qp([x, 6, 12])} L${qp([x * 0.6, Y - 14, 12])}" stroke="#3a3a40" stroke-width="2"/>`).join(''); },
+    p_balloon: P => { const { c, id } = P; qShadow(id, 22, 22);
+      return `<path d="M${qp([-24, 70, 0])} L${qp([-12, 34, 0])} M${qp([24, 70, 0])} L${qp([12, 34, 0])} M${qp([0, 66, -20])} L${qp([0, 34, -10])}" stroke="#6b4423" stroke-width="1.2"/>` +
+        qBall(0, 100, 0, 40, 44, 40, `url(#${id}b)`, ` stroke="${shade(c.body, -0.35)}" stroke-width="1.2"`) + qBall(0, 100, 0, 14, 44, 40, c.stripe, ' opacity=".9"') +
+        qBall(0, 100, 0, 40, 44, 14, c.stripe, ' opacity=".55"') + qHead(P, 0, 42, 0, 9) + qBoxB(-12, 12, 18, 36, -12, 12, '#a0703f', 2); },
+    p_blimp: P => { const { c, id } = P, Y = 64; qShadow(id, 34, 60);
+      const fin = s => qFace([[s * 4, Y, -50], [s * 30, Y, -66], [s * 30, Y, -58], [s * 4, Y, -36]], c.stripe, [0, 1, 0]);
+      return fin(1) + qFace([[0, Y + 4, -50], [0, Y + 32, -66], [0, Y + 32, -58], [0, Y + 4, -36]], c.stripe, [-1, 0, 0]) +
+        qBall(0, Y, 0, 28, 28, 66, `url(#${id}b)`, ` stroke="${shade(c.body, -0.35)}" stroke-width="1.2"`) + qBall(-6, Y - 2, 0, 24, 2.5, 60, c.stripe, ' opacity=".85"') + fin(-1) +
+        qBoxB(-10, 10, Y - 40, Y - 26, -14, 18, '#e3e5ec', 4) + qFaceWin(P, qXRect(-10, -8, 12, Y - 38, Y - 28)); },
+    // 배
+    s_turtle:    P => qShip(P, { w: 34, deck: 24, zr: -56, zb: 24, zf: 64, deckCol: '#8b5a2b',
+      top: (P2, o) => qPrismZ(Array.from({ length: 11 }, (_, i) => { const t = Math.PI - i / 10 * Math.PI; return [Math.cos(t) * 32, 24 + Math.sin(t) * 26]; }).concat([[32, 24]]).reverse(), -50, 30, '#3b2a1e') +
+        Array.from({ length: 6 }, (_, i) => qFace([[-14, 50, -44 + i * 13], [-6, 50, -44 + i * 13], [-10, 58, -42 + i * 13]], '#c9ccd6', [-0.3, 1, -0.3])).join('') +
+        qBall(0, 40, 56, 8, 9, 10, '#d9a441') + qFaceWin(P2, qZRect(-50, -10, 10, 28, 40)) }),
+    s_panokseon: P => qShip(P, { w: 38, deck: 24, zr: -56, zb: 26, zf: 66, deckCol: '#a0703f',
+      top: (P2, o) => qBoxB(-32, 32, 24, 42, -48, 30, '#a0703f', 3) + qBoxB(-24, 24, 42, 56, -40, 16, '#8b5a2b', 3) + `<path d="M${qp([-32, 42, -48])} L${qp([32, 42, -48])}" stroke="${P2.c.stripe}" stroke-width="2.5"/>` +
+        qRider(P2, -8, 56, -24, 8) + qCylY(0, 0, 56, 110, 2, '#5a3a1e') + qFace([[0, 110, 0], [0, 98, 0], [0, 104, 18]], '#e2412e', [-1, 0, 0]) }),
+    s_sailboat:  P => qShip(P, { w: 28, deck: 20, zr: -48, zb: 20, zf: 56, deckCol: '#a0703f',
+      top: (P2, o) => qCylY(0, 6, 20, 118, 2, '#5a3a1e') + qFace([[-32, 40, 4], [32, 40, 4], [26, 112, 4], [-26, 112, 4]], P2.c.stripe, [0, 0, -1]) +
+        [56, 72, 88].map(y => `<path d="M${qp([-31, y, 4])} L${qp([31, y, 4])}" stroke="#a0703f" stroke-width="1.6"/>`).join('') + qRider(P2, 0, 20, -34, 8) }),
+    s_yacht:     P => qShip(P, { w: 30, deck: 20, zr: -50, zb: 18, zf: 60, deckCol: '#f4f5f7',
+      top: (P2, o) => qBoxB(-18, 18, 20, 32, -14, 22, '#ffffff', 4) + qCylY(0, 0, 20, 120, 1.6, '#9aa0ae') + qFace([[0, 26, -40], [0, 118, -2], [0, 26, -2]], '#ffffff', [-1, 0, 0]) +
+        qFace([[0, 30, 2], [0, 104, 2], [0, 30, 40]], P2.c.stripe, [-1, 0, 0]) + qRider(P2, -10, 20, -36, 8) }),
+    s_carrier:   P => qShip(P, { w: 44, deck: 22, zr: -70, zb: 40, zf: 80, hull: '#6b7484', deckCol: '#5b6578',
+      top: (P2, o) => `<path d="M${qp([0, 22.2, -64])} L${qp([0, 22.2, 60])}" stroke="#fff" stroke-width="1.5" stroke-dasharray="6 4"/>` + qBoxB(22, 38, 22, 58, -10, 20, '#8a95a8', 3) +
+        qFaceWin(P2, qXRect(22, -6, 14, 44, 54)) + qCylY(30, 4, 58, 76, 1.5, '#5b6578') + qWing(0, 12, 26, -40, -30, -44, -38, 2, '#c9ccd6') + qWing(0, -12, 26, -40, -30, -44, -38, 2, '#c9ccd6') }),
+    s_submarine: P => { const { c, id } = P; QSHADOW = qSea(40, 66); return qBall(0, 6, 0, 26, 22, 64, `url(#${id}b)`, ` stroke="${shade(c.body, -0.35)}" stroke-width="1.2"`) +
+      qBoxB(-9, 9, 18, 46, -10, 16, c.body, 5) + qHead(P, 0, 50, 0, 8) + qCylY(5, 10, 46, 62, 1.5, '#3a3a40') + `<g transform="${qMz(-62)}"><path d="M0 -12 V0 M-8 -6 H8" stroke="${c.stripe}" stroke-width="4" stroke-linecap="round"/></g>` +
+      `<ellipse cx="0" cy="0" rx="30" ry="66" transform="${qMy(4)}" fill="#5fb8f0" opacity=".55"/>` + qFoam(28, 64); },
+    s_cruise:    P => qShip(P, { w: 42, deck: 26, zr: -68, zb: 34, zf: 78, hull: P.c.body, deckCol: '#f4f5f7',
+      top: (P2, o) => [[36, 26, 40, -60, 30], [30, 40, 54, -54, 20], [22, 54, 66, -46, 6]].map(([w2, y0, y1, z0, z1]) => qBoxB(-w2, w2, y0, y1, z0, z1, '#ffffff', 3) +
+          `<g transform="${qMx(-w2)}">${Array.from({ length: Math.floor((z1 - z0 - 8) / 8) }, (_, i) => `<rect x="${z0 + 5 + i * 8}" y="${-(y1 - 4)}" width="4.5" height="5" rx="1" fill="#5fb8f0"/>`).join('')}</g>`).join('') +
+        qCylY(0, -24, 66, 88, 8, P2.c.stripe) + qFaceWin(P2, qZRect(-46, -8, 8, 57, 64)) }),
+    s_fishing:   P => qShip(P, { w: 30, deck: 20, zr: -50, zb: 18, zf: 58, deckCol: '#c49a63',
+      top: (P2, o) => qBoxB(-18, 18, 20, 48, -8, 22, '#ffffff', 4) + qFaceWin(P2, qXRect(-18, -2, 16, 30, 44)) + qCylY(0, -30, 20, 84, 1.6, '#5a3a1e') +
+        qFace([[0, 84, -30], [0, 76, -30], [0, 80, -18]], '#ffd84a', [-1, 0, 0]) + `<path d="M${qp([0, 80, -30])} L${qp([-20, 20, -46])}" stroke="#5a3a1e" stroke-width="1.2"/>` }),
+    s_motorboat: P => qShip(P, { w: 28, deck: 18, zr: -48, zb: 10, zf: 58, deckCol: '#f4f5f7',
+      top: (P2, o) => qBoxB(-6, 6, 4, 26, -56, -46, '#26262b', 3) + qRider(P2, 0, 18, -20, 9) + qFace([[-20, 18, 4], [20, 18, 4], [16, 34, 10], [-16, 34, 10]], '#bfe3f5', [0, 0.4, -1]) }),
+    s_container: P => qShip(P, { w: 44, deck: 22, zr: -70, zb: 40, zf: 80, deckCol: '#5b6578',
+      top: (P2, o) => qBoxB(-26, 26, 22, 74, -66, -42, '#ffffff', 3) + qFaceWin(P2, qZRect(-66, -10, 10, 58, 68)) +
+        [['#2f7fd1', -36, -38], ['#f5c242', 2, -38], ['#34c759', -36, -10], ['#e2412e', 2, -10], ['#ff9f0a', -36, 18], ['#8a55d6', 2, 18], ['#2f7fd1', -17, 44]].map(([col, x, z]) => qBoxB(x, x + 34, 22, 38, z, z + 26, col, 2)).join('') }),
+    s_banana:    P => { const { c, id } = P; QSHADOW = qSea(40, 72);
+      return [26, -26].map(x => qBall(x, 8, 0, 7, 7, 48, c.body, ` stroke="${shade(c.body, -0.3)}" stroke-width="1"`))[0] + qBall(0, 14, 0, 14, 13, 66, `url(#${id}b)`, ` stroke="${shade(c.body, -0.3)}" stroke-width="1.2"`) +
+        [30, 6, -18].map(z => qRider(P, 0, 22, z, 7)).join('') + qBall(-26, 8, 0, 7, 7, 48, c.body, ` stroke="${shade(c.body, -0.3)}" stroke-width="1"`) + qFoam(30, 66); },
+    // 상상 탈것
+    x_rudolph: P => { const { c, id } = P; qShadow(id, 40, 70);
+      const runner = x => `<path d="M${qp([x, 4, -40])} L${qp([x, 4, 30])} Q${qp([x, 4, 44])} ${qp([x, 18, 40])}" stroke="#f5c242" stroke-width="3.5" fill="none" stroke-linecap="round"/>`;
+      return runner(22) + qBall(0, 34, 70, 12, 14, 24, '#a0703f') + qBall(0, 56, 92, 7, 9, 10, '#a0703f') + `<path d="M${qp([-4, 64, 94])} L${qp([-12, 82, 90])} M${qp([4, 64, 94])} L${qp([12, 82, 90])} M${qp([-9, 76, 92])} L${qp([-16, 76, 88])} M${qp([9, 76, 92])} L${qp([16, 76, 88])}" stroke="#8b5a2b" stroke-width="2.4" stroke-linecap="round"/>` +
+        qBall(0, 58, 101, 2.5, 2.5, 2.5, '#ff3b30') + qBoxB(-26, 26, 10, 34, -44, 26, c.body, 6) + qBall(14, 44, -26, 14, 14, 14, '#8b5a2b') + qRider(P, -6, 34, -6, 10) + runner(-26); },
+    x_pumpkin: P => { const { c, id } = P; qShadow(id, 44, 46);
+      const wl = x => qWheel(x, x + 5, 18, -10, 18, { tire: '#8a6a10', face: '#d4a72c', rim: '#f5d76e' });
+      return wl(40) + qBall(0, 48, 0, 42, 38, 42, `url(#${id}b)`, ` stroke="${shade(c.body, -0.35)}" stroke-width="1.2"`) + [12, 26].map(a => qBall(0, 48, 0, a, 38, 42, 'none', ` stroke="${shade(c.body, -0.3)}" stroke-width="1.2"`)).join('') +
+        qPort(P, -36, 50, -8, 13) + `<path d="M${qp([0, 86, 0])} Q${qp([4, 96, 4])} ${qp([10, 94, 8])}" stroke="#3e9a4d" stroke-width="4" fill="none" stroke-linecap="round"/>` + wl(-45); },
+    x_carpet: P => { const { c, id } = P; qShadow(id, 38, 50);
+      return qBox(-34, 34, 22, 25, -46, 46, c.body) + `<path d="${qPoly([[-30, 25.1, -42], [30, 25.1, -42], [30, 25.1, 42], [-30, 25.1, 42]])}" fill="none" stroke="${c.stripe}" stroke-width="2.4"/>` +
+        [-30, -15, 0, 15, 30].map(x => `<path d="M${qp([x, 22, -46])} L${qp([x, 16, -48])}" stroke="${c.stripe}" stroke-width="2" stroke-linecap="round"/>`).join('') + qRider(P, 0, 25, -6, 11); },
+    x_broom: P => { const { c, id } = P; qShadow(id, 18, 56);
+      return qCylZ(0, 34, -30, 62, 2.4, '#8a5a2b') + qBall(0, 34, -40, 12, 12, 20, '#d9a441', ' stroke="#8a6a28" stroke-width="1"') + qRider(P, 0, 34, 4, 10, c.stripe) +
+        qFace([[-11, 81, 4], [11, 81, 4], [0, 104, 4]], c.stripe, [0, 0.2, -1]); },
+    x_cloud: P => { qShadow(P.id, 40, 34);
+      return [[18, 30, 10, 18], [-14, 26, 14, 18], [10, 26, -18, 18], [-10, 34, -10, 20], [0, 40, 14, 18]].map(([x, y, z, r]) => qBall(x, y, z, r, r * 0.85, r, '#ffffff', ' stroke="#dbe9f5" stroke-width="1.2"')).join('') + qHead(P, -2, 58, 0, 11); },
+    x_rocket: P => { const { c, id } = P, Y = 40; qShadow(id, 26, 60);
+      const fin = (x, y) => qFace([[x * 0.4, Y + y * 0.4, -40], [x, Y + y, -62], [x, Y + y, -50], [x * 0.4, Y + y * 0.4, -24]], c.stripe, [x < 0 ? -1 : 0.3, y > 0 ? 1 : -0.2, -0.3]);
+      return fin(18, -14) + qBall(0, Y, -66, 10, 10, 12, '#ff9f0a', ' opacity=".9"') + qBall(0, Y, -72, 6, 6, 8, '#fff6c2') + qBall(0, Y, 0, 16, 16, 60, `url(#${id}b)`, ` stroke="${shade(c.body, -0.35)}" stroke-width="1.2"`) +
+        qBall(-2, Y, 0, 15, 15, 3, c.stripe, ' opacity=".9"') + fin(0, 26) + fin(-18, -14) + qPort(P, -15, Y + 3, 18, 9); },
+    x_ufo: P => { const { c, id } = P, Y = 36; qShadow(id, 40, 40);
+      return qBall(0, Y, 0, 56, 12, 56, `url(#${id}b)`, ` stroke="${shade(c.body, -0.35)}" stroke-width="1.2"`) +
+        Array.from({ length: 8 }, (_, i) => { const t = i / 8 * Math.PI * 2; return qBall(Math.cos(t) * 50, Y - 2, Math.sin(t) * 50, 3, 3, 3, c.stripe); }).join('') + qCanopy(P, 0, Y + 14, 0, 24, 18, 24); },
+    x_paperplane: P => { const { c, id } = P, Y = 34; qShadow(id, 34, 54);
+      return qFace([[0, Y, 60], [40, Y + 10, -40], [4, Y, -40]], '#f2f4f7', [0.2, 1, 0]) + qFace([[0, Y, 60], [0, Y - 14, -36], [0, Y, -40]], '#e3e6ec', [-1, 0, 0]) + qRider(P, -6, Y, -6, 9) +
+        qFace([[0, Y, 60], [-4, Y, -40], [-40, Y + 10, -40]], '#ffffff', [-0.2, 1, 0]) + `<path d="M${qp([0, Y + 0.5, 60])} L${qp([0, Y + 0.5, -40])}" stroke="${c.stripe}" stroke-width="1.6"/>`; },
+    x_sled: P => { const { c, id } = P; qShadow(id, 34, 52);
+      const runner = x => `<path d="M${qp([x, 3, -44])} L${qp([x, 3, 30])} Q${qp([x, 3, 44])} ${qp([x, 16, 42])}" stroke="#d7261e" stroke-width="3.5" fill="none" stroke-linecap="round"/>`;
+      return runner(20) + qBoxB(-24, 24, 10, 22, -44, 32, c.body, 4) + `<g transform="${qMx(-24)}">${[-34, -14, 6, 26].map(z => `<path d="M${z} -11 V-21" stroke="${shade(c.body, -0.35)}" stroke-width="1.2"/>`).join('')}</g>` + qRider(P, 0, 22, -10, 10) + runner(-24); },
+    x_turtle: P => { const { c, id } = P; qShadow(id, 44, 54);
+      const leg = (x, z) => qBall(x, 8, z, 9, 7, 10, '#4f9a5a');
+      return leg(26, 26) + leg(26, -26) + qBall(0, 26, 50, 11, 10, 14, '#4f9a5a') + qBall(0, 22, 0, 40, 30, 46, `url(#${id}b)`, ` stroke="${shade(c.body, -0.35)}" stroke-width="1.4"`) +
+        [[-14, 40, -10], [10, 46, 6], [-6, 44, 22], [14, 40, -24]].map(([x, y, z]) => qBall(x, y, z, 9, 4, 9, shade(c.body, -0.15), ' opacity=".8"')).join('') +
+        leg(-26, 26) + leg(-26, -26) + qBall(0, 12, -48, 4, 4, 6, '#4f9a5a') + qRider(P, 0, 50, 0, 9); }
+  });
+  // 원기둥(x 방향): 왼쪽 원판이 보여요(돌바퀴)
+  function qCylX(x0, y, z, len, r, col) {
+    const x1 = x0 + len, pts = qRing(t => [[x0, y + Math.sin(t) * r * 2, z + Math.cos(t) * r * 2], [x1, y + Math.sin(t) * r * 2, z + Math.cos(t) * r * 2]]).flat().map(p => [qu(...p), qv(...p)]);
+    return `<path d="${qHullPath(pts)}" fill="${shade(col, -0.25)}"/><g transform="${qMx(x0)}"><circle cx="${f1(z)}" cy="${f1(-y)}" r="${f1(r * 2)}" fill="${col}" stroke="${shade(col, -0.35)}" stroke-width="1.4"/><circle cx="${f1(z)}" cy="${f1(-y)}" r="${f1(r * 0.6)}" fill="${shade(col, -0.4)}"/></g>`;
+  }
+
+  // 동물 캐릭터: 정면 그림 그대로 두되 얼굴을 왼쪽으로 살짝 돌려 뒤를 돌아보는 모습
+  let FLUFF_TURN = false;
+  function quarterSVG(i) {
+    const n = CARS.length, k = ((i % n) + n) % n, c = CARS[k], id = 'q' + k + '_' + (++rearUid);
+    const P = { c, id, dark: shade(c.body, -0.38), lite: shade(c.body, 0.42), deep: shade(c.body, -0.6), toy: false, back: true };
+    let inner = null;
+    QID = id;
+    QSHADOW = '';
+    if (Q45[c.kind]) { // 그림자는 외곽선 밖에. 비행기는 날개가 가늘어서 크게
+      const body = Q45[c.kind](P), k = /^p_/.test(c.kind) && c.kind !== 'p_balloon' ? 1.35 : 1;
+      inner = `<g transform="scale(${k})">${QSHADOW}<g filter="url(#${id}o)">${body}</g></g>`;
+    }
+    else if (/^[abm]_/.test(c.kind) && SPECIAL[c.kind]) {
+      FLUFF_TURN = true;
+      try { qShadow(id, 40, 34); inner = QSHADOW + `<g transform="scale(1.4) translate(-60 -65)">${SPECIAL[c.kind](P)}</g>`; } finally { FLUFF_TURN = false; }
+    }
+    if (inner == null) inner = `<g transform="translate(-60 -66)">${rearSVG(i).replace(/^<svg[^>]*>/, '').replace(/<\/svg>$/, '')}</g>`; // 아직 45도 그림이 없는 탈것은 뒷모습
+    return `<svg class="car-svg q" viewBox="-85 -125 170 170" aria-hidden="true">${qDefs(id, c)}${inner}</svg>`;
   }
 
   function carSVG(i) {
@@ -2686,5 +3245,5 @@
   }
   function hasArt(eraId) { return !!SCENE_ART[eraId]; }
 
-  window.ART = { CARS, GROUPS, carSVG, rearSVG, sceneSVG, hasArt };
+  window.ART = { CARS, GROUPS, carSVG, rearSVG, rearSide, quarterSVG, sceneSVG, hasArt };
 })();
