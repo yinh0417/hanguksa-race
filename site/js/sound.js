@@ -534,6 +534,8 @@
     unlock: ensure,
     startBgm, stopBgm,
     setIntensity(v) { hot = v ? 1 : 0; },
+    // 중계 해설이 말하는 동안 배경 음악을 줄여요
+    duck(v) { if (bus && ctx) bus.gain.setTargetAtTime(v ? 0.3 : 0.8, ctx.currentTime, 0.12); },
     nowPlaying: () => (bgmTimer && song ? song.name : null),
     // 선생님 화면의 음악 목록
     playlist: kind => {

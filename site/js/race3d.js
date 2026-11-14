@@ -1,6 +1,7 @@
 /*
  * 큰 화면 레이스의 3D 화면: 중계 방송처럼 여러 카메라로 보여 줘요
  *  - main  메인 카메라: 왼쪽 뒤 위에서 45도로 내려다봐요(art.js quarterSVG). 줌 인·줌 아웃
+ *          front를 켜면 결승선 쪽 위에서 다가오는 차를 비춰 앞모습(art.js frontSVG)이 보여요(중계 화면)
  *  - chase 추격 카메라: 뒤에서 따라가며 뒷모습을 보여 줘요(art.js rearSVG)
  *  - side  측면 카메라: 길 옆에서 나란히 따라가며 옆모습을 보여 줘요(art.js carSVG)
  *  (항공 카메라는 teacher.js가 지금의 2D 지도 화면으로 보여 줘요)
@@ -30,7 +31,7 @@
   const LANE = 96, CAR_LEN = 120;      // 메인 카메라: 차선 폭, 차 길이(그림 단위)
   const C0 = -80, STEP = 0.25;         // 굽이 표: C0칸부터 STEP칸마다
   // 카메라마다 탈것 그림 틀의 가로·세로 비와 바닥 자리(위에서 몇 %)
-  const BOX = { main: { h: 1, ay: 125 / 170 }, chase: { h: 100 / 120, ay: 0.96 }, side: { h: 86 / 120, ay: 0.92 } };
+  const BOX = { main: { h: 1, ay: 125 / 170 }, front: { h: 100 / 120, ay: 0.96 }, chase: { h: 100 / 120, ay: 0.96 }, side: { h: 86 / 120, ay: 0.92 } };
   // 길가 물건 모양: [줄기 색, 잎 색, 밝은 잎 색], 경기장은 광고판 색
   const SIDE = { tree: ['#7a5638', '#3e9a4d', '#5bb565'], pine: ['#6d4a30', '#3c7a4a', '#4f8f5c'], palm: ['#8a6440', '#3f9a52', '#5bb565'], cactus: ['#4f9a5a', '#4f9a5a', '#6bb576'],
     bush: ['#5c8f45', '#4fa457', '#5bb565'], board: ['#0066cc', '#ffd84a', '#ff3b30', '#34c759', '#ffffff'] };
@@ -98,40 +99,56 @@
       return { miniBottom, carW: SHOTS[shot].carW, tagSize: tagSize(), board: { x: W - bw - W * 0.012, y: miniBottom + 10, w: bw, h: bh } };
     }
     const tagSize = () => clamp(SHOTS[shot].carW * 0.17, 16, 28);
+    // 메인 카메라가 앞에서 비출 때는 그림(앞모습)과 효과 자리가 달라서 'front'로 따로 불러요
+    const face = () => (shot === 'main' && MAIN.front ? 'front' : shot);
     function applyShotVars() {
-      host.dataset.shot = shot;
+      host.dataset.shot = face();
       host.style.setProperty('--car-w', SHOTS[shot].carW + 'px');
       host.style.setProperty('--tag-size', tagSize() + 'px');
     }
-    // 카메라 바꾸기: name(main·chase·side), o.focus('all' 전체·'lead' 선두), o.zoom(메인 카메라의 줌, 1이 기본)
+    // 카메라 바꾸기: name(main·chase·side), o.focus('all' 전체·'lead' 선두), o.zoom(메인 카메라의 줌, 1이 기본),
+    // o.front(메인 카메라를 결승선 쪽에서 비춰 차가 다가오고 앞모습이 보여요)
     function setShot(name, o) {
       o = o || {};
       if (!SHOTS[name]) name = 'main';
-      const changed = name !== shot;
+      let changed = name !== shot;
       shot = name;
       focus = o.focus || 'all';
       if (o.zoom != null) zoomTo = o.zoom;
       if (o.zoomFrom != null) SHOTS.main.zoom = o.zoomFrom;
+      if (o.front != null && !!o.front !== MAIN.front) {
+        MAIN.front = !!o.front;
+        MAIN.dir = MAIN.front ? -1 : 1;
+        if (G) MAIN.size();
+        changed = true;
+      }
       if (G) applyShotVars();
       if (changed || o.cut) { first = true; drawnKey = ''; lift.clear(); }
     }
     function setZoom(z) { zoomTo = z; }
 
     // ---------- 메인 카메라(45도) ----------
+    // dir: 1이면 왼쪽 뒤 위에서 앞으로 달려 나가는 차를, -1이면 결승선 쪽 위에서 다가오는 차를 비춰요(길 모양은 같고 달리는 방향만 반대)
     const MAIN = {
-      cc: 0, zs: 40, zoom: 1,
+      cc: 0, zs: 40, zoom: 1, dir: 1, front: false,
+      size() {
+        const { W, H } = G;
+        this.carQ = clamp(Math.min(H * 0.17, W * 0.095), 80, 170); // 45도 그림 틀(170) 기준
+        this.carW = this.front ? this.carQ * 0.92 : this.carQ;     // 앞모습 그림 틀(120)은 조금 작게
+        this.S = this.carQ / 170;
+        this.OY = H * (this.front ? 0.52 : 0.6); // 앞에서 비출 때는 선두(화면 아래쪽)가 자막에 가리지 않게 조금 위로
+      },
       layout() {
         const { W, H, L } = G;
-        this.carW = clamp(Math.min(H * 0.17, W * 0.095), 80, 170);
-        this.S = this.carW / 170;
+        this.size();
         this.HW = L * LANE / 2;
         this.lanes = Array.from({ length: L }, (_, j) => ((j + 0.5) / L * 2 - 1) * this.HW * 0.9);
-        this.OX = W * 0.5; this.OY = H * 0.6; this.D = 3600; this.along = Math.hypot(W, H) * 0.5;
+        this.OX = W * 0.5; this.D = 3600; this.along = Math.hypot(W, H) * 0.5;
       },
       gap() { return CAR_LEN * 1.04 / this.zs; },
       bendX(c) { const dx = tab(XX, c) - tab(XX, this.cc) - tab(HX, this.cc) * (c - this.cc); return this.HW * 2.2 * Math.tanh(dx * 0.6); },
       proj(x, y, c) {
-        const z = (c - this.cc) * this.zs, d = Math.max(-0.6 * this.D, (x + z) * QK * QC - y * QS), s = this.D / (this.D + d), k = this.S * this.zoom * s;
+        const z = (c - this.cc) * this.zs * this.dir, d = Math.max(-0.6 * this.D, (x + z) * QK * QC - y * QS), s = this.D / (this.D + d), k = this.S * this.zoom * s;
         return { x: this.OX + k * (x - z) * QK, y: this.OY - k * (QK * QS * (x + z) + QC * y), s: s * this.zoom, d };
       },
       road(u, c) { return this.proj(this.bendX(c) + u, 0, c); },
@@ -144,14 +161,14 @@
       },
       place(k) {
         const p = this.road(this.lanes[k.i % G.L], k.qx);
-        return { x: p.x, y: p.y, s: p.s, zi: Math.round(20000 - p.d * 4), tagY: p.y - this.carW * 0.6 * p.s };
+        return { x: p.x, y: p.y, s: p.s, zi: Math.round(20000 - p.d * 4), tagY: p.y - this.carW * (this.front ? 0.8 : 0.6) * p.s };
       },
       gates(hi) {
         [0, G.cells].forEach((c, gi) => {
           const g = gates[gi], p = this.proj(this.bendX(c), 0, c);
           if ((gi === 0 && hi > 1.5) || p.x < -G.W || p.x > G.W * 2 || p.y < -G.H || p.y > G.H * 2) { g.style.display = 'none'; return; }
           const x0 = this.bendX(c) - this.HW * 1.12, wd = this.HW * 2.24, ht = 150, k = this.S * p.s;
-          const z = (c - this.cc) * this.zs, e = this.OX + k * QK * (x0 - z), f = this.OY - k * (QK * QS * (x0 + z) + QC * ht);
+          const z = (c - this.cc) * this.zs * this.dir, e = this.OX + k * QK * (x0 - z), f = this.OY - k * (QK * QS * (x0 + z) + QC * ht);
           g.style.display = '';
           g.style.width = wd.toFixed(0) + 'px';
           g.style.height = ht + 'px';
@@ -159,7 +176,7 @@
           g.style.zIndex = Math.round(20000 - p.d * 4);
         });
       },
-      key() { return this.cc.toFixed(3) + '|' + this.zs.toFixed(3) + '|' + this.zoom.toFixed(3); },
+      key() { return this.dir + '|' + this.cc.toFixed(3) + '|' + this.zs.toFixed(3) + '|' + this.zoom.toFixed(3); },
       draw(c) {
         const { W, H, theme: T, cells, L } = G, HW = this.HW;
         c.fillStyle = T.grass[0];
@@ -214,8 +231,8 @@
           c.fill();
         });
         const B = propBag();
-        for (let k = Math.floor(c1); k >= Math.floor(c0); k--) {
-          const h = hash(k);
+        for (let m = 0, n = Math.floor(c1) - Math.floor(c0); m <= n; m++) { // 먼 것부터
+          const k = this.dir > 0 ? Math.floor(c1) - m : Math.floor(c0) + m, h = hash(k);
           if (h >= 0.55) continue;
           const right = hash(k + 3) < 0.6, u = (right ? 1 : -1) * HW * (1.35 + hash(k + 5) * 1.4);
           const p = road(u, k + hash(k + 7) * 0.8);
@@ -562,7 +579,7 @@
       sh.cam(flo, hi, dt, snap);
       first = false;
 
-      const live = new Set(), labels = [], bx = BOX[shot];
+      const live = new Set(), labels = [], bx = BOX[face()];
       cars.forEach(k => {
         const p = sh.place(k);
         let tg = tags.get(k.el);

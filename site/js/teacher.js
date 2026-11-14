@@ -576,6 +576,7 @@
     room = null; meta = null; players = {}; states = {}; questions = [];
     clearInterval(tickTimer); tickTimer = null;
     SOUND.stopBgm();
+    if (window.CASTER) CASTER.stop();
   }
   async function closeRoom() {
     const code = room;
@@ -794,7 +795,7 @@
     $('#lanes').innerHTML = ap.map(p => `
       <div class="racer" data-uid="${p.uid}">
         <span class="tag" data-uid="${p.uid}"><b class="rank-badge"></b>${esc(p.nick)}</span>
-        <div class="car-box"><span class="fx-flame"></span><span class="fx-aura"></span><span class="fx-hit"></span>${A.carSVG(p.car)}${A.quarterSVG(p.car)}${A.rearSVG(p.car)}<span class="fx-bubble"></span><span class="fx-shield">🛡️</span><span class="fx-bolt">⚡</span></div>
+        <div class="car-box"><span class="fx-flame"></span><span class="fx-aura"></span><span class="fx-hit"></span>${A.carSVG(p.car)}${A.quarterSVG(p.car)}${A.frontSVG(p.car)}${A.rearSVG(p.car)}<span class="fx-bubble"></span><span class="fx-shield">🛡️</span><span class="fx-bolt">⚡</span></div>
       </div>`).join('');
     lastRankSig = '';
     layoutRace();
@@ -866,6 +867,7 @@
   // ---------- 3D 화면(race3d.js)과 중계(여러 카메라) ----------
   // 위쪽의 2D·3D·중계 단추로 바꾸고, 고른 화면은 이 노트북에 기억해요
   //  3D: 45도 메인 카메라 하나로 계속 / 중계: 방송처럼 메인·선두·전체·추격·측면·항공 카메라가 번갈아 나와요
+  //  (중계의 메인 카메라는 결승선 쪽에서 비춰서 다가오는 차의 앞모습이 보여요)
   let viewMode = '2d', r3 = null;
   try { const v = localStorage.getItem('hkr-race-view'); if (v === '3d' || v === 'live') viewMode = v; } catch (e) { /* 무시 */ }
   // 중계 카메라: shot(race3d.js의 카메라, aerial은 2D 지도 화면), focus(전체·선두), zoom(줌 인·아웃), len(보여 주는 시간)
@@ -907,7 +909,7 @@
     director.until = director.cutAt + CAMS.main.len;
     if (viewMode === '2d') leave3d();
     layoutRace();
-    if (r3) r3.setShot('main', { focus: 'all', zoom: 1, cut: true });
+    if (r3) r3.setShot('main', { focus: 'all', zoom: 1, cut: true, front: viewMode === 'live' });
     camBadge.querySelector('b').textContent = CAMS.main.label;
     updateRace();
     startCarLoop();
@@ -930,7 +932,7 @@
       updateRace();
       startCarLoop();
     }
-    if (r3 && !director.aerial) r3.setShot(cam.shot, { focus: cam.focus, zoom: cam.zoom != null ? cam.zoom : 1, zoomFrom: cam.zoomFrom, cut: true });
+    if (r3 && !director.aerial) r3.setShot(cam.shot, { focus: cam.focus, zoom: cam.zoom != null ? cam.zoom : 1, zoomFrom: cam.zoomFrom, cut: true, front: true });
   }
   // 중계 감독: 출발은 뒤에서, 그다음엔 메인 카메라와 다른 카메라를 번갈아, 선두가 바뀌면 선두 카메라로
   function directorTick(now) {
@@ -953,6 +955,28 @@
     const opts = pool.filter(k => k !== director.cam);
     cutTo(director.cam !== 'main' && Math.random() < 0.45 ? 'main' : opts[Math.floor(Math.random() * opts.length)]);
   }
+  // ---------- 중계 해설(caster.js): 순위·역전·아이템·골인을 목소리와 자막으로 ----------
+  if (window.CASTER) CASTER.attach(circEl, { muted: () => SOUND.isMuted() });
+  function showCasterBtn() {
+    const b = $('#rcCaster'), on = !!window.CASTER && CASTER.isOn();
+    b.textContent = on ? '해설 끄기' : '해설 켜기';
+    b.setAttribute('aria-pressed', String(on));
+  }
+  if (window.CASTER) {
+    showCasterBtn();
+    $('#rcCaster').addEventListener('click', () => { SOUND.unlock(); CASTER.toggle(); showCasterBtn(); });
+  } else $('#rcCaster').classList.add('hidden');
+  function casterTick(now) {
+    if (!window.CASTER || !meta || meta.status !== 'racing') return;
+    const ap = approvedList();
+    if (!ap.length) return;
+    const clock = G.raceClock(meta, now);
+    CASTER.update({
+      key: room + ':' + meta.startAt, now, startAt: meta.startAt, left: clock.left, paused: clock.paused,
+      secret: rankSecret(now), final: finalOn,
+      players: G.ranking(ap, states).map(r => ({ uid: r.uid, nick: r.nick, rank: r.rank, pos: r.pos, done: !!r.finishedAt, fx: (states[r.uid] || {}).fx }))
+    });
+  }
   function leave3d() {
     if (r3) { r3.destroy(); r3 = null; }
     $('#circuit').classList.remove('is3d');
@@ -963,7 +987,7 @@
     if (!r3) {
       r3 = RACE3D.create(circ, { carsEl: $('#lanes') });
       const cam = CAMS[viewMode === 'live' ? director.cam : 'main'];
-      r3.setShot(cam.shot === 'aerial' ? 'main' : cam.shot, { focus: cam.focus, zoom: cam.zoom != null ? cam.zoom : 1 });
+      r3.setShot(cam.shot === 'aerial' ? 'main' : cam.shot, { focus: cam.focus, zoom: cam.zoom != null ? cam.zoom : 1, front: viewMode === 'live' });
     }
     circ.classList.add('is3d');
     $$('#lanes .racer').forEach(el => { el.style.left = ''; el.style.top = ''; el.querySelector('.car-box').style.transform = ''; }); // 2D 자리·회전 지우기
@@ -1226,6 +1250,7 @@
       updateRace();
       updateBackdrop();
       directorTick(now);
+      casterTick(now);
       const ap = approvedList();
       const allDone = ap.length > 0 && ap.every(p => states[p.uid] && states[p.uid].finishedAt);
       if (now >= meta.endAt || (now > meta.startAt && allDone)) finishRace();
@@ -1235,6 +1260,7 @@
   async function finishRace() {
     if (finishing || !meta || meta.status !== 'racing') return;
     finishing = true;
+    if (window.CASTER) { const ap = approvedList(); CASTER.end(ap.length > 0 && ap.every(p => states[p.uid] && states[p.uid].finishedAt), rankSecret(DB.now())); }
     SOUND.stopBgm();
     SOUND.play('end');
     await DB.update(`rooms/${room}/meta`, { status: 'finished', endedAt: DB.now() });
