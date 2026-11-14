@@ -860,9 +860,10 @@
 .ar-car .car-no { font-size: .78em; padding: 0 .4em; border-width: 1.5px; left: -.3em; top: -.25em; }
 
 /* ===== 3D 화면: 왼쪽 뒤 위에서 45도로 내려다보는 시점 (race3d.js, 탈것은 art.js quarterSVG) ===== */
-.car-svg.q { display: none; }
-.circuit.is3d .car-svg:not(.q) { display: none; }
-.circuit.is3d .car-svg.q { display: block; }
+.car-svg.q, .car-svg.rear { display: none; }
+.circuit.is3d .car-svg { display: none; }
+/* 카메라마다 보이는 그림: 메인=45도, 추격=뒷모습, 측면=옆모습 */
+.circuit.is3d[data-shot="main"] .car-svg.q, .circuit.is3d[data-shot="chase"] .car-svg.rear, .circuit.is3d[data-shot="side"] .car-svg:not(.q):not(.rear) { display: block; }
 .circuit.is3d .circuit-svg, .circuit.is3d .race-bg, .circuit.is3d .bg-caption { display: none; }
 .circuit.is3d .bg-screen { z-index: 2; border-radius: 12px; }
 .circuit.is3d .bg-screen::before { content: attr(data-caption); position: absolute; left: 50%; top: 8px; transform: translateX(-50%); z-index: 1;
@@ -871,6 +872,8 @@
 .r3-ground { position: absolute; left: 0; top: 0; pointer-events: none; z-index: 1; }
 .circuit.is3d .cars-layer { z-index: 3; }
 .circuit.is3d .racer { left: 0; top: 0; transform-origin: 50% 73.5%; will-change: transform; }
+.circuit.is3d[data-shot="chase"] .racer { transform-origin: 50% 96%; }
+.circuit.is3d[data-shot="side"] .racer { transform-origin: 50% 92%; }
 .circuit.is3d .car-box { transform: none; }
 .circuit.is3d .racer.moving .car-box { animation: r3-bob .3s ease-in-out infinite alternate; }
 @keyframes r3-bob { to { transform: translateY(-2%); } }
@@ -880,18 +883,18 @@
 .tag.done::after { content: '🏁'; }
 .circuit .tag.done { background: #1d1d1f; color: #fff; }
 /* 아이템 효과를 45도 모습에 맞춰: 불꽃과 속도선은 꽁무니(오른쪽 아래)에서 뒤로 */
-.circuit.is3d .fx-flame { right: auto; left: 58%; top: 66%; width: 36%; height: 20%; z-index: 1; border-radius: 0 50% 50% 0;
+.circuit.is3d[data-shot="main"] .fx-flame { right: auto; left: 58%; top: 66%; width: 36%; height: 20%; z-index: 1; border-radius: 0 50% 50% 0;
   background: radial-gradient(ellipse at 0% 50%, #fff6c2 0 16%, #ffd23f 30%, #ff7a1a 55%, rgba(255,59,48,.5) 72%, transparent 75%); transform-origin: 0 50%; transform: rotate(28deg); }
 @keyframes r3-flame { from { transform: rotate(28deg) scaleX(.8); opacity: .85; } to { transform: rotate(28deg) scaleX(1.15); opacity: 1; } }
-.circuit.is3d .turbo .fx-flame { animation-name: r3-flame; }
-.circuit.is3d .boosting .car-box::before { right: auto; left: 52%; top: 46%; width: 56%; height: 26%; border-radius: 0; transform-origin: 0 50%;
+.circuit.is3d[data-shot="main"] .turbo .fx-flame { animation-name: r3-flame; }
+.circuit.is3d[data-shot="main"] .boosting .car-box::before { right: auto; left: 52%; top: 46%; width: 56%; height: 26%; border-radius: 0; transform-origin: 0 50%;
   background: repeating-linear-gradient(to bottom, var(--primary-on-dark) 0 3px, transparent 3px 9px); animation: r3-dash .3s infinite linear; }
 @keyframes r3-dash { from { opacity: 1; transform: rotate(28deg) translateX(0); } to { opacity: .3; transform: rotate(28deg) translateX(14%); } }
-.circuit.is3d .smoking .car-box::after { left: 55%; top: 20%; width: 40%; }
-.circuit.is3d .fx-bubble { inset: 16% 10% 16%; }
-.circuit.is3d .fx-aura { inset: 22% 14% 18%; }
-.circuit.is3d .fx-shield { right: 8%; top: 4%; }
-.circuit.is3d .fx-hit, .circuit.is3d .fx-bolt { top: -10%; }
+.circuit.is3d[data-shot="main"] .smoking .car-box::after { left: 55%; top: 20%; width: 40%; }
+.circuit.is3d[data-shot="main"] .fx-bubble { inset: 16% 10% 16%; }
+.circuit.is3d[data-shot="main"] .fx-aura { inset: 22% 14% 18%; }
+.circuit.is3d[data-shot="main"] .fx-shield { right: 8%; top: 4%; }
+.circuit.is3d[data-shot="main"] .fx-hit, .circuit.is3d[data-shot="main"] .fx-bolt { top: -10%; }
 @media (prefers-reduced-motion: reduce) {
   .circuit.is3d .racer.moving .car-box { animation-duration: .3s !important; animation-iteration-count: infinite !important; }
   .circuit.is3d .turbo .fx-flame { animation-duration: .12s !important; animation-iteration-count: infinite !important; }
@@ -937,3 +940,28 @@
 /* 맞아서 흔들릴 때는 두 면이 함께 흔들리게 상자째로 */
 .circuit.is3d .spiked .car-svg { animation: none; }
 .circuit.is3d .spiked .car-box { animation: shake-car .25s infinite; }
+/* 추격 카메라(뒷모습): 불꽃은 배기구에서 아래로, 속도선은 양옆에 */
+.circuit.is3d[data-shot="chase"] .fx-flame { right: auto; left: 28%; width: 44%; top: 70%; height: 46%; z-index: 1; border-radius: 40% 40% 50% 50%;
+  background: radial-gradient(ellipse at 50% 0%, #fff6c2 0 16%, #ffd23f 30%, #ff7a1a 55%, rgba(255,59,48,.5) 72%, transparent 75%); transform-origin: 50% 0; }
+@keyframes r3-flame-down { from { transform: scaleY(.8) scaleX(.92); opacity: .85; } to { transform: scaleY(1.15) scaleX(1.04); opacity: 1; } }
+.circuit.is3d[data-shot="chase"] .turbo .fx-flame { animation-name: r3-flame-down; }
+.circuit.is3d[data-shot="chase"] .boosting .car-box::before { right: auto; left: -22%; top: 10%; width: 144%; height: 70%; border-radius: 0;
+  background: linear-gradient(to right, transparent 0 4%, var(--primary-on-dark) 4% 7%, transparent 7% 11%, var(--primary-on-dark) 11% 13%, transparent 13% 87%, var(--primary-on-dark) 87% 89%, transparent 89% 93%, var(--primary-on-dark) 93% 96%, transparent 96%);
+  animation: r3-dash-down .3s infinite linear; }
+@keyframes r3-dash-down { from { opacity: 1; transform: translateY(0); } to { opacity: .3; transform: translateY(14%); } }
+.circuit.is3d[data-shot="chase"] .smoking .car-box::after { left: 30%; top: -30%; width: 50%; }
+
+/* 중계: 왼쪽 아래 카메라 이름표(● LIVE)와 카메라가 바뀔 때 번쩍 */
+.cam-badge { position: absolute; left: 14px; bottom: 14px; z-index: 40; display: flex; align-items: center; gap: 8px; padding: 6px 14px 6px 11px;
+  border-radius: 9999px; background: rgba(20,20,26,.8); color: #fff; font: 700 clamp(13px, 2.1vh, 22px) var(--font-body); pointer-events: none;
+  box-shadow: 0 4px 14px rgba(0,0,0,.3); }
+.cam-badge i { width: .7em; height: .7em; border-radius: 50%; background: #ff3b30; box-shadow: 0 0 0 3px rgba(255,59,48,.3); animation: cam-rec 1.2s steps(2) infinite; }
+.cam-badge span { color: #ff7a70; letter-spacing: .08em; font-size: .85em; }
+@keyframes cam-rec { 50% { opacity: .25; } }
+.cam-flash { position: absolute; inset: 0; z-index: 39; pointer-events: none; background: #fff; opacity: 0; }
+.cam-flash.go { animation: cam-flash .45s ease-out; }
+@keyframes cam-flash { from { opacity: .8; } to { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) {
+  .cam-flash.go { animation-duration: .45s !important; }
+  .cam-badge i { animation-duration: 1.2s !important; animation-iteration-count: infinite !important; }
+}

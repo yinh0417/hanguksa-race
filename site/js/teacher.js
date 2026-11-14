@@ -794,7 +794,7 @@
     $('#lanes').innerHTML = ap.map(p => `
       <div class="racer" data-uid="${p.uid}">
         <span class="tag" data-uid="${p.uid}"><b class="rank-badge"></b>${esc(p.nick)}</span>
-        <div class="car-box"><span class="fx-flame"></span><span class="fx-aura"></span><span class="fx-hit"></span>${A.carSVG(p.car)}${A.quarterSVG(p.car)}<span class="fx-bubble"></span><span class="fx-shield">🛡️</span><span class="fx-bolt">⚡</span></div>
+        <div class="car-box"><span class="fx-flame"></span><span class="fx-aura"></span><span class="fx-hit"></span>${A.carSVG(p.car)}${A.quarterSVG(p.car)}${A.rearSVG(p.car)}<span class="fx-bubble"></span><span class="fx-shield">🛡️</span><span class="fx-bolt">⚡</span></div>
       </div>`).join('');
     lastRankSig = '';
     layoutRace();
@@ -863,36 +863,111 @@
     if (n > bgSolved && DB.now() - bgAt >= BG_HOLD) { bgSolved = n; showBackdrop((bgIdx + 1) % 5); }
   }
 
-  // ---------- 3D 화면(뒤에서 따라가는 시점, race3d.js) ----------
-  // 위쪽의 2D·3D 단추로 바꾸고, 고른 화면은 이 노트북에 기억해요
-  let view3d = false, r3 = null;
-  try { view3d = localStorage.getItem('hkr-race-view') === '3d'; } catch (e) { /* 무시 */ }
-  function showViewSeg() { $$('#viewSeg button').forEach(b => b.setAttribute('aria-pressed', String((b.dataset.view === '3d') === view3d))); }
+  // ---------- 3D 화면(race3d.js)과 중계(여러 카메라) ----------
+  // 위쪽의 2D·3D·중계 단추로 바꾸고, 고른 화면은 이 노트북에 기억해요
+  //  3D: 45도 메인 카메라 하나로 계속 / 중계: 방송처럼 메인·선두·전체·추격·측면·항공 카메라가 번갈아 나와요
+  let viewMode = '2d', r3 = null;
+  try { const v = localStorage.getItem('hkr-race-view'); if (v === '3d' || v === 'live') viewMode = v; } catch (e) { /* 무시 */ }
+  // 중계 카메라: shot(race3d.js의 카메라, aerial은 2D 지도 화면), focus(전체·선두), zoom(줌 인·아웃), len(보여 주는 시간)
+  const CAMS = {
+    main:      { shot: 'main', focus: 'all', zoom: 1, label: '메인 카메라', len: 9000 },
+    lead:      { shot: 'main', focus: 'lead', zoomFrom: 1.05, zoom: 1.45, label: '선두 카메라', len: 7000 },
+    wide:      { shot: 'main', focus: 'all', zoomFrom: 1.3, zoom: 0.85, label: '전체 카메라', len: 7000 },
+    chase:     { shot: 'chase', focus: 'all', label: '추격 카메라', len: 7000 },
+    chaseLead: { shot: 'chase', focus: 'lead', label: '선두 추격 카메라', len: 6000 },
+    side:      { shot: 'side', focus: 'lead', label: '측면 카메라', len: 7000 },
+    sideAll:   { shot: 'side', focus: 'all', label: '측면 전체 카메라', len: 6000 },
+    aerial:    { shot: 'aerial', label: '항공 카메라', len: 6500 }
+  };
+  const director = { cam: 'main', until: 0, cutAt: 0, leadAt: 0, aerial: false, opened: '', leader: '' };
+  const is3d = () => viewMode !== '2d' && !director.aerial;
+  const circEl = $('#circuit');
+  const camBadge = document.createElement('div');
+  camBadge.className = 'cam-badge hidden';
+  camBadge.setAttribute('aria-hidden', 'true');
+  camBadge.innerHTML = '<i></i><span>LIVE</span><b></b>';
+  const camFlash = document.createElement('div');
+  camFlash.className = 'cam-flash';
+  camFlash.setAttribute('aria-hidden', 'true');
+  circEl.append(camBadge, camFlash);
+  function showViewSeg() {
+    $$('#viewSeg button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.view === viewMode)));
+    camBadge.classList.toggle('hidden', viewMode !== 'live');
+  }
   showViewSeg();
   $('#viewSeg').addEventListener('click', e => {
     const b = e.target.closest('button[data-view]');
-    if (!b || (b.dataset.view === '3d') === view3d) return;
-    view3d = b.dataset.view === '3d';
-    try { localStorage.setItem('hkr-race-view', view3d ? '3d' : '2d'); } catch (err) { /* 무시 */ }
+    if (!b || b.dataset.view === viewMode) return;
+    viewMode = b.dataset.view;
+    try { localStorage.setItem('hkr-race-view', viewMode); } catch (err) { /* 무시 */ }
     showViewSeg();
-    if (!view3d) leave3d();
+    director.aerial = false;
+    director.cam = 'main';
+    director.cutAt = DB.now();
+    director.until = director.cutAt + CAMS.main.len;
+    if (viewMode === '2d') leave3d();
     layoutRace();
+    if (r3) r3.setShot('main', { focus: 'all', zoom: 1, cut: true });
+    camBadge.querySelector('b').textContent = CAMS.main.label;
     updateRace();
     startCarLoop();
   });
+  // 카메라 바꾸기: 번쩍 하고 넘어가며 왼쪽 아래 이름표가 바뀌어요
+  function cutTo(name) {
+    const cam = CAMS[name];
+    director.cam = name;
+    director.cutAt = DB.now();
+    director.until = director.cutAt + cam.len * (finalOn ? 0.7 : 1); // 막판에는 더 빨리 바뀌어요
+    camBadge.querySelector('b').textContent = cam.label;
+    camFlash.classList.remove('go');
+    void camFlash.offsetWidth;
+    camFlash.classList.add('go');
+    const wasAerial = director.aerial;
+    director.aerial = cam.shot === 'aerial';
+    if (director.aerial !== wasAerial) {
+      if (director.aerial) leave3d();
+      layoutRace();
+      updateRace();
+      startCarLoop();
+    }
+    if (r3 && !director.aerial) r3.setShot(cam.shot, { focus: cam.focus, zoom: cam.zoom != null ? cam.zoom : 1, zoomFrom: cam.zoomFrom, cut: true });
+  }
+  // 중계 감독: 출발은 뒤에서, 그다음엔 메인 카메라와 다른 카메라를 번갈아, 선두가 바뀌면 선두 카메라로
+  function directorTick(now) {
+    if (viewMode !== 'live' || !meta || meta.status !== 'racing' || !r3 && !director.aerial) return;
+    if (G.raceClock(meta, now).paused) return; // 쿨링 타임에는 쉬어요
+    const secret = rankSecret(now);
+    if (director.opened !== room && now >= meta.startAt - 3000) { director.opened = room; cutTo('chase'); director.until = meta.startAt + 6000; return; }
+    const leader = Object.keys(rankNow).find(u => rankNow[u] === 1) || '';
+    // 선두가 바뀌면 선두 카메라로(이미 선두를 비추고 있거나, 방금 바꿨으면 그대로)
+    if (!secret && leader && director.leader && leader !== director.leader && now - director.cutAt > 5000 && now - director.leadAt > 20000 &&
+        now > meta.startAt + 15000 && !['lead', 'chaseLead', 'side'].includes(director.cam)) {
+      director.leader = leader;
+      director.leadAt = now;
+      cutTo('lead');
+      return;
+    }
+    if (leader) director.leader = leader;
+    if (now < director.until) return;
+    const pool = secret ? ['wide', 'chase', 'aerial'] : ['lead', 'wide', 'chase', 'chaseLead', 'side', 'sideAll', 'aerial'];
+    const opts = pool.filter(k => k !== director.cam);
+    cutTo(director.cam !== 'main' && Math.random() < 0.45 ? 'main' : opts[Math.floor(Math.random() * opts.length)]);
+  }
   function leave3d() {
     if (r3) { r3.destroy(); r3 = null; }
     $('#circuit').classList.remove('is3d');
-    $$('#lanes .racer').forEach(el => { el.style.transform = ''; el.style.zIndex = ''; el.classList.remove('moving'); });
+    $$('#lanes .racer').forEach(el => { el.style.transform = ''; el.style.zIndex = ''; el.style.visibility = ''; el.classList.remove('moving'); });
     Object.keys(shown3d).forEach(k => delete shown3d[k]);
   }
   function layout3d(circ, Wd, Ht, n, type) {
-    if (!r3) r3 = RACE3D.create(circ, { carsEl: $('#lanes') });
+    if (!r3) {
+      r3 = RACE3D.create(circ, { carsEl: $('#lanes') });
+      const cam = CAMS[viewMode === 'live' ? director.cam : 'main'];
+      r3.setShot(cam.shot === 'aerial' ? 'main' : cam.shot, { focus: cam.focus, zoom: cam.zoom != null ? cam.zoom : 1 });
+    }
     circ.classList.add('is3d');
     $$('#lanes .racer').forEach(el => { el.style.left = ''; el.style.top = ''; el.querySelector('.car-box').style.transform = ''; }); // 2D 자리·회전 지우기
     const g = r3.layout(Wd, Ht, n, { cells: C.finishCells, track: type });
-    circ.style.setProperty('--car-w', g.carW + 'px');
-    circ.style.setProperty('--tag-size', g.tagSize + 'px');
     // 역사 장면 전광판: 길이 지나가지 않는 오른쪽 위
     const el = $('#bgScreen'), b = g.board;
     Object.assign(el.style, { left: b.x + 'px', top: b.y + 'px', width: b.w + 'px', height: b.h + 'px' });
@@ -907,7 +982,7 @@
     if (!Wd || !Ht) return;
     const n = Math.max(approvedList().length, 1), k = Math.min(n, 2); // 2줄로 달려서 탈것을 크게
     const type = trackType();
-    if (view3d) {
+    if (is3d()) {
       geo = TRACKS.build(type, Wd, Ht, { x: 0, y: 0, w: Wd, h: Ht }); // 코스 이름(geo.name)과 준비됐다는 표시로 써요
       geo.k = k;
       circ.dataset.track = type;
@@ -967,7 +1042,7 @@
   }
   function moveCars(now) {
     if (!geo || currentView() !== '#vRace') { carLoop = null; lastFrameAt = 0; return; }
-    if (view3d && r3) { moveCars3d(now || performance.now()); carLoop = requestAnimationFrame(moveCars); return; }
+    if (is3d() && r3) { moveCars3d(now || performance.now()); carLoop = requestAnimationFrame(moveCars); return; }
     const jump = rankSecret(DB.now()); // 결승선으로 모일 때는 달려가는 모습 없이 바로 옮겨요(가는 동안 앞뒤가 보이지 않게)
     approvedList().forEach((p, i) => {
       const el = document.querySelector(`.racer[data-uid="${p.uid}"]`);
@@ -1150,6 +1225,7 @@
       }
       updateRace();
       updateBackdrop();
+      directorTick(now);
       const ap = approvedList();
       const allDone = ap.length > 0 && ap.every(p => states[p.uid] && states[p.uid].finishedAt);
       if (now >= meta.endAt || (now > meta.startAt && allDone)) finishRace();

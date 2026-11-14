@@ -1400,13 +1400,8 @@
     : `<rect x="${f1(x - w / 2)}" y="${f1(y - h / 2)}" width="${w}" height="${h}" rx="${f1(Math.min(w, h) * 0.35)}" fill="#ff4b3e" stroke="#9c1c14" stroke-width=".8"/><rect x="${f1(x - w / 2 + 1.2)}" y="${f1(y - h / 2 + 1)}" width="${f1(w * 0.45)}" height="${f1(h * 0.35)}" rx="1" fill="#ffd0c8" opacity=".8"/>`;
   const rPlate = (y, c) => `<rect x="50" y="${y}" width="20" height="7" rx="1.5" fill="#fff" stroke="${shade(c.stripe, -0.25)}" stroke-width="1"/><path d="M53 ${y + 3.5} H67" stroke="#8a8f99" stroke-width="1.4" stroke-dasharray="2 1.4"/>`;
   const rBumper = (L, R, y) => `<rect x="${L - 1}" y="${y}" width="${R - L + 2}" height="6" rx="3" fill="#e3e5ec" stroke="#a9adba" stroke-width=".6"/>`;
-  // 옆면이 붙는 탈것은 옆 창문에 얼굴이 보이니, 뒤에서는 뒤통수만(얼굴이 두 개로 보이지 않게)
-  const rFace = (P, x, y, r) => (P.back ? driverBack(P.c.driver, x, y, r) : driver(P.c.driver, x, y, r));
-  function driverBack(kind, x, y, r) {
-    const s = driver(kind, x, y, r), key = `<circle cx="${x}" cy="${y}" r="${r}" fill="`, at = s.indexOf(key);
-    const col = at >= 0 ? s.slice(at + key.length, s.indexOf('"', at + key.length)) : SKIN;
-    return s + `<circle cx="${x}" cy="${y}" r="${f1(r * 0.94)}" fill="${col}"/><ellipse cx="${f1(x - r * 0.3)}" cy="${f1(y - r * 0.42)}" rx="${f1(r * 0.36)}" ry="${f1(r * 0.2)}" fill="#fff" opacity=".28"/>`;
-  }
+  // 뒤에서 따라가는 카메라에는 운전자가 뒤를 돌아보는 얼굴로 보여요
+  const rFace = (P, x, y, r) => driver(P.c.driver, x, y, r);
   const rBodyAttr = (P) => `fill="url(#${P.id}b)" stroke="${P.dark}" stroke-width="1.1" stroke-linejoin="round"`;
   // 창문 안에 뒤돌아보는 운전자
   function rWin(P, d, x, y, r) {
@@ -1690,8 +1685,6 @@
     if (o.spots) g += [[44, 22], [76, 26], [54, 46], [70, 50], [38, 40], [84, 44]].map(([x, y]) => `<ellipse cx="${x}" cy="${y}" rx="2.4" ry="1.7" fill="${o.spots}" opacity=".7"/>`).join('');
     if (o.shaggy) g += `<path d="${fuzz(60, 20, 26, 10, 22, 2.4)}" fill="${o.shaggy}"/>`;
     g += `<ellipse cx="58" cy="20" rx="10" ry="5" fill="#fff" opacity=".22"/>`; // 머리 뒤 반짝
-    // 비스듬히 뒤에서 보면 얼굴이 왼쪽 가장자리로 살짝 보여요(옆으로 눌러 그린 얼굴)
-    g += `<g clip-path="url(#${id}c)"><g transform="translate(38 1) scale(.42 1) translate(-60 0)">${fluffFace(o, id)}</g></g>`;
     g += flopEars(o);
     // 날개·지느러미
     if (o.arms === 'wing') g += [[30, 44, 20], [90, 44, -20]].map(([x, y, r]) => `<g transform="rotate(${r} ${x} ${y})"><ellipse cx="${x}" cy="${y}" rx="6.5" ry="11" fill="${o.wing || shade(B, -0.12)}"/></g>`).join('');
@@ -1720,25 +1713,9 @@
     return g;
   }
 
-  // 비스듬한 뒤 시점: 뒷모습 왼쪽 가장자리(뒷모습 그림의 x)에 옆모습 그림을 비스듬히 붙여요.
-  // 동물 캐릭터·열기구·구름은 옆모습이 앞을 보는 얼굴이라 붙이지 않고, 대신 얼굴이 옆으로 살짝 보여요
-  const SIDE_X = {
-    ev: 20, suv: 18, sport: 15, luxury: 19, hatch: 21, pickup: 18, box: 22, retro: 23, jeep: 19, taxi: 20, police: 19,
-    ambulance: 19, fire: 16, bus: 16, mtruck: 16, t_dump: 16, t_mixer: 20, t_subway: 18, t_train: 18, tram: 20, steam: 18, t_crane: 16,
-    tank: 10, spg: 10, t_excavator: 12, t_forklift: 24, f_tractor: 9, tiller: 15, f_combine: 12, f_transplanter: 38, f_drone: 40,
-    stonecart: 16, gama: 34, carriage: 16, hwacha: 15, rickshaw: 22,
-    x_rudolph: 26, x_pumpkin: 20, x_carpet: 30, x_broom: 50, x_rocket: 40, x_ufo: 30, x_paperplane: 54, x_sled: 28, x_turtle: 16,
-    p_airliner: 46, p_fighter: 49, p_light: 48, p_biplane: 49, p_aerobatic: 49, p_glider: 53, p_seaplane: 48, p_heli: 36, p_blimp: 32,
-    s_turtle: 18, s_panokseon: 16, s_sailboat: 26, s_yacht: 24, s_carrier: 10, s_submarine: 34, s_cruise: 12, s_fishing: 24, s_motorboat: 22, s_container: 10, s_banana: 44
-  };
-  function rearSide(i) {
-    const n = CARS.length, c = CARS[((i % n) + n) % n];
-    return SIDE_X[c.kind] == null ? null : SIDE_X[c.kind];
-  }
-
   function rearSVG(i) {
     const n = CARS.length, k = ((i % n) + n) % n, c = CARS[k], id = 'rr' + k + '_' + (++rearUid);
-    const P = { c, id, dark: shade(c.body, -0.38), lite: shade(c.body, 0.42), deep: shade(c.body, -0.6), toy: false, back: SIDE_X[c.kind] != null };
+    const P = { c, id, dark: shade(c.body, -0.38), lite: shade(c.body, 0.42), deep: shade(c.body, -0.6), toy: false };
     let inner;
     if (REAR[c.kind]) inner = REAR[c.kind](P);
     else if (/^[abm]_/.test(c.kind) && SPECIAL[c.kind]) {
@@ -3245,5 +3222,5 @@
   }
   function hasArt(eraId) { return !!SCENE_ART[eraId]; }
 
-  window.ART = { CARS, GROUPS, carSVG, rearSVG, rearSide, quarterSVG, sceneSVG, hasArt };
+  window.ART = { CARS, GROUPS, carSVG, rearSVG, quarterSVG, sceneSVG, hasArt };
 })();
